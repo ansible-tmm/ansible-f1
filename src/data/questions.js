@@ -1,0 +1,126 @@
+export const QUESTIONS = [
+  {
+    id: 1,
+    category: "basics",
+    prompt: "What does state: present usually mean in Ansible?",
+    options: [
+      "Delete the resource",
+      "Ensure it exists",
+      "Pause the playbook",
+      "Restart the host",
+    ],
+    answer: 1,
+    explanation: "state: present usually ensures the target resource exists.",
+  },
+  {
+    id: 2,
+    category: "basics",
+    prompt: "Which file format is most commonly used for Ansible playbooks?",
+    options: ["JSON", "YAML", "INI", "XML"],
+    answer: 1,
+    explanation: "Ansible playbooks are most commonly written in YAML.",
+  },
+  {
+    id: 3,
+    category: "inventory",
+    prompt: "What is an inventory in Ansible?",
+    options: [
+      "A list of managed hosts and groups",
+      "A package manager",
+      "A log file",
+      "A backup archive",
+    ],
+    answer: 0,
+    explanation: "Inventory defines the hosts and groups Ansible manages.",
+  },
+  {
+    id: 4,
+    category: "modules",
+    prompt: "What is a module in Ansible?",
+    options: [
+      "A dashboard theme",
+      "A unit of work Ansible executes",
+      "A Linux service account",
+      "A license file",
+    ],
+    answer: 1,
+    explanation: "Modules are the building blocks Ansible uses to perform tasks.",
+  },
+  {
+    id: 5,
+    category: "services",
+    prompt: "Which module is commonly used to manage services?",
+    options: ["copy", "user", "service", "debug"],
+    answer: 2,
+    explanation: "The service module is commonly used to manage services.",
+  },
+  {
+    id: 6,
+    category: "packages",
+    prompt: "Which kind of module would you typically use to install a package?",
+    options: [
+      "A package module like yum, dnf, or apt",
+      "debug",
+      "template",
+      "ping",
+    ],
+    answer: 0,
+    explanation:
+      "Package management is typically done with yum, dnf, apt, or package modules.",
+  },
+  {
+    id: 7,
+    category: "idempotency",
+    prompt: "Why is idempotency valuable in Ansible?",
+    options: [
+      "It makes tasks safe to run repeatedly",
+      "It encrypts variables automatically",
+      "It removes the need for inventories",
+      "It speeds up boot time",
+    ],
+    answer: 0,
+    explanation:
+      "Idempotency means repeated runs converge safely toward the same result.",
+  },
+  {
+    id: 8,
+    category: "templating",
+    prompt: "What is Jinja commonly used for in Ansible?",
+    options: [
+      "3D rendering",
+      "Templating variables and files",
+      "Encrypting SSH keys",
+      "Starting containers only",
+    ],
+    answer: 1,
+    explanation: "Jinja is used for templating expressions, variables, and files.",
+  },
+  {
+    id: 9,
+    category: "facts",
+    prompt: "What are Ansible facts?",
+    options: [
+      "Random comments in a playbook",
+      "System information gathered from hosts",
+      "Only inventory group names",
+      "A kind of YAML syntax warning",
+    ],
+    answer: 1,
+    explanation:
+      "Facts are discovered host data such as OS, interfaces, memory, and more.",
+  },
+  {
+    id: 10,
+    category: "handlers",
+    prompt: "When are handlers typically run in Ansible?",
+    options: [
+      "Before inventory loads",
+      "Only when notified by a changed task",
+      "Every second during execution",
+      "Only on localhost",
+    ],
+    answer: 1,
+    explanation:
+      "Handlers are usually triggered only when notified by a changed task.",
+  },
+];

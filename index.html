@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Built to Automate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="game-root">
+      <canvas id="c"></canvas>
+      <div id="screen-flash" aria-hidden="true"></div>
+
+      <div id="hud" class="hud hidden">
+        <div class="hud-left">
+          <div>Stability <span id="hud-stability">100</span></div>
+          <div>Score <span id="hud-score">0</span></div>
+          <div>Speed <span id="hud-speed">0</span></div>
+          <div>Streak <span id="hud-streak">0</span></div>
+        </div>
+        <div class="hud-right">
+          <div id="hud-shield">Shield: —</div>
+          <div id="hud-flow">Flow: —</div>
+        </div>
+        <div id="boost-bar" class="boost-bar hidden">
+          <span>Boost</span>
+          <div class="boost-track">
+            <div id="boost-fill"></div>
+          </div>
+        </div>
+        <div id="hud-status" class="hud-status"></div>
+      </div>
+
+      <div id="main-menu" class="overlay panel">
+        <p class="eyebrow">Ansible arcade</p>
+        <h1 class="title">Built to Automate</h1>
+        <p class="tagline">Race automation through a chaotic IT highway.</p>
+        <div class="best-row">
+          Best Score <span id="menu-best">0</span>
+        </div>
+        <button type="button" id="btn-start" class="btn primary">Start Run</button>
+        <ul class="help">
+          <li>Move: ← / → or A / D</li>
+          <li>Collect pickups · Dodge outages</li>
+          <li>Answer fast questions for boosts &amp; recovery</li>
+        </ul>
+      </div>
+
+      <div id="pause-menu" class="overlay panel hidden">
+        <h2>Paused</h2>
+        <button type="button" id="btn-resume" class="btn primary">Resume</button>
+        <button type="button" id="btn-restart-pause" class="btn">Restart Run</button>
+        <p class="hint">Esc to resume</p>
+      </div>
+
+      <div id="game-over" class="overlay panel hidden">
+        <h2>Run Complete</h2>
+        <div class="stats-grid">
+          <div>Final Score <span id="go-score">0</span></div>
+          <div>Best <span id="go-best">0</span></div>
+          <div>Obstacles Hit <span id="go-hits">0</span></div>
+          <div>Pickups <span id="go-pickups">0</span></div>
+          <div>Correct Answers <span id="go-correct">0</span></div>
+        </div>
+        <button type="button" id="btn-restart-go" class="btn primary">Restart</button>
+        <button type="button" id="btn-menu-go" class="btn">Back to Menu</button>
+      </div>
+
+      <div id="recovery-overlay" class="overlay panel compact hidden">
+        <h3>Attempt remediation?</h3>
+        <p class="hint">Answer a skill check to recover Stability.</p>
+        <div class="row">
+          <button type="button" id="recovery-yes" class="btn primary">Yes</button>
+          <button type="button" id="recovery-no" class="btn">No</button>
+        </div>
+      </div>
+
+      <div id="quiz-overlay" class="overlay panel quiz hidden">
+        <h3 id="quiz-title">Skill Check</h3>
+        <p id="quiz-prompt"></p>
+        <div id="quiz-options" class="quiz-options"></div>
+        <p id="quiz-explain" class="quiz-explain hidden"></p>
+        <p class="hint">Keys 1–4 or click</p>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
