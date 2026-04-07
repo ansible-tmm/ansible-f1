@@ -103,10 +103,12 @@ export class Game {
       if (this.state === "quiz") return;
 
       if (e.code === "Escape") {
-        if (this.state === "paused") {
+        if (this.recoveryPrompt) {
+          this.onRecoveryNo();
+        } else if (this.state === "paused") {
           this.state = "running";
           this.ui.showPause(false);
-        } else if (this.state === "running" && !this.recoveryPrompt) {
+        } else if (this.state === "running") {
           this.state = "paused";
           this.ui.showPause(true);
         }
@@ -592,7 +594,7 @@ export class Game {
 
     this.recoveryPrompt = true;
     const showTip = !hasSeenRecoveryTip();
-    this.ui.showRecovery(true, showTip);
+    this.ui.showRecovery(true, showTip, () => this.onRecoveryNo());
   }
 
   _onPickup(e) {

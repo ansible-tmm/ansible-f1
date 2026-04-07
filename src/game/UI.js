@@ -10,6 +10,8 @@ export class UI {
       quiz: document.getElementById("quiz-overlay"),
       recovery: document.getElementById("recovery-overlay"),
       recoveryFirstTip: document.getElementById("recovery-first-tip"),
+      recoveryCountdown: document.getElementById("recovery-countdown"),
+      recoveryNo: document.getElementById("recovery-no"),
       hud: document.getElementById("hud"),
       flash: document.getElementById("screen-flash"),
       canvasWrap: document.getElementById("game-root"),
@@ -41,6 +43,8 @@ export class UI {
     };
 
     this._statusTimer = null;
+    this._recoveryCountdownId = null;
+    this._recoveryAutoTimer = null;
     this._bindButtons();
   }
 
@@ -134,9 +138,11 @@ export class UI {
 
   /**
    * @param {boolean} visible
-   * @param {boolean} [showFirstTimeTip] — explain Yes vs No (once per browser; caller gates with storage)
+   * @param {boolean} [showFirstTimeTip]
+   * @param {function} [onAutoNo] — called when the 5-second countdown expires
    */
-  showRecovery(visible, showFirstTimeTip = false) {
+  showRecovery(visible, showFirstTimeTip = false, onAutoNo = null) {
+    this.stopRecoveryCountdown();
     this.el.recovery.classList.toggle("hidden", !visible);
     if (this.el.recoveryFirstTip) {
       this.el.recoveryFirstTip.classList.toggle(
@@ -144,6 +150,59 @@ export class UI {
         !visible || !showFirstTimeTip
       );
     }
+    if (this.el.recoveryNo) {
+      this.el.recoveryNo.classList.remove("auto-selected");
+    }
+
+    if (visible) {
+      this._startRecoveryCountdown(onAutoNo);
+    }
+  }
+
+  _startRecoveryCountdown(onAutoNo) {
+    const cd = this.el.recoveryCountdown;
+    if (!cd) return;
+    let remaining = 5;
+    cd.textContent = String(remaining);
+    cd.classList.remove("hidden", "urgent");
+
+    this._recoveryCountdownId = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        this._autoSelectNo(onAutoNo);
+        return;
+      }
+      cd.textContent = String(remaining);
+      if (remaining <= 2) {
+        cd.classList.add("urgent");
+      }
+    }, 1000);
+  }
+
+  _autoSelectNo(onAutoNo) {
+    this.stopRecoveryCountdown();
+    const cd = this.el.recoveryCountdown;
+    if (cd) {
+      cd.textContent = "0";
+      cd.classList.add("urgent");
+    }
+    const noBtn = this.el.recoveryNo;
+    if (noBtn) {
+      noBtn.classList.add("auto-selected");
+    }
+    this._recoveryAutoTimer = setTimeout(() => {
+      if (noBtn) noBtn.classList.remove("auto-selected");
+      if (onAutoNo) onAutoNo();
+    }, 900);
+  }
+
+  stopRecoveryCountdown() {
+    clearInterval(this._recoveryCountdownId);
+    this._recoveryCountdownId = null;
+    clearTimeout(this._recoveryAutoTimer);
+    this._recoveryAutoTimer = null;
+    const cd = this.el.recoveryCountdown;
+    if (cd) cd.classList.remove("urgent");
   }
 
   showHud(visible) {

@@ -38,6 +38,6 @@ export function setEntityBoxFromMesh(mesh, halfW, halfH, halfD, box) {
 }
 
 export const HIT = {
-  obstacle: { w: 0.85, h: 0.9, d: 0.95 },
+  obstacle: { w: 0.85, h: 0.9, d: 4.2 },
   pickup: { w: 0.5, h: 0.55, d: 0.5 },
 };
