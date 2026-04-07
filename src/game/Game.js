@@ -114,7 +114,7 @@ export class Game {
 
       if (this.state === "quiz") return;
 
-      if (e.code === "Escape") {
+      if (e.code === "Escape" || e.code === "Space") {
         if (this.recoveryPrompt) {
           this.onRecoveryNo();
         } else if (this.state === "paused") {

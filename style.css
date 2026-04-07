@@ -206,27 +206,32 @@ body {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
 }
 
+.swatch-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.35));
+}
+
 .swatch-outage {
   background: linear-gradient(180deg, #ff3333 70%, #ffdd00 70%);
-}
-
-.swatch-playbook {
-  background: #0088dd;
-  box-shadow: 0 0 8px rgba(0, 160, 255, 0.45);
-}
-
-.swatch-collection {
-  background: #00dd66;
-  box-shadow: 0 0 8px rgba(0, 255, 120, 0.35);
 }
 
 .swatch-shield {
   background: #9944ff;
   box-shadow: 0 0 8px rgba(180, 100, 255, 0.4);
+  border-radius: 2px 2px 2px 2px;
+  clip-path: polygon(50% 0%, 100% 15%, 100% 55%, 50% 100%, 0% 55%, 0% 15%);
+  width: 15px;
+  height: 17px;
 }
 
 .swatch-boost {
   background: linear-gradient(135deg, #ffdd00, #ffaa00);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
 }
 
 .recovery-countdown {
@@ -304,7 +309,7 @@ body {
 
 .hud-right {
   position: absolute;
-  top: 1rem;
+  top: 3.2rem;
   right: 1rem;
   text-align: right;
   line-height: 1.5;

@@ -1,3 +1,5 @@
+import { getLeaderboard } from "../utils/storage.js";
+
 /**
  * DOM overlays + HUD updates (Built to Automate)
  */
@@ -62,6 +64,8 @@ export class UI {
       if (b) b.addEventListener("click", fn);
     };
     on("btn-start", () => this.onStart && this.onStart());
+    on("btn-highscores", () => this._showMenuLeaderboard());
+    on("btn-lb-back", () => this._hideMenuLeaderboard());
     on("btn-resume", () => this.onResume && this.onResume());
     on("btn-restart-pause", () => this.onRestart && this.onRestart());
     on("btn-restart-go", () => this.onRestart && this.onRestart());
@@ -371,5 +375,44 @@ export class UI {
     this.el.canvasWrap.classList.remove("shake");
     void this.el.canvasWrap.offsetWidth;
     this.el.canvasWrap.classList.add("shake");
+  }
+
+  _showMenuLeaderboard() {
+    const lb = document.getElementById("menu-leaderboard");
+    if (!lb) return;
+    const board = getLeaderboard();
+    const body = document.getElementById("menu-lb-body");
+    if (body) {
+      body.innerHTML = "";
+      if (board.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 3;
+        td.textContent = "No scores yet — play a round!";
+        td.style.textAlign = "center";
+        td.style.color = "var(--muted)";
+        td.style.padding = "1.5rem 0.5rem";
+        tr.appendChild(td);
+        body.appendChild(tr);
+      } else {
+        board.forEach((entry, i) => {
+          const tr = document.createElement("tr");
+          const tdRank = document.createElement("td");
+          tdRank.textContent = String(i + 1);
+          const tdName = document.createElement("td");
+          tdName.textContent = entry.name || "???";
+          const tdScore = document.createElement("td");
+          tdScore.textContent = String(entry.score);
+          tr.append(tdRank, tdName, tdScore);
+          body.appendChild(tr);
+        });
+      }
+    }
+    lb.classList.remove("hidden");
+  }
+
+  _hideMenuLeaderboard() {
+    const lb = document.getElementById("menu-leaderboard");
+    if (lb) lb.classList.add("hidden");
   }
 }

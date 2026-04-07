@@ -392,11 +392,7 @@ export class Spawner {
     return g;
   }
 
-  _animateObstacles(dt) {
-    for (const e of this.obstacles) {
-      if (!e.active) continue;
-      e.mesh.rotation.y += dt * 0.35;
-    }
+  _animateObstacles() {
   }
 
   _animatePickups(dt) {

@@ -58,11 +58,11 @@
               <span><strong>Outage</strong> — hazard · dodge it</span>
             </div>
             <div class="legend-row">
-              <span class="swatch swatch-playbook" aria-hidden="true"></span>
+              <img class="swatch-icon" src="./assets/playbook-icon.png" alt="" aria-hidden="true" />
               <span><strong>Playbook</strong> — +100 score</span>
             </div>
             <div class="legend-row">
-              <span class="swatch swatch-collection" aria-hidden="true"></span>
+              <img class="swatch-icon" src="./assets/collection-icon.png" alt="" aria-hidden="true" />
               <span><strong>Collection</strong> — +150 score</span>
             </div>
             <div class="legend-row">
@@ -96,6 +96,22 @@
           Best Score <span id="menu-best">0</span>
         </div>
         <button type="button" id="btn-start" class="btn primary">Start Run</button>
+        <button type="button" id="btn-highscores" class="btn">High Scores</button>
+
+        <div id="menu-leaderboard" class="go-leaderboard hidden">
+          <h3 class="lb-title">Leaderboard</h3>
+          <div class="lb-scroll" id="menu-lb-scroll">
+            <table class="lb-table">
+              <thead>
+                <tr><th>#</th><th>Name</th><th>Score</th></tr>
+              </thead>
+              <tbody id="menu-lb-body"></tbody>
+            </table>
+          </div>
+          <p class="lb-hint">Scroll to see more</p>
+          <button type="button" id="btn-lb-back" class="btn" style="margin-top:0.6rem">Back</button>
+        </div>
+
         <ul class="help">
           <li>Move: ← / → or A / D</li>
           <li>
