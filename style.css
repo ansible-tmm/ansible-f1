@@ -22,6 +22,43 @@ body {
   font-family: "Orbitron", system-ui, sans-serif;
 }
 
+#audio-controls {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  display: flex;
+  gap: 6px;
+}
+
+#audio-controls button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  border-radius: 5px;
+  background: rgba(5, 10, 20, 0.7);
+  color: var(--neon);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
+  padding: 0;
+  line-height: 1;
+}
+
+#audio-controls button:hover {
+  background: rgba(10, 25, 40, 0.85);
+  border-color: rgba(0, 255, 204, 0.5);
+}
+
+#audio-controls button.muted {
+  color: rgba(0, 255, 204, 0.2);
+  border-color: rgba(0, 255, 204, 0.08);
+}
+
 #game-root {
   position: relative;
   width: 100%;
@@ -110,6 +147,25 @@ body {
   color: rgba(180, 210, 235, 0.75);
   font-weight: 500;
   max-width: 14rem;
+}
+
+.hud-pickup-counter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.hud-pickup-counter span:first-of-type {
+  color: #fff;
+  font-weight: 700;
+}
+
+.hud-pickup-pts {
+  font-size: 0.6rem;
+  color: var(--neon);
+  font-weight: 400;
+  opacity: 0.8;
 }
 
 .hud-legend {

@@ -20,6 +20,10 @@ export class UI {
       score: document.getElementById("hud-score"),
       speed: document.getElementById("hud-speed"),
       streak: document.getElementById("hud-streak"),
+      playbookCount: document.getElementById("hud-playbooks"),
+      playbookPts: document.getElementById("hud-playbook-pts"),
+      collectionCount: document.getElementById("hud-collections"),
+      collectionPts: document.getElementById("hud-collection-pts"),
       shield: document.getElementById("hud-shield"),
       flow: document.getElementById("hud-flow"),
       status: document.getElementById("hud-status"),
@@ -240,6 +244,10 @@ export class UI {
       automationFlow,
       boostRemaining,
       boostTotal,
+      playbooks,
+      playbookPts,
+      collections,
+      collectionPts,
     } = data;
     if (this.el.health)
       this.el.health.textContent = `${Math.max(0, Math.floor(health))}`;
@@ -247,6 +255,14 @@ export class UI {
     if (this.el.speed)
       this.el.speed.textContent = `${speed.toFixed(1)}`;
     if (this.el.streak) this.el.streak.textContent = `${streak}`;
+    if (this.el.playbookCount)
+      this.el.playbookCount.textContent = `${playbooks || 0}`;
+    if (this.el.playbookPts)
+      this.el.playbookPts.textContent = `${playbookPts || 0} pts`;
+    if (this.el.collectionCount)
+      this.el.collectionCount.textContent = `${collections || 0}`;
+    if (this.el.collectionPts)
+      this.el.collectionPts.textContent = `${collectionPts || 0} pts`;
     if (this.el.shield) {
       this.el.shield.textContent = shield ? "Shield: ON" : "Shield: —";
       this.el.shield.classList.toggle("active", !!shield);

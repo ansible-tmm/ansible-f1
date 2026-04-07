@@ -2,8 +2,11 @@ import * as THREE from "three";
 import { CONFIG } from "../data/config.js";
 import { HIT, setEntityBoxFromMesh } from "./CollisionSystem.js";
 
-const _playbookTex = new THREE.TextureLoader().load("./assets/playbook-icon.png");
+const _texLoader = new THREE.TextureLoader();
+const _playbookTex = _texLoader.load("./assets/playbook-icon.png");
 _playbookTex.colorSpace = THREE.SRGBColorSpace;
+const _collectionTex = _texLoader.load("./assets/collection-icon.png");
+_collectionTex.colorSpace = THREE.SRGBColorSpace;
 
 let _id = 0;
 
@@ -273,26 +276,17 @@ export class Spawner {
   _makePickupMesh(type) {
     if (type === "POLICY_SHIELD") return this._makeShieldMesh();
     if (type === "PLAYBOOK") return this._makePlaybookMesh();
+    if (type === "CERTIFIED_COLLECTION") return this._makeCollectionMesh();
 
     const g = new THREE.Group();
-    let color = 0x00ff66;
-    let emissive = 0x004422;
-    if (type === "BOOST_TOKEN") {
-      color = 0xffdd00;
-      emissive = 0xffaa00;
-    }
     const mat = new THREE.MeshStandardMaterial({
-      color,
+      color: 0xffdd00,
       metalness: 0.25,
       roughness: 0.35,
-      emissive,
+      emissive: 0xffaa00,
       emissiveIntensity: 0.5,
     });
-    const geo =
-      type === "BOOST_TOKEN"
-        ? new THREE.OctahedronGeometry(0.55, 0)
-        : new THREE.IcosahedronGeometry(0.5, 0);
-    const core = new THREE.Mesh(geo, mat);
+    const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), mat);
     g.add(core);
     g.userData.core = core;
     return g;
@@ -380,6 +374,24 @@ export class Spawner {
     return g;
   }
 
+  _makeCollectionMesh() {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({
+      map: _collectionTex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      emissive: 0xffffff,
+      emissiveMap: _collectionTex,
+      emissiveIntensity: 0.35,
+      metalness: 0.1,
+      roughness: 0.6,
+    });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.0), mat);
+    g.add(plane);
+    g.userData.core = g;
+    return g;
+  }
+
   _animateObstacles(dt) {
     for (const e of this.obstacles) {
       if (!e.active) continue;
@@ -397,7 +409,7 @@ export class Spawner {
       const c = e.mesh.userData.core;
       if (!c) continue;
       const st = e.subtype;
-      if (st === "POLICY_SHIELD" || st === "PLAYBOOK") {
+      if (st === "POLICY_SHIELD" || st === "PLAYBOOK" || st === "CERTIFIED_COLLECTION") {
         c.rotation.y += dt * 2.2;
       } else {
         c.rotation.x += dt * 1.8;

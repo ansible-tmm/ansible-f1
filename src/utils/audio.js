@@ -2,6 +2,9 @@ let ctx = null;
 const buffers = {};
 let unlocked = false;
 
+let _sfxMuted = false;
+let _musicMuted = false;
+
 function getContext() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -14,6 +17,9 @@ function unlock() {
   const c = getContext();
   if (c.state === "suspended") c.resume();
   unlocked = true;
+  if (_bgmEl && _bgmEl.paused && !_musicMuted) {
+    _bgmEl.play().catch(() => {});
+  }
 }
 
 window.addEventListener("click", unlock, { once: true });
@@ -34,6 +40,7 @@ export async function preload(urls) {
 }
 
 export function play(url, volume = 1) {
+  if (_sfxMuted) return;
   const c = getContext();
   if (c.state === "suspended") c.resume();
   const buf = buffers[url];
@@ -46,10 +53,16 @@ export function play(url, volume = 1) {
   src.start(0);
 }
 
+// --- Engine loop (in-game SFX loop, respects SFX mute) ---
 let _loopEl = null;
+let _loopUrl = null;
+let _loopVol = 0.2;
 
 export function startLoop(url, volume = 0.2) {
   stopLoop();
+  _loopUrl = url;
+  _loopVol = volume;
+  if (_sfxMuted) return;
   _loopEl = new Audio(url);
   _loopEl.loop = true;
   _loopEl.volume = volume;
@@ -57,8 +70,60 @@ export function startLoop(url, volume = 0.2) {
 }
 
 export function stopLoop() {
-  if (!_loopEl) return;
-  _loopEl.pause();
-  _loopEl.currentTime = 0;
-  _loopEl = null;
+  if (_loopEl) {
+    _loopEl.pause();
+    _loopEl.currentTime = 0;
+    _loopEl = null;
+  }
+  _loopUrl = null;
+}
+
+// --- Background music (always looping, independent of engine loop) ---
+let _bgmEl = null;
+let _bgmVol = 0.1;
+
+export function startBgm(url, volume = 0.1) {
+  if (_bgmEl) {
+    _bgmEl.pause();
+    _bgmEl = null;
+  }
+  _bgmVol = volume;
+  _bgmEl = new Audio(url);
+  _bgmEl.loop = true;
+  _bgmEl.volume = _musicMuted ? 0 : volume;
+  _bgmEl.play().catch(() => {});
+}
+
+// --- Mute toggles ---
+export function isSfxMuted() {
+  return _sfxMuted;
+}
+
+export function toggleSfxMute() {
+  _sfxMuted = !_sfxMuted;
+  if (_sfxMuted) {
+    if (_loopEl) {
+      _loopEl.pause();
+      _loopEl.currentTime = 0;
+      _loopEl = null;
+    }
+  } else if (_loopUrl) {
+    _loopEl = new Audio(_loopUrl);
+    _loopEl.loop = true;
+    _loopEl.volume = _loopVol;
+    _loopEl.play().catch(() => {});
+  }
+  return _sfxMuted;
+}
+
+export function isMusicMuted() {
+  return _musicMuted;
+}
+
+export function toggleMusicMute() {
+  _musicMuted = !_musicMuted;
+  if (_bgmEl) {
+    _bgmEl.volume = _musicMuted ? 0 : _bgmVol;
+  }
+  return _musicMuted;
 }

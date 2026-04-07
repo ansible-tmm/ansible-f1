@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Game } from "./game/Game.js";
 import { UI } from "./game/UI.js";
 import { getBestScore } from "./utils/storage.js";
+import { startBgm, toggleMusicMute, toggleSfxMute } from "./utils/audio.js";
 
 const canvas = document.getElementById("c");
 const renderer = new THREE.WebGLRenderer({
@@ -47,6 +48,25 @@ ui.setHandlers({
 game.state = "main_menu";
 ui.showMainMenu(true);
 ui.updateMenuBest(getBestScore());
+
+startBgm("./assets/audio/bgm.m4a", 0.1);
+
+const btnMusic = document.getElementById("btn-music");
+const btnSfx = document.getElementById("btn-sfx");
+if (btnMusic) {
+  btnMusic.addEventListener("click", () => {
+    const muted = toggleMusicMute();
+    btnMusic.classList.toggle("muted", muted);
+    btnMusic.title = muted ? "Music off" : "Toggle music";
+  });
+}
+if (btnSfx) {
+  btnSfx.addEventListener("click", () => {
+    const muted = toggleSfxMute();
+    btnSfx.classList.toggle("muted", muted);
+    btnSfx.title = muted ? "SFX off" : "Toggle sound effects";
+  });
+}
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;

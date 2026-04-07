@@ -74,6 +74,10 @@ export class Game {
     this.obstaclesHit = 0;
     this.pickupsCollected = 0;
     this.sessionCorrect = 0;
+    this.playbookCount = 0;
+    this.playbookPts = 0;
+    this.collectionCount = 0;
+    this.collectionPts = 0;
 
     this.recoveryPrompt = false;
     this.timeScale = 1;
@@ -184,6 +188,10 @@ export class Game {
     this.obstaclesHit = 0;
     this.pickupsCollected = 0;
     this.sessionCorrect = 0;
+    this.playbookCount = 0;
+    this.playbookPts = 0;
+    this.collectionCount = 0;
+    this.collectionPts = 0;
     this.recoveryPrompt = false;
     this.timeScale = 1;
     this.player.targetLaneIndex = 1;
@@ -517,6 +525,10 @@ export class Game {
       automationFlow: flowActive,
       boostRemaining: Math.max(0, this.boostUntil - now),
       boostTotal: CONFIG.BOOST_DURATION * 1000,
+      playbooks: this.playbookCount,
+      playbookPts: this.playbookPts,
+      collections: this.collectionCount,
+      collectionPts: this.collectionPts,
     });
   }
 
@@ -580,6 +592,10 @@ export class Game {
       automationFlow: flowActive,
       boostRemaining: Math.max(0, this.boostUntil - now),
       boostTotal: CONFIG.BOOST_DURATION * 1000,
+      playbooks: this.playbookCount,
+      playbookPts: this.playbookPts,
+      collections: this.collectionCount,
+      collectionPts: this.collectionPts,
     });
   }
 
@@ -628,6 +644,8 @@ export class Game {
     if (t === "PLAYBOOK") {
       const pts = Math.floor(CONFIG.PICKUP_SCORE.PLAYBOOK * this._flowMult());
       this.score += pts;
+      this.playbookCount += 1;
+      this.playbookPts += pts;
       this.ui.setStatus(
         `Pickup: Playbook — +${pts} score`,
         CONFIG.STATUS_HIT_MS
@@ -635,6 +653,8 @@ export class Game {
     } else if (t === "CERTIFIED_COLLECTION") {
       const pts = Math.floor(CONFIG.PICKUP_SCORE.COLLECTION * this._flowMult());
       this.score += pts;
+      this.collectionCount += 1;
+      this.collectionPts += pts;
       this.ui.setStatus(
         `Pickup: Certified Collection — +${pts} score`,
         CONFIG.STATUS_HIT_MS
