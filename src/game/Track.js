@@ -122,14 +122,14 @@ export class Track {
 
   _skyline() {
     const skylineGroup = new THREE.Group();
-    skylineGroup.position.set(0, 0, -160);
+    skylineGroup.position.set(0, 0, -120);
     this.group.add(skylineGroup);
 
     const bldgMat = (color, emissive = 0x000000) =>
       new THREE.MeshStandardMaterial({
         color,
         emissive,
-        emissiveIntensity: 0.3,
+        emissiveIntensity: 0.7,
         metalness: 0.1,
         roughness: 0.85,
         flatShading: true,
@@ -137,29 +137,30 @@ export class Track {
 
     // Generic background buildings (blocky, 16-bit style)
     const buildings = [
-      { x: -55, w: 10, h: 22, d: 8, color: 0x1a1e2e },
-      { x: -42, w: 8, h: 30, d: 7, color: 0x22263a },
-      { x: -30, w: 12, h: 18, d: 9, color: 0x181c28 },
-      { x: -18, w: 7, h: 26, d: 6, color: 0x1e2234 },
-      { x: 18, w: 9, h: 24, d: 7, color: 0x1c2030 },
-      { x: 30, w: 11, h: 16, d: 8, color: 0x191d2a },
-      { x: 42, w: 7, h: 28, d: 6, color: 0x20243a },
-      { x: 55, w: 10, h: 20, d: 8, color: 0x1a1e2e },
+      { x: -50, w: 10, h: 22, d: 8, color: 0x2a3048 },
+      { x: -38, w: 8, h: 30, d: 7, color: 0x343a55 },
+      { x: -26, w: 12, h: 18, d: 9, color: 0x282e44 },
+      { x: -15, w: 7, h: 26, d: 6, color: 0x303650 },
+      { x: -5, w: 9, h: 20, d: 7, color: 0x2c3248 },
+      { x: 5, w: 8, h: 15, d: 6, color: 0x262c40 },
+      { x: 38, w: 11, h: 16, d: 8, color: 0x282e44 },
+      { x: 48, w: 7, h: 28, d: 6, color: 0x343a55 },
+      { x: 58, w: 10, h: 20, d: 8, color: 0x2a3048 },
     ];
 
     for (const b of buildings) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(b.w, b.h, b.d),
-        bldgMat(b.color, 0x060810)
+        bldgMat(b.color, 0x141830)
       );
       mesh.position.set(b.x, b.h / 2, 0);
       skylineGroup.add(mesh);
 
       // Window grid (emissive dots)
       const winMat = new THREE.MeshBasicMaterial({
-        color: 0x334466,
+        color: 0x5588bb,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.8,
       });
       const rows = Math.floor(b.h / 2.5);
       const cols = Math.floor(b.w / 2.2);
@@ -184,10 +185,10 @@ export class Track {
     const rhqW = 14;
     const rhqH = 38;
     const rhqD = 10;
-    const rhqX = 2;
+    const rhqX = 22;
 
     // Main tower — light gray/blue tint like the real building
-    const towerMat = bldgMat(0x7a8a9a, 0x0a1520);
+    const towerMat = bldgMat(0x7a8a9a, 0x1a2535);
     const tower = new THREE.Mesh(
       new THREE.BoxGeometry(rhqW, rhqH, rhqD),
       towerMat
@@ -197,9 +198,9 @@ export class Track {
 
     // Window grid on the tower
     const rhWinMat = new THREE.MeshBasicMaterial({
-      color: 0x6688aa,
+      color: 0x88aacc,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.75,
     });
     const rhRows = Math.floor(rhqH / 2.2);
     const rhCols = Math.floor(rhqW / 1.8);
