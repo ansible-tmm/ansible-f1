@@ -72,7 +72,7 @@ export const CONFIG = {
   STATUS_MESSAGE_MS: 2200,
   STATUS_HIT_MS: 3800,
   /** How long CORRECT / WRONG result screen shows before applying & resuming */
-  QUIZ_RESULT_DISPLAY_MS: 1600,
+  QUIZ_RESULT_DISPLAY_MS: 1000,
 };
 
 export const PICKUP_TYPES = [

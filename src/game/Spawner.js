@@ -2,6 +2,9 @@ import * as THREE from "three";
 import { CONFIG } from "../data/config.js";
 import { HIT, setEntityBoxFromMesh } from "./CollisionSystem.js";
 
+const _playbookTex = new THREE.TextureLoader().load("./assets/playbook-icon.png");
+_playbookTex.colorSpace = THREE.SRGBColorSpace;
+
 let _id = 0;
 
 function nextId() {
@@ -268,16 +271,13 @@ export class Spawner {
   }
 
   _makePickupMesh(type) {
+    if (type === "POLICY_SHIELD") return this._makeShieldMesh();
+    if (type === "PLAYBOOK") return this._makePlaybookMesh();
+
     const g = new THREE.Group();
-    let color = 0x0088ff;
-    let emissive = 0x002244;
-    if (type === "CERTIFIED_COLLECTION") {
-      color = 0x00ff66;
-      emissive = 0x004422;
-    } else if (type === "POLICY_SHIELD") {
-      color = 0xaa44ff;
-      emissive = 0x220044;
-    } else if (type === "BOOST_TOKEN") {
+    let color = 0x00ff66;
+    let emissive = 0x004422;
+    if (type === "BOOST_TOKEN") {
       color = 0xffdd00;
       emissive = 0xffaa00;
     }
@@ -295,6 +295,70 @@ export class Spawner {
     const core = new THREE.Mesh(geo, mat);
     g.add(core);
     g.userData.core = core;
+    return g;
+  }
+
+  _makeShieldMesh() {
+    const g = new THREE.Group();
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0.55);
+    shape.quadraticCurveTo(0.48, 0.55, 0.48, 0.2);
+    shape.lineTo(0.42, -0.1);
+    shape.quadraticCurveTo(0.3, -0.4, 0, -0.6);
+    shape.quadraticCurveTo(-0.3, -0.4, -0.42, -0.1);
+    shape.lineTo(-0.48, 0.2);
+    shape.quadraticCurveTo(-0.48, 0.55, 0, 0.55);
+
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.12,
+      bevelEnabled: true,
+      bevelThickness: 0.04,
+      bevelSize: 0.03,
+      bevelSegments: 2,
+    });
+    geo.center();
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xaa44ff,
+      emissive: 0x440088,
+      emissiveIntensity: 0.6,
+      metalness: 0.5,
+      roughness: 0.3,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    g.add(mesh);
+
+    const trim = new THREE.Mesh(
+      new THREE.TorusGeometry(0.32, 0.03, 6, 20),
+      new THREE.MeshStandardMaterial({
+        color: 0xddaaff,
+        emissive: 0x6622aa,
+        emissiveIntensity: 0.4,
+        metalness: 0.6,
+        roughness: 0.25,
+      })
+    );
+    trim.position.z = 0.06;
+    g.add(trim);
+
+    g.userData.core = g;
+    return g;
+  }
+
+  _makePlaybookMesh() {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({
+      map: _playbookTex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      emissive: 0xffffff,
+      emissiveMap: _playbookTex,
+      emissiveIntensity: 0.35,
+      metalness: 0.1,
+      roughness: 0.6,
+    });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.0), mat);
+    g.add(plane);
+    g.userData.core = g;
     return g;
   }
 
