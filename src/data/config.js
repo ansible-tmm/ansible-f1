@@ -7,9 +7,9 @@ export const CONFIG = {
   LANE_INDEX: { LEFT: 0, CENTER: 1, RIGHT: 2 },
 
   // Movement
-  BASE_SPEED: 16.8,
+  BASE_SPEED: 23.5,
   /** Units per second²-ish scaling for forward speed over time */
-  SPEED_RAMP: 0.096,
+  SPEED_RAMP: 0.134,
   /** Max multiplier on base speed from ramp + boosts */
   MAX_SPEED_MULT: 2.4,
   LANE_LERP: 8,
@@ -57,7 +57,7 @@ export const CONFIG = {
   // Boost token quiz (gameplay pauses while answering)
   BOOST_DURATION: 5,
   /** Speed multiplier during boost */
-  BOOST_SPEED_MULT: 1.55,
+  BOOST_SPEED_MULT: 1.85,
 
   // Crash recovery quiz (same — full pause)
 
@@ -72,7 +72,7 @@ export const CONFIG = {
   STATUS_MESSAGE_MS: 2200,
   STATUS_HIT_MS: 3800,
   /** How long CORRECT / WRONG result screen shows before applying & resuming */
-  QUIZ_RESULT_DISPLAY_MS: 2600,
+  QUIZ_RESULT_DISPLAY_MS: 1600,
 };
 
 export const PICKUP_TYPES = [

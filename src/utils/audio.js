@@ -45,3 +45,20 @@ export function play(url, volume = 1) {
   src.connect(gain).connect(c.destination);
   src.start(0);
 }
+
+let _loopEl = null;
+
+export function startLoop(url, volume = 0.2) {
+  stopLoop();
+  _loopEl = new Audio(url);
+  _loopEl.loop = true;
+  _loopEl.volume = volume;
+  _loopEl.play().catch(() => {});
+}
+
+export function stopLoop() {
+  if (!_loopEl) return;
+  _loopEl.pause();
+  _loopEl.currentTime = 0;
+  _loopEl = null;
+}

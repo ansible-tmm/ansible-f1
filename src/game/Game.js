@@ -13,16 +13,21 @@ import {
   hasSeenRecoveryTip,
   markRecoveryTipSeen,
 } from "../utils/storage.js";
-import { preload, play } from "../utils/audio.js";
+import { preload, play, startLoop, stopLoop } from "../utils/audio.js";
 
 const SFX = {
   SHIELD_HIT: "./assets/audio/shield-hit.wav",
   SHIELD_ON: "./assets/audio/shield-on.wav",
   OBSTACLE_HIT: "./assets/audio/obstacle-hit.wav",
+  BOOST_WHOOSH: "./assets/audio/boost-whoosh.wav",
+  CORRECT: "./assets/audio/correct.m4a",
+  WRONG: "./assets/audio/wrong.mp4",
   PICKUP: "./assets/audio/pickup.wav",
   GAME_OVER: "./assets/audio/game-over.wav",
   START_RUN: "./assets/audio/start-run.wav",
 };
+
+const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
 
 preload(Object.values(SFX));
 
@@ -155,6 +160,7 @@ export class Game {
     this.ui.showHud(true);
     this.ui.setStatus("Go!", 1500);
     play(SFX.START_RUN, 0.75);
+    startLoop(ENGINE_LOOP, 0.2);
   }
 
   resetRun() {
@@ -196,6 +202,7 @@ export class Game {
     this.state = "main_menu";
     this.recoveryPrompt = false;
     this.timeScale = 1;
+    stopLoop();
     this.ui.showGameOver(false);
     this.ui.showPause(false);
     this.ui.showQuiz(false);
@@ -236,6 +243,9 @@ export class Game {
     this._quizPhase = "result";
     const q = this.currentQuestion;
     const ok = this.quiz.isCorrect(q, optionIndex);
+
+    if (ok) play(SFX.CORRECT, 0.8);
+    else play(SFX.WRONG, 0.8);
 
     const { title, lines } = this._quizResultCopy(ok);
     this.ui.showQuizResult(ok, title, lines, q.explanation);
@@ -319,6 +329,7 @@ export class Game {
         this.sessionCorrect += 1;
         addTotalCorrectAnswers(1);
         this.boostUntil = performance.now() + CONFIG.BOOST_DURATION * 1000;
+        play(SFX.BOOST_WHOOSH, 0.85);
         this.ui.setStatus("Correct: Speed Boost", CONFIG.STATUS_MESSAGE_MS);
         this._checkStreakAutomation();
       } else {
@@ -371,6 +382,7 @@ export class Game {
     this.recoveryPrompt = false;
     this.ui.showRecovery(false, false);
     this.player.setAutomationFlowActive(false);
+    stopLoop();
     play(SFX.GAME_OVER, 0.8);
     const best = getBestScore();
     setBestScoreIfHigher(this.score);
