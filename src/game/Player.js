@@ -18,7 +18,9 @@ export class Player {
     scene.add(this.mesh);
 
     this.flowGlow = null;
+    this.shieldRing = null;
     this._buildFlowGlow();
+    this._buildShieldRing();
   }
 
   _buildMesh() {
@@ -244,6 +246,26 @@ export class Player {
     this.flowGlow = ring;
   }
 
+  _buildShieldRing() {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1.6, 0.055, 8, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xaa55ff,
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.3;
+    this.mesh.add(ring);
+    this.shieldRing = ring;
+  }
+
+  setShieldActive(on) {
+    if (!this.shieldRing) return;
+    this.shieldRing.material.opacity = on ? 0.75 : 0;
+  }
+
   setAutomationFlowActive(on) {
     if (!this.flowGlow) return;
     this.flowGlow.material.opacity = on ? 0.85 : 0;
@@ -283,6 +305,9 @@ export class Player {
 
     if (this.flowGlow && this.flowGlow.material.opacity > 0.01) {
       this.flowGlow.rotation.z += dt * 2.2;
+    }
+    if (this.shieldRing && this.shieldRing.material.opacity > 0.01) {
+      this.shieldRing.rotation.z -= dt * 1.5;
     }
   }
 

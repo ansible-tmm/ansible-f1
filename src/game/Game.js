@@ -183,6 +183,7 @@ export class Game {
     this.streak = 0;
     this.worldSpeed = CONFIG.BASE_SPEED;
     this.shield = false;
+    this.player.setShieldActive(false);
     this.boostUntil = 0;
     this.automationFlowUntil = 0;
     this.obstaclesHit = 0;
@@ -603,6 +604,7 @@ export class Game {
     this.spawner.removeEntity(e);
     if (this.shield) {
       this.shield = false;
+      this.player.setShieldActive(false);
       play(SFX.SHIELD_HIT, 0.7);
       this.ui.setStatus(
         "Obstacle hit — shield blocked it! (Shield used up)",
@@ -661,6 +663,7 @@ export class Game {
       );
     } else if (t === "POLICY_SHIELD") {
       this.shield = true;
+      this.player.setShieldActive(true);
       play(SFX.SHIELD_ON, 0.75);
       this.ui.setStatus(
         "Pickup: Policy Shield — next obstacle hit won’t cost health",
