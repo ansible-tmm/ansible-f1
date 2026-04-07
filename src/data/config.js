@@ -36,7 +36,7 @@ export const CONFIG = {
   OBSTACLE_KIND: "OUTAGE",
   /** Display name for HUD legend */
   OBSTACLE_NAME: "Outage",
-  OBSTACLE_DAMAGE: 20,
+  OBSTACLE_DAMAGE: 25,
 
   // Health (run survival meter)
   STARTING_HEALTH: 100,

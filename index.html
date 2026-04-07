@@ -41,7 +41,14 @@
             </div>
             <div>Score <span id="hud-score">0</span></div>
             <div>Speed <span id="hud-speed">0</span></div>
-            <div>Streak <span id="hud-streak">0</span></div>
+            <div class="hud-flow-progress">
+              Flow <span id="hud-streak">0</span> / 3
+              <div class="flow-pips">
+                <span class="flow-pip" id="flow-pip-0"></span>
+                <span class="flow-pip" id="flow-pip-1"></span>
+                <span class="flow-pip" id="flow-pip-2"></span>
+              </div>
+            </div>
             <div class="hud-pickup-counter">
               Playbooks <span id="hud-playbooks">0</span>
               <span class="hud-pickup-pts" id="hud-playbook-pts">0 pts</span>
@@ -72,6 +79,11 @@
             <div class="legend-row">
               <span class="swatch swatch-boost" aria-hidden="true"></span>
               <span><strong>Boost token</strong> — quiz for speed</span>
+            </div>
+            <div class="legend-divider"></div>
+            <div class="legend-row legend-flow-row">
+              <span class="swatch swatch-flow" aria-hidden="true">⚡</span>
+              <span><strong>Automation Flow</strong> — 3 correct answers in a row triggers 8s of 1.2× score + pickup magnet</span>
             </div>
           </div>
         </div>

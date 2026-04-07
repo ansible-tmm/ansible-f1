@@ -259,6 +259,14 @@ export class UI {
     if (this.el.speed)
       this.el.speed.textContent = `${speed.toFixed(1)}`;
     if (this.el.streak) this.el.streak.textContent = `${streak}`;
+    for (let i = 0; i < 3; i++) {
+      const pip = document.getElementById(`flow-pip-${i}`);
+      if (pip) {
+        const filled = i < streak;
+        pip.classList.toggle("filled", filled && !automationFlow);
+        pip.classList.toggle("all-filled", automationFlow);
+      }
+    }
     if (this.el.playbookCount)
       this.el.playbookCount.textContent = `${playbooks || 0}`;
     if (this.el.playbookPts)
@@ -273,7 +281,7 @@ export class UI {
     }
     if (this.el.flow) {
       this.el.flow.textContent = automationFlow
-        ? "Automation Flow"
+        ? "⚡ Flow active — 1.2× score"
         : "Flow: —";
       this.el.flow.classList.toggle("active", !!automationFlow);
     }
