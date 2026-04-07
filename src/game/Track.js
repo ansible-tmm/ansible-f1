@@ -11,6 +11,7 @@ export class Track {
     this._road();
     this._laneMarkers();
     this._sideProps();
+    this._skyline();
     this._horizon();
     this._lights();
   }
@@ -117,6 +118,196 @@ export class Track {
       pole2.position.x = 11;
       this.propsGroup.add(pole2);
     }
+  }
+
+  _skyline() {
+    const skylineGroup = new THREE.Group();
+    skylineGroup.position.set(0, 0, -160);
+    this.group.add(skylineGroup);
+
+    const bldgMat = (color, emissive = 0x000000) =>
+      new THREE.MeshStandardMaterial({
+        color,
+        emissive,
+        emissiveIntensity: 0.3,
+        metalness: 0.1,
+        roughness: 0.85,
+        flatShading: true,
+      });
+
+    // Generic background buildings (blocky, 16-bit style)
+    const buildings = [
+      { x: -55, w: 10, h: 22, d: 8, color: 0x1a1e2e },
+      { x: -42, w: 8, h: 30, d: 7, color: 0x22263a },
+      { x: -30, w: 12, h: 18, d: 9, color: 0x181c28 },
+      { x: -18, w: 7, h: 26, d: 6, color: 0x1e2234 },
+      { x: 18, w: 9, h: 24, d: 7, color: 0x1c2030 },
+      { x: 30, w: 11, h: 16, d: 8, color: 0x191d2a },
+      { x: 42, w: 7, h: 28, d: 6, color: 0x20243a },
+      { x: 55, w: 10, h: 20, d: 8, color: 0x1a1e2e },
+    ];
+
+    for (const b of buildings) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(b.w, b.h, b.d),
+        bldgMat(b.color, 0x060810)
+      );
+      mesh.position.set(b.x, b.h / 2, 0);
+      skylineGroup.add(mesh);
+
+      // Window grid (emissive dots)
+      const winMat = new THREE.MeshBasicMaterial({
+        color: 0x334466,
+        transparent: true,
+        opacity: 0.6,
+      });
+      const rows = Math.floor(b.h / 2.5);
+      const cols = Math.floor(b.w / 2.2);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (Math.random() < 0.35) continue;
+          const win = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.8, 0.6),
+            winMat
+          );
+          win.position.set(
+            b.x - (b.w / 2) + 1.2 + c * 2.2,
+            1.5 + r * 2.5,
+            b.d / 2 + 0.05
+          );
+          skylineGroup.add(win);
+        }
+      }
+    }
+
+    // --- Red Hat HQ building (center-right, tallest, distinctive) ---
+    const rhqW = 14;
+    const rhqH = 38;
+    const rhqD = 10;
+    const rhqX = 2;
+
+    // Main tower — light gray/blue tint like the real building
+    const towerMat = bldgMat(0x7a8a9a, 0x0a1520);
+    const tower = new THREE.Mesh(
+      new THREE.BoxGeometry(rhqW, rhqH, rhqD),
+      towerMat
+    );
+    tower.position.set(rhqX, rhqH / 2, 0);
+    skylineGroup.add(tower);
+
+    // Window grid on the tower
+    const rhWinMat = new THREE.MeshBasicMaterial({
+      color: 0x6688aa,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const rhRows = Math.floor(rhqH / 2.2);
+    const rhCols = Math.floor(rhqW / 1.8);
+    for (let r = 0; r < rhRows; r++) {
+      for (let c = 0; c < rhCols; c++) {
+        if (Math.random() < 0.2) continue;
+        const win = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.9, 0.7),
+          rhWinMat
+        );
+        win.position.set(
+          rhqX - (rhqW / 2) + 1 + c * 1.8,
+          1.8 + r * 2.2,
+          rhqD / 2 + 0.06
+        );
+        skylineGroup.add(win);
+      }
+    }
+
+    // Red Hat sign panel on top
+    const signW = rhqW * 0.85;
+    const signH = 3.5;
+    const signMat = new THREE.MeshStandardMaterial({
+      color: 0xcc0000,
+      emissive: 0xcc0000,
+      emissiveIntensity: 0.8,
+      metalness: 0.05,
+      roughness: 0.5,
+    });
+    const sign = new THREE.Mesh(
+      new THREE.BoxGeometry(signW, signH, 0.3),
+      signMat
+    );
+    sign.position.set(rhqX, rhqH - 1.2, rhqD / 2 + 0.2);
+    skylineGroup.add(sign);
+
+    // "RED HAT" text using small white blocks (pixel-art lettering)
+    const textMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const pixelSize = 0.38;
+    // Simplified pixel font: R E D  H A T
+    const letters = {
+      R: [[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2],[0,3],[2,3],[0,4]],
+      E: [[0,0],[1,0],[2,0],[0,1],[0,2],[1,2],[0,3],[0,4],[1,4],[2,4]],
+      D: [[0,0],[1,0],[0,1],[2,1],[0,2],[2,2],[0,3],[2,3],[0,4],[1,4]],
+      H: [[0,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2],[0,3],[2,3],[0,4],[2,4]],
+      A: [[1,0],[0,1],[2,1],[0,2],[1,2],[2,2],[0,3],[2,3],[0,4],[2,4]],
+      T: [[0,0],[1,0],[2,0],[1,1],[1,2],[1,3],[1,4]],
+    };
+    const word = "REDHAT";
+    const totalW = word.length * 3.5 * pixelSize;
+    let cursorX = rhqX - totalW / 2;
+
+    for (const ch of word) {
+      if (ch === " ") { cursorX += 1.5 * pixelSize; continue; }
+      const dots = letters[ch];
+      if (!dots) { cursorX += 3.5 * pixelSize; continue; }
+      for (const [dx, dy] of dots) {
+        const px = new THREE.Mesh(
+          new THREE.BoxGeometry(pixelSize * 0.85, pixelSize * 0.85, 0.15),
+          textMat
+        );
+        px.position.set(
+          cursorX + dx * pixelSize,
+          rhqH - 0.2 - dy * pixelSize,
+          rhqD / 2 + 0.4
+        );
+        skylineGroup.add(px);
+      }
+      cursorX += 3.5 * pixelSize;
+    }
+
+    // Fedora silhouette on top of the building (blocky pixel art)
+    const hatMat = new THREE.MeshStandardMaterial({
+      color: 0xcc0000,
+      emissive: 0xaa0000,
+      emissiveIntensity: 0.6,
+      metalness: 0.05,
+      roughness: 0.5,
+      flatShading: true,
+    });
+    // Brim
+    const brim = new THREE.Mesh(
+      new THREE.BoxGeometry(6, 0.6, 2),
+      hatMat
+    );
+    brim.position.set(rhqX, rhqH + 1.8, rhqD / 2 - 0.5);
+    skylineGroup.add(brim);
+    // Crown
+    const crown = new THREE.Mesh(
+      new THREE.BoxGeometry(3.5, 2.2, 1.8),
+      hatMat
+    );
+    crown.position.set(rhqX - 0.3, rhqH + 3.2, rhqD / 2 - 0.5);
+    skylineGroup.add(crown);
+    // Crown dent/pinch (slightly inset top)
+    const dent = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 0.5, 1.6),
+      bldgMat(0x990000, 0x660000)
+    );
+    dent.position.set(rhqX - 0.3, rhqH + 4.3, rhqD / 2 - 0.5);
+    skylineGroup.add(dent);
+    // Tip of hat (right side bump)
+    const tip = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 1.0, 1.4),
+      hatMat
+    );
+    tip.position.set(rhqX + 1.8, rhqH + 3.0, rhqD / 2 - 0.5);
+    skylineGroup.add(tip);
   }
 
   _horizon() {
