@@ -18,6 +18,7 @@ import { preload, play } from "../utils/audio.js";
 const SFX = {
   SHIELD_HIT: "./assets/audio/shield-hit.wav",
   SHIELD_ON: "./assets/audio/shield-on.wav",
+  OBSTACLE_HIT: "./assets/audio/obstacle-hit.wav",
   PICKUP: "./assets/audio/pickup.wav",
   GAME_OVER: "./assets/audio/game-over.wav",
   START_RUN: "./assets/audio/start-run.wav",
@@ -156,6 +157,9 @@ export class Game {
 
   resetRun() {
     incrementTotalRuns();
+    this._resetQuizFlags();
+    this.quizMode = null;
+    this.currentQuestion = null;
     this.quiz.resetPool();
     this.spawner.reset();
     this.runTime = 0;
@@ -571,6 +575,7 @@ export class Game {
     const dmg = CONFIG.OBSTACLE_DAMAGE;
     this.health -= dmg;
     this.obstaclesHit += 1;
+    play(SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
     this.ui.shake();
     this.shakeUntil = performance.now() + 200;

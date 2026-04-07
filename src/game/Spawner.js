@@ -183,18 +183,23 @@ export class Spawner {
       type = Math.random() < 0.5 ? "PLAYBOOK" : "CERTIFIED_COLLECTION";
     }
 
-    // Try not to overlap pickup inside same lane very close to obstacle
-    const tooClose = this.obstacles.some(
-      (o) =>
-        o.lane === lane &&
-        Math.abs(o.mesh.position.z - z) < CONFIG.MIN_OBSTACLE_GAP * 0.9
-    );
-    if (tooClose) {
-      const alt = (lane + 1) % 3;
-      this._addPickup(type, alt, z);
-    } else {
-      this._addPickup(type, lane, z);
+    // Find a lane that doesn't overlap an obstacle at this Z depth
+    const minSep = CONFIG.MIN_OBSTACLE_ALONG_Z * 0.55;
+    const laneOrder = [lane, (lane + 1) % 3, (lane + 2) % 3];
+    let chosen = lane;
+    for (const candidate of laneOrder) {
+      const blocked = this.obstacles.some(
+        (o) =>
+          o.active &&
+          o.lane === candidate &&
+          Math.abs(o.mesh.position.z - z) < minSep
+      );
+      if (!blocked) {
+        chosen = candidate;
+        break;
+      }
     }
+    this._addPickup(type, chosen, z);
   }
 
   _addObstacle(type, lane, z) {
