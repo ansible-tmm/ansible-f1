@@ -1,0 +1,458 @@
+[
+  {
+    "id": 1,
+    "category": "basics",
+    "prompt": "What does state: present usually mean in Ansible?",
+    "options": ["Delete the resource", "Ensure it exists", "Pause the playbook", "Restart the host"],
+    "answer": 1,
+    "explanation": "state: present usually ensures the target resource exists."
+  },
+  {
+    "id": 2,
+    "category": "basics",
+    "prompt": "What is the language Ansible Playbooks are written in?",
+    "options": ["JSON", "YAML", "XML", "TOML"],
+    "answer": 1,
+    "explanation": "Ansible playbooks are written in YAML (YAML Ain't Markup Language)."
+  },
+  {
+    "id": 3,
+    "category": "inventory",
+    "prompt": "What is an inventory in Ansible?",
+    "options": ["A list of managed hosts and groups", "A package manager", "A log file", "A backup archive"],
+    "answer": 0,
+    "explanation": "Inventory defines the hosts and groups Ansible manages."
+  },
+  {
+    "id": 4,
+    "category": "modules",
+    "prompt": "What is a module in Ansible?",
+    "options": ["A dashboard theme", "A unit of work Ansible executes", "A Linux service account", "A license file"],
+    "answer": 1,
+    "explanation": "Modules are the building blocks Ansible uses to perform tasks."
+  },
+  {
+    "id": 5,
+    "category": "services",
+    "prompt": "Which module is commonly used to manage services?",
+    "options": ["copy", "user", "service", "debug"],
+    "answer": 2,
+    "explanation": "The service module is commonly used to manage services."
+  },
+  {
+    "id": 6,
+    "category": "packages",
+    "prompt": "Which Ansible module is commonly used to install packages on RHEL-based systems?",
+    "options": ["apt", "dnf", "pip", "npm"],
+    "answer": 1,
+    "explanation": "The dnf module is the standard package manager for RHEL-based systems."
+  },
+  {
+    "id": 7,
+    "category": "idempotency",
+    "prompt": "An operation is ___ if the result of performing it once is exactly the same as performing it repeatedly.",
+    "options": ["concurrent", "idempotent", "asynchronous", "recursive"],
+    "answer": 1,
+    "explanation": "Idempotency means repeated runs converge safely toward the same result."
+  },
+  {
+    "id": 8,
+    "category": "templating",
+    "prompt": "What is the preferred templating language of Ansible's template module?",
+    "options": ["Mako", "Jinja2", "ERB", "Mustache"],
+    "answer": 1,
+    "explanation": "Jinja2 is the templating engine used by Ansible for variables, templates, and expressions."
+  },
+  {
+    "id": 9,
+    "category": "facts",
+    "prompt": "___ are things discovered about remote nodes, most commonly gathered at the beginning of a play.",
+    "options": ["Roles", "Facts", "Handlers", "Inventories"],
+    "answer": 1,
+    "explanation": "Facts are discovered host data such as OS, interfaces, memory, and more."
+  },
+  {
+    "id": 10,
+    "category": "handlers",
+    "prompt": "What is the Ansible keyword to signify a handler should be run?",
+    "options": ["trigger", "notify", "signal", "invoke"],
+    "answer": 1,
+    "explanation": "The notify keyword triggers a handler when a task reports a change."
+  },
+  {
+    "id": 11,
+    "category": "basics",
+    "prompt": "What unique property of Ansible allows it to automate network infrastructure so well?",
+    "options": ["Requires a Java agent", "Agentless architecture", "Uses SNMP traps only", "Needs root SSH keys"],
+    "answer": 1,
+    "explanation": "Ansible is agentless — it requires no software to be installed on managed nodes."
+  },
+  {
+    "id": 12,
+    "category": "collections",
+    "prompt": "You can package and distribute playbooks, roles, modules, and plugins using what?",
+    "options": ["Ansible tarball", "Ansible content collection", "Ansible RPM", "Ansible snap"],
+    "answer": 1,
+    "explanation": "Ansible content collections are the standard way to package and distribute Ansible content."
+  },
+  {
+    "id": 13,
+    "category": "community",
+    "prompt": "What is the name of the online server for finding and sharing Ansible community content?",
+    "options": ["Ansible Hub", "Ansible Galaxy", "Ansible Forge", "Ansible Registry"],
+    "answer": 1,
+    "explanation": "Ansible Galaxy is the community hub for sharing roles, collections, and plugins."
+  },
+  {
+    "id": 14,
+    "category": "conditionals",
+    "prompt": "What is the keyword for a conditional statement attached to a task in an Ansible Playbook?",
+    "options": ["if", "when", "unless", "condition"],
+    "answer": 1,
+    "explanation": "The 'when' keyword is used to conditionally execute tasks."
+  },
+  {
+    "id": 15,
+    "category": "testing",
+    "prompt": "What mode does not make any changes on remote systems, but only outputs the changes that might occur?",
+    "options": ["dry-run mode", "check mode", "verbose mode", "preview mode"],
+    "answer": 1,
+    "explanation": "Check mode (--check) simulates changes without actually applying them."
+  },
+  {
+    "id": 16,
+    "category": "collections",
+    "prompt": "What does the acronym FQCN stand for?",
+    "options": ["Fully Qualified Collection Name", "Fast Query Configuration Node", "Federated Queue Control Network", "File-based Query Cache Namespace"],
+    "answer": 0,
+    "explanation": "FQCN stands for Fully Qualified Collection Name, e.g. ansible.builtin.copy."
+  },
+  {
+    "id": 17,
+    "category": "documentation",
+    "prompt": "Ansible can use facts to create ___ which functions as a live, managed-as-code center of knowledge.",
+    "options": ["static inventory", "dynamic documentation", "backup manifests", "compliance reports"],
+    "answer": 1,
+    "explanation": "Dynamic documentation uses live facts to create real-time, data-centric infrastructure knowledge."
+  },
+  {
+    "id": 18,
+    "category": "tools",
+    "prompt": "Which TUI program allows you to run Ansible Playbooks in an execution environment?",
+    "options": ["ansible-console", "ansible-navigator", "ansible-runner", "ansible-shell"],
+    "answer": 1,
+    "explanation": "ansible-navigator provides a text user interface for running playbooks in execution environments."
+  },
+  {
+    "id": 19,
+    "category": "roles",
+    "prompt": "Which Ansible feature allows you to organize complex playbooks into reusable components?",
+    "options": ["Modules", "Roles", "Plugins", "Callbacks"],
+    "answer": 1,
+    "explanation": "Roles let you organize tasks, handlers, variables, and files into a reusable directory structure."
+  },
+  {
+    "id": 20,
+    "category": "modules",
+    "prompt": "What language are the Ansible Windows modules written in?",
+    "options": ["Bash", "PowerShell", "Python", "C#"],
+    "answer": 1,
+    "explanation": "Ansible Windows modules are written in PowerShell to run natively on Windows systems."
+  },
+  {
+    "id": 21,
+    "category": "platform",
+    "prompt": "What company owns the product Ansible Automation Platform?",
+    "options": ["Microsoft", "Red Hat", "Canonical", "HashiCorp"],
+    "answer": 1,
+    "explanation": "Red Hat develops and maintains Ansible Automation Platform."
+  },
+  {
+    "id": 22,
+    "category": "platform",
+    "prompt": "What technology allows Ansible Automation Platform to distribute automation across an execution plane?",
+    "options": ["Ansible Tower", "Automation mesh", "Ansible Bridge", "Task broker"],
+    "answer": 1,
+    "explanation": "Automation mesh distributes automation execution across a scalable, resilient network."
+  },
+  {
+    "id": 23,
+    "category": "platform",
+    "prompt": "You can install Red Hat Ansible Automation Platform on RHEL and what other platform?",
+    "options": ["Ubuntu", "OpenShift", "AWS Lambda", "Windows Server"],
+    "answer": 1,
+    "explanation": "Ansible Automation Platform can be installed on RHEL or deployed on OpenShift."
+  },
+  {
+    "id": 24,
+    "category": "tools",
+    "prompt": "What is the name of the tool that packages Ansible content into a container image?",
+    "options": ["ansible-container", "ansible-builder", "ansible-packager", "ansible-docker"],
+    "answer": 1,
+    "explanation": "ansible-builder creates container images (execution environments) for running Ansible."
+  },
+  {
+    "id": 25,
+    "category": "platform",
+    "prompt": "In Ansible Automation Platform, Ansible is executed in what type of container?",
+    "options": ["Sidecar container", "Execution environment", "Init container", "Pod sandbox"],
+    "answer": 1,
+    "explanation": "Execution environments are containerized images with Ansible, collections, and dependencies."
+  },
+  {
+    "id": 26,
+    "category": "variables",
+    "prompt": "What type of variable always wins (has the most precedence) in Ansible variable precedence?",
+    "options": ["Role defaults", "Extra vars", "Host vars", "Group vars"],
+    "answer": 1,
+    "explanation": "Extra vars (-e / --extra-vars) have the highest precedence and override everything."
+  },
+  {
+    "id": 27,
+    "category": "collections",
+    "prompt": "What is the namespace for Ansible modules and plugins that are included with ansible-core?",
+    "options": ["core.ansible", "ansible.builtin", "ansible.core", "redhat.ansible"],
+    "answer": 1,
+    "explanation": "ansible.builtin is the namespace for all modules and plugins shipped with ansible-core."
+  },
+  {
+    "id": 28,
+    "category": "tools",
+    "prompt": "Which tool allows users to identify and correct stylistic errors and anti-patterns in Ansible?",
+    "options": ["ansible-test", "ansible-lint", "ansible-check", "ansible-validate"],
+    "answer": 1,
+    "explanation": "ansible-lint checks playbooks for practices and behaviors that could be improved."
+  },
+  {
+    "id": 29,
+    "category": "tools",
+    "prompt": "What common IDE does Red Hat support with an Ansible Plugin for creating playbooks?",
+    "options": ["Vim", "Visual Studio Code", "Eclipse", "IntelliJ IDEA"],
+    "answer": 1,
+    "explanation": "Red Hat provides an official Ansible extension for Visual Studio Code."
+  },
+  {
+    "id": 30,
+    "category": "security",
+    "prompt": "What AAP feature allows you to validate that project files have not been tampered with?",
+    "options": ["ansible-vault", "Content signing (ansible-sign)", "SELinux policies", "Checksum module"],
+    "answer": 1,
+    "explanation": "Content signing via ansible-sign validates the integrity of project files."
+  },
+  {
+    "id": 31,
+    "category": "loops",
+    "prompt": "What type of loop would you use in an Ansible Playbook to retry a task until it completes successfully?",
+    "options": ["loop", "until", "with_items", "retry"],
+    "answer": 1,
+    "explanation": "The 'until' keyword retries a task until a condition is met or max retries are exhausted."
+  },
+  {
+    "id": 32,
+    "category": "modules",
+    "prompt": "What Ansible module can be used to check if given expressions are true with an optional custom message?",
+    "options": ["ansible.builtin.fail", "ansible.builtin.assert", "ansible.builtin.debug", "ansible.builtin.validate"],
+    "answer": 1,
+    "explanation": "ansible.builtin.assert evaluates expressions and fails the task if they are not true."
+  },
+  {
+    "id": 33,
+    "category": "loops",
+    "prompt": "What keyword can you use to loop over a list or dictionary with an Ansible module?",
+    "options": ["foreach", "loop", "iterate", "repeat"],
+    "answer": 1,
+    "explanation": "The 'loop' keyword iterates over a list, replacing the older with_items syntax."
+  },
+  {
+    "id": 34,
+    "category": "history",
+    "prompt": "What year was Ansible created?",
+    "options": ["2009", "2012", "2015", "2010"],
+    "answer": 1,
+    "explanation": "Ansible was created by Michael DeHaan and first released in 2012."
+  },
+  {
+    "id": 35,
+    "category": "community",
+    "prompt": "___ is an annual conference of the Ansible community of users, contributors, and enthusiasts.",
+    "options": ["AnsibleCon", "AnsibleFest", "AutomateCon", "Red Hat Summit"],
+    "answer": 1,
+    "explanation": "AnsibleFest is the annual conference for the Ansible community."
+  },
+  {
+    "id": 36,
+    "category": "modules",
+    "prompt": "What Ansible module will test connectivity from a control node to a managed Linux system?",
+    "options": ["ansible.builtin.ping", "ansible.builtin.wait_for", "ansible.builtin.uri", "ansible.builtin.command"],
+    "answer": 0,
+    "explanation": "ansible.builtin.ping verifies a usable Python and connectivity on the managed node."
+  },
+  {
+    "id": 37,
+    "category": "performance",
+    "prompt": "What can you increase on your Ansible control node to allow more parallelism?",
+    "options": ["Timeout", "Forks", "Retries", "Verbosity"],
+    "answer": 1,
+    "explanation": "The forks setting controls how many hosts Ansible manages in parallel (default is 5)."
+  },
+  {
+    "id": 38,
+    "category": "community",
+    "prompt": "What is the upstream mascot for AWX?",
+    "options": ["Angry Spud", "Red Panda", "Rocket Raccoon", "Turbo Turtle"],
+    "answer": 0,
+    "explanation": "The AWX project mascot is Angry Spud."
+  },
+  {
+    "id": 39,
+    "category": "blocks",
+    "prompt": "What Ansible feature allows you to group tasks and apply conditionals to the same set of tasks?",
+    "options": ["Roles", "Blocks", "Includes", "Tags"],
+    "answer": 1,
+    "explanation": "Blocks group tasks together and can share conditionals, error handling, and other directives."
+  },
+  {
+    "id": 40,
+    "category": "blocks",
+    "prompt": "Which task directive will NOT work on blocks?",
+    "options": ["when", "loop", "rescue", "become"],
+    "answer": 1,
+    "explanation": "The 'loop' directive cannot be applied to a block — only to individual tasks."
+  },
+  {
+    "id": 41,
+    "category": "blocks",
+    "prompt": "What feature allows a block to recover from task errors?",
+    "options": ["retry", "rescue", "fallback", "recover"],
+    "answer": 1,
+    "explanation": "The 'rescue' section within a block runs tasks when an error occurs in the block."
+  },
+  {
+    "id": 42,
+    "category": "error_handling",
+    "prompt": "What task directive allows you to continue despite a task failure?",
+    "options": ["force_continue", "ignore_errors", "skip_on_fail", "allow_failure"],
+    "answer": 1,
+    "explanation": "Setting ignore_errors: true lets a playbook continue even if that task fails."
+  },
+  {
+    "id": 43,
+    "category": "error_handling",
+    "prompt": "What task directive lets you define what 'failure' means for a task?",
+    "options": ["error_when", "failed_when", "failure_condition", "fail_if"],
+    "answer": 1,
+    "explanation": "failed_when lets you customize the conditions under which Ansible considers a task failed."
+  },
+  {
+    "id": 44,
+    "category": "variables",
+    "prompt": "What task directive allows you to store the result of a task to a variable?",
+    "options": ["set_fact", "register", "store", "capture"],
+    "answer": 1,
+    "explanation": "The 'register' keyword saves the return data of a task into a named variable."
+  },
+  {
+    "id": 45,
+    "category": "strategy",
+    "prompt": "The default strategy in Ansible is linear. What strategy lets each host run to the end of the play as fast as it can?",
+    "options": ["parallel", "free", "async", "burst"],
+    "answer": 1,
+    "explanation": "The 'free' strategy allows each host to proceed through tasks independently at its own pace."
+  },
+  {
+    "id": 46,
+    "category": "basics",
+    "prompt": "What character indicates a comment in an Ansible Playbook?",
+    "options": ["//", "#", "/*", "--"],
+    "answer": 1,
+    "explanation": "The # (hash) character begins a comment in YAML and Ansible Playbooks."
+  },
+  {
+    "id": 47,
+    "category": "security",
+    "prompt": "What Ansible tool allows you to encrypt variables and files?",
+    "options": ["ansible-crypt", "ansible-vault", "ansible-encrypt", "ansible-gpg"],
+    "answer": 1,
+    "explanation": "ansible-vault encrypts sensitive data such as passwords, keys, and variable files."
+  },
+  {
+    "id": 48,
+    "category": "tools",
+    "prompt": "What command-line tool is used to display or dump the configured inventory as Ansible sees it?",
+    "options": ["ansible-config", "ansible-inventory", "ansible-doc", "ansible-hosts"],
+    "answer": 1,
+    "explanation": "ansible-inventory displays, graphs, or dumps the inventory in various formats."
+  },
+  {
+    "id": 49,
+    "category": "platform",
+    "prompt": "What types of Ansible content can you get from Automation Hub?",
+    "options": ["Community and nightly", "Certified and validated", "Open source only", "Beta and stable"],
+    "answer": 1,
+    "explanation": "Automation Hub provides Red Hat certified and validated Ansible content collections."
+  },
+  {
+    "id": 50,
+    "category": "collections",
+    "prompt": "What is the FQCN for the Cisco IOS-XE content collection?",
+    "options": ["cisco.iosxe", "cisco.ios", "network.cisco", "cisco.nxos"],
+    "answer": 1,
+    "explanation": "cisco.ios is the Fully Qualified Collection Name for managing Cisco IOS and IOS-XE devices."
+  },
+  {
+    "id": 51,
+    "category": "ai",
+    "prompt": "What AI feature helps users create Ansible Playbooks within Visual Studio Code?",
+    "options": ["Red Hat Copilot", "Ansible Lightspeed", "Ansible AI Assist", "Automation Advisor"],
+    "answer": 1,
+    "explanation": "Ansible Lightspeed uses AI to generate Ansible task recommendations in VS Code."
+  },
+  {
+    "id": 52,
+    "category": "advanced",
+    "prompt": "What Ansible keyword saves time when you frequently call the same module with the same arguments?",
+    "options": ["defaults", "module_defaults", "common_args", "task_defaults"],
+    "answer": 1,
+    "explanation": "module_defaults sets default parameters for specific modules across an entire play or block."
+  },
+  {
+    "id": 53,
+    "category": "testing",
+    "prompt": "How do you check for syntax errors before running an Ansible Playbook?",
+    "options": ["ansible-playbook --dry-run", "ansible-playbook --syntax-check", "ansible-lint --parse", "ansible-check playbook.yml"],
+    "answer": 1,
+    "explanation": "The --syntax-check flag validates playbook syntax without executing any tasks."
+  },
+  {
+    "id": 54,
+    "category": "variables",
+    "prompt": "What type of variable is inventory_hostname considered?",
+    "options": ["Host var", "Magic variable", "Group var", "Extra var"],
+    "answer": 1,
+    "explanation": "inventory_hostname is a magic variable automatically set by Ansible for each host."
+  },
+  {
+    "id": 55,
+    "category": "variables",
+    "prompt": "What magic variable allows you to skip an option in a task, leaving it unset?",
+    "options": ["undefined", "omit", "none", "skip"],
+    "answer": 1,
+    "explanation": "The special 'omit' variable removes a parameter entirely when used with a default filter."
+  },
+  {
+    "id": 56,
+    "category": "network",
+    "prompt": "What variable indicates which network operating system a managed host is running?",
+    "options": ["ansible_os_family", "ansible_network_os", "ansible_distribution", "ansible_platform"],
+    "answer": 1,
+    "explanation": "ansible_network_os identifies the network platform (e.g. cisco.ios.ios, arista.eos.eos)."
+  },
+  {
+    "id": 57,
+    "category": "variables",
+    "prompt": "What magic variable contains the path to the directory of the currently running playbook?",
+    "options": ["ansible_playbook_path", "playbook_dir", "ansible_base_dir", "play_path"],
+    "answer": 1,
+    "explanation": "playbook_dir is a magic variable that resolves to the directory containing the playbook."
+  }
+]

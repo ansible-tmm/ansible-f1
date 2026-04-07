@@ -3,6 +3,9 @@ import { Game } from "./game/Game.js";
 import { UI } from "./game/UI.js";
 import { getBestScore } from "./utils/storage.js";
 import { startBgm, toggleMusicMute, toggleSfxMute } from "./utils/audio.js";
+import { loadQuestions } from "./data/questions.js";
+
+await loadQuestions();
 
 const canvas = document.getElementById("c");
 const renderer = new THREE.WebGLRenderer({

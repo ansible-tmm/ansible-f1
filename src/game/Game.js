@@ -98,6 +98,9 @@ export class Game {
     this._bbTargetLook = new THREE.Vector3();
     this._bbCurrentLook = new THREE.Vector3(0, 1.2, -2);
     this._bbZooming = false;
+    this._bbOverlayShown = false;
+    this._bbReturning = false;
+    this._bbLabel = "";
 
     this._lastTs = performance.now();
 
@@ -226,6 +229,8 @@ export class Game {
     this._activeBillboard = id;
     this.state = "billboard";
     this._bbZooming = true;
+    this._bbOverlayShown = false;
+    this._bbReturning = false;
 
     const bb = this.track.billboards[id];
     if (!bb) return;
@@ -233,25 +238,29 @@ export class Game {
     const pos = bb.position;
     const faceDir = pos.x < 0 ? 1 : -1;
     this._bbTargetPos.set(
-      pos.x + faceDir * 6,
+      pos.x + faceDir * 4,
       pos.y + 8,
-      pos.z + 12
+      pos.z + 10
     );
     this._bbTargetLook.set(pos.x, pos.y + 7.5, pos.z);
-    this._bbCurrentLook.copy(this.camera.position).add(
-      new THREE.Vector3(0, -4, -14)
+    this._bbCurrentLook.set(
+      this.camera.position.x * 0.2,
+      1.2,
+      -2
     );
 
-    const labels = { demo1: "Demo 1", demo2: "Demo 2", demo3: "Demo 3" };
-    this.ui.showBillboard(true, labels[id] || id);
+    this._bbLabel = { demo1: "Demo 1", demo2: "Demo 2", demo3: "Demo 3" }[id] || id;
   }
 
   closeBillboard() {
-    this._activeBillboard = null;
-    this._bbZooming = false;
-    this.state = "running";
+    if (this._bbReturning) return;
     this.ui.showBillboard(false);
-    this.renderer.domElement.style.cursor = "";
+    this._bbReturning = true;
+    this._bbOverlayShown = false;
+
+    const px = this.player.mesh.position.x;
+    this._bbTargetPos.set(px * 0.35, this.cameraBase.y, this.cameraBase.z);
+    this._bbTargetLook.set(px * 0.2, 1.2, -2);
   }
 
   startFromMenu() {
@@ -793,10 +802,25 @@ export class Game {
   }
 
   _updateBillboardCamera(dt) {
-    const speed = dt * 2.5;
-    this.camera.position.lerp(this._bbTargetPos, speed);
-    this._bbCurrentLook.lerp(this._bbTargetLook, speed);
+    const lerpSpeed = dt * 2.0;
+    this.camera.position.lerp(this._bbTargetPos, lerpSpeed);
+    this._bbCurrentLook.lerp(this._bbTargetLook, lerpSpeed);
     this.camera.lookAt(this._bbCurrentLook);
+
+    const dist = this.camera.position.distanceTo(this._bbTargetPos);
+
+    if (!this._bbReturning && !this._bbOverlayShown && dist < 3) {
+      this._bbOverlayShown = true;
+      this.ui.showBillboard(true, this._bbLabel);
+    }
+
+    if (this._bbReturning && dist < 1.5) {
+      this._activeBillboard = null;
+      this._bbZooming = false;
+      this._bbReturning = false;
+      this.state = "running";
+      this.renderer.domElement.style.cursor = "";
+    }
   }
 
   _updateCamera(dt, now) {

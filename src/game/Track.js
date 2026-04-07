@@ -126,9 +126,9 @@ export class Track {
 
   _billboards() {
     const defs = [
-      { id: "demo1", label: "Demo 1", x: 14,  z: -42, accent: 0x00c8ea },
-      { id: "demo2", label: "Demo 2", x: 15,  z: -68, accent: 0xff6644 },
-      { id: "demo3", label: "Demo 3", x: -14, z: -55, accent: 0x66ffcc },
+      { id: "demo1", label: "Demo 1", x: -14, z: -55, accent: 0x00c8ea },
+      { id: "demo2", label: "Demo 2", x: 14,  z: -62, accent: 0xff6644 },
+      { id: "demo3", label: "Demo 3", x: 15,  z: -78, accent: 0x66ffcc },
     ];
 
     const boardW = 8, boardH = 5;

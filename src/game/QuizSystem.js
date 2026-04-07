@@ -1,24 +1,21 @@
-import { QUESTIONS } from "../data/questions.js";
+import { getQuestions } from "../data/questions.js";
 
 export class QuizSystem {
   constructor() {
-    this._pool = [...QUESTIONS];
+    this._pool = [];
   }
 
-  /**
-   * @returns {typeof QUESTIONS[0]}
-   */
+  resetPool() {
+    this._pool = [...getQuestions()];
+  }
+
   nextQuestion() {
     if (this._pool.length === 0) {
-      this._pool = [...QUESTIONS];
+      this._pool = [...getQuestions()];
     }
     const i = Math.floor(Math.random() * this._pool.length);
     const [q] = this._pool.splice(i, 1);
     return q;
-  }
-
-  resetPool() {
-    this._pool = [...QUESTIONS];
   }
 
   isCorrect(question, optionIndex) {
