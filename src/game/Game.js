@@ -10,6 +10,8 @@ import {
   addTotalCorrectAnswers,
   incrementTotalRuns,
   getBestScore,
+  hasSeenRecoveryTip,
+  markRecoveryTipSeen,
 } from "../utils/storage.js";
 
 /**
@@ -66,13 +68,19 @@ export class Game {
     this._bindKeys();
     this._bindQuizUi();
     this._quizBusy = false;
+    /** @type {'question'|'result'} */
+    this._quizPhase = "question";
   }
 
   _bindKeys() {
     window.addEventListener("keydown", (e) => {
       if (this.state === "main_menu" || this.state === "game_over") return;
 
-      if (this.state === "quiz" && this.currentQuestion) {
+      if (
+        this.state === "quiz" &&
+        this._quizPhase === "question" &&
+        this.currentQuestion
+      ) {
         const k = e.key;
         if (k >= "1" && k <= "4") {
           this._answerQuiz(Number(k) - 1);
@@ -110,6 +118,13 @@ export class Game {
     const opts = this.ui.el.quizOpts;
     if (opts) {
       opts.addEventListener("click", (ev) => {
+        if (
+          this.state !== "quiz" ||
+          this._quizPhase !== "question" ||
+          !this.currentQuestion
+        ) {
+          return;
+        }
         const t = /** @type {HTMLElement} */ (ev.target);
         if (t && t.dataset && t.dataset.index !== undefined) {
           this._answerQuiz(Number(t.dataset.index));
@@ -172,17 +187,82 @@ export class Game {
   }
 
   _answerQuiz(optionIndex) {
-    if (this.state !== "quiz" || !this.currentQuestion || this._quizBusy) return;
+    if (
+      this.state !== "quiz" ||
+      this._quizPhase !== "question" ||
+      !this.currentQuestion ||
+      this._quizBusy
+    ) {
+      return;
+    }
     this._quizBusy = true;
+    this._quizPhase = "result";
     const q = this.currentQuestion;
     const ok = this.quiz.isCorrect(q, optionIndex);
 
-    this.ui.showQuizExplanation(q.explanation);
+    const { title, lines } = this._quizResultCopy(ok);
+    this.ui.showQuizResult(ok, title, lines, q.explanation);
+
     window.setTimeout(() => {
-      this.ui.hideQuizExplanation();
       this._finishQuiz(ok);
       this._quizBusy = false;
-    }, CONFIG.QUIZ_EXPLANATION_MS);
+      this._quizPhase = "question";
+    }, CONFIG.QUIZ_RESULT_DISPLAY_MS);
+  }
+
+  /**
+   * Reward copy shown on result screen (gameplay still paused until _finishQuiz).
+   */
+  _quizResultCopy(ok) {
+    const mode = this.quizMode;
+    const fm = this._flowMult();
+    const lines = [];
+
+    if (mode === "boost") {
+      if (ok) {
+        const pts = Math.floor(CONFIG.BOOST_QUIZ_CORRECT * fm);
+        const nextStreak = this.streak + 1;
+        lines.push(
+          `${CONFIG.BOOST_DURATION}s speed boost — you move forward faster (watch the Speed readout)`
+        );
+        lines.push(`+${pts} score${fm > 1 ? " (Automation Flow ×1.2 applied)" : ""}`);
+        lines.push(`Streak → ${nextStreak} (3 correct triggers Automation Flow)`);
+        if (nextStreak >= CONFIG.STREAK_FOR_FLOW) {
+          lines.push(
+            "Next: Automation Flow — 8s score ×1.2 + pickup magnet + glow"
+          );
+        }
+        return { title: "CORRECT!", lines };
+      }
+      const cons = Math.floor(CONFIG.BOOST_QUIZ_WRONG * fm);
+      lines.push(`+${cons} consolation score only`);
+      lines.push("No speed boost this time");
+      lines.push("Streak reset to 0");
+      return { title: "WRONG", lines };
+    }
+
+    if (mode === "recovery") {
+      if (ok) {
+        const nextStreak = this.streak + CONFIG.REMEDIATION_CORRECT_STREAK;
+        lines.push(`+${CONFIG.REMEDIATION_RESTORE} Stability (toward max 100)`);
+        lines.push(`Streak → ${nextStreak}`);
+        if (nextStreak >= CONFIG.STREAK_FOR_FLOW) {
+          lines.push(
+            "Automation Flow will trigger — 8s score ×1.2 + pickup magnet"
+          );
+        }
+        return { title: "CORRECT!", lines };
+      }
+      const after = this.stability - CONFIG.REMEDIATION_WRONG_PENALTY;
+      lines.push(`−${CONFIG.REMEDIATION_WRONG_PENALTY} Stability`);
+      lines.push("Streak reset to 0");
+      if (after <= 0) {
+        lines.push("Stability at 0 — run ends after this screen");
+      }
+      return { title: "WRONG", lines };
+    }
+
+    return { title: ok ? "CORRECT!" : "WRONG", lines };
   }
 
   _finishQuiz(correct) {
@@ -250,6 +330,7 @@ export class Game {
     this.state = "game_over";
     this.timeScale = 1;
     this.recoveryPrompt = false;
+    this.ui.showRecovery(false, false);
     this.player.setAutomationFlowActive(false);
     const best = getBestScore();
     setBestScoreIfHigher(this.score);
@@ -267,31 +348,40 @@ export class Game {
   /** Recovery prompt */
   onRecoveryYes() {
     if (!this.recoveryPrompt) return;
+    markRecoveryTipSeen();
     this.recoveryPrompt = false;
-    this.ui.showRecovery(false);
+    this.ui.showRecovery(false, false);
     this.currentQuestion = this.quiz.nextQuestion();
     this.quizMode = "recovery";
     this.state = "quiz";
-    this.timeScale = CONFIG.RECOVERY_SLOW_SCALE;
+    this._quizPhase = "question";
     this.ui.renderQuizQuestion(this.currentQuestion);
     this.ui.showQuiz(true);
   }
 
   onRecoveryNo() {
     if (!this.recoveryPrompt) return;
+    markRecoveryTipSeen();
     this.recoveryPrompt = false;
-    this.ui.showRecovery(false);
+    this.ui.showRecovery(false, false);
     this.timeScale = 1;
+    this.ui.setStatus(
+      "Skipped remediation — no extra penalty. Keep driving!",
+      CONFIG.STATUS_HIT_MS
+    );
   }
 
   _openBoostQuiz() {
     this.currentQuestion = this.quiz.nextQuestion();
     this.quizMode = "boost";
     this.state = "quiz";
-    this.timeScale = CONFIG.BOOST_SLOW_SCALE;
+    this._quizPhase = "question";
     this.ui.renderQuizQuestion(this.currentQuestion);
     this.ui.showQuiz(true);
-    this.ui.setStatus("Boost ready", 1200);
+    this.ui.setStatus(
+      "Pickup: Boost token — highway paused for skill quiz",
+      CONFIG.STATUS_HIT_MS
+    );
   }
 
   update() {
@@ -309,18 +399,44 @@ export class Game {
       return;
     }
 
-    const ts = this.recoveryPrompt
-      ? 0
-      : this.state === "quiz"
-        ? this.timeScale
-        : 1;
+    // Full pause during skill checks — no movement, spawns, collisions, or score clock
+    if (this.state === "quiz") {
+      this._updateCamera(0, now);
+      this._refreshHudOnly(now);
+      return;
+    }
+
+    const ts = this.recoveryPrompt ? 0 : 1;
     const effDt = dt * ts;
 
-    if (this.state === "running" || this.state === "quiz") {
+    if (this.state === "running") {
       this._updateRun(effDt, now, dt, ts);
     }
 
     this._updateCamera(dt, now);
+  }
+
+  _refreshHudOnly(now) {
+    const ramp = Math.min(
+      CONFIG.MAX_SPEED_MULT,
+      1 + this.runTime * CONFIG.SPEED_RAMP * 0.02
+    );
+    let speedMult = ramp;
+    if (now < this.boostUntil) {
+      speedMult *= CONFIG.BOOST_SPEED_MULT;
+    }
+    const ws = CONFIG.BASE_SPEED * speedMult;
+    const flowActive = now < this.automationFlowUntil;
+    this.ui.updateHud({
+      stability: this.stability,
+      score: this.score,
+      speed: ws,
+      streak: this.streak,
+      shield: this.shield,
+      automationFlow: flowActive,
+      boostRemaining: Math.max(0, this.boostUntil - now),
+      boostTotal: CONFIG.BOOST_DURATION * 1000,
+    });
   }
 
   _updateRun(effDt, now, rawDt, spawnScale) {
@@ -389,18 +505,24 @@ export class Game {
     this.spawner.removeEntity(e);
     if (this.shield) {
       this.shield = false;
-      this.ui.setStatus("Shield absorbed impact", CONFIG.STATUS_MESSAGE_MS);
+      this.ui.setStatus(
+        "Obstacle hit — shield blocked it! (Shield used up)",
+        CONFIG.STATUS_HIT_MS
+      );
       return;
     }
 
-    const dmg =
-      CONFIG.DAMAGE[e.subtype] ?? 15;
+    const dmg = CONFIG.OBSTACLE_DAMAGE;
     this.stability -= dmg;
     this.obstaclesHit += 1;
     this.ui.flashDamage();
     this.ui.shake();
     this.shakeUntil = performance.now() + 200;
     this.shakeAmp = 0.35;
+    this.ui.setStatus(
+      `Obstacle hit! −${dmg} Stability (Outage). You’re at ${Math.max(0, Math.floor(this.stability))}.`,
+      CONFIG.STATUS_HIT_MS
+    );
 
     if (this.stability <= 0) {
       this._gameOver();
@@ -408,7 +530,8 @@ export class Game {
     }
 
     this.recoveryPrompt = true;
-    this.ui.showRecovery(true);
+    const showTip = !hasSeenRecoveryTip();
+    this.ui.showRecovery(true, showTip);
   }
 
   _onPickup(e) {
@@ -417,12 +540,25 @@ export class Game {
     this.pickupsCollected += 1;
 
     if (t === "PLAYBOOK") {
-      this.score += CONFIG.PICKUP_SCORE.PLAYBOOK * this._flowMult();
+      const pts = Math.floor(CONFIG.PICKUP_SCORE.PLAYBOOK * this._flowMult());
+      this.score += pts;
+      this.ui.setStatus(
+        `Pickup: Playbook — +${pts} score`,
+        CONFIG.STATUS_HIT_MS
+      );
     } else if (t === "CERTIFIED_COLLECTION") {
-      this.score += CONFIG.PICKUP_SCORE.COLLECTION * this._flowMult();
+      const pts = Math.floor(CONFIG.PICKUP_SCORE.COLLECTION * this._flowMult());
+      this.score += pts;
+      this.ui.setStatus(
+        `Pickup: Certified Collection — +${pts} score`,
+        CONFIG.STATUS_HIT_MS
+      );
     } else if (t === "POLICY_SHIELD") {
       this.shield = true;
-      this.ui.setStatus("Shield online", CONFIG.STATUS_MESSAGE_MS);
+      this.ui.setStatus(
+        "Pickup: Policy Shield — next obstacle hit won’t cost Stability",
+        CONFIG.STATUS_HIT_MS
+      );
     } else if (t === "BOOST_TOKEN") {
       this._openBoostQuiz();
     }

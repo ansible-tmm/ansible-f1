@@ -22,30 +22,24 @@ export const CONFIG = {
   // Spawning (Z is forward; obstacles start negative, move +Z)
   SPAWN_Z: -95,
   DESPAWN_Z: 12,
-  /** Minimum gap along Z between obstacle rows */
-  MIN_OBSTACLE_GAP: 9,
+  /** Minimum |Δz| between two obstacles in the same lane (fairness) */
+  MIN_OBSTACLE_ALONG_Z: 26,
   /** Base interval (seconds) — lowered after warmup */
   OBSTACLE_SPAWN_BASE: 2.1,
-  OBSTACLE_SPAWN_MIN: 0.85,
+  OBSTACLE_SPAWN_MIN: 0.95,
   PICKUP_SPAWN_BASE: 2.8,
   PICKUP_SPAWN_MIN: 1.35,
   /** First ~25s: easier spawns */
   WARMUP_SECONDS: 28,
 
-  // Difficulty
-  SPAWN_ACCEL: 0.012,
-  /** Chance to block all 3 lanes in one row (kept low) */
-  FULL_WALL_CHANCE: 0.06,
+  // Single hazard type (MVP clarity)
+  OBSTACLE_KIND: "OUTAGE",
+  /** Display name for HUD legend */
+  OBSTACLE_NAME: "Outage",
+  OBSTACLE_DAMAGE: 20,
 
   // Stability
   STARTING_STABILITY: 100,
-  DAMAGE: {
-    CONFIG_DRIFT: 20,
-    PATCH_FAILURE: 25,
-    TICKET_FLOOD: 15,
-    ALERT_STORM: 18,
-    MANUAL_TOIL: 12,
-  },
   REMEDIATION_WRONG_PENALTY: 5,
   REMEDIATION_RESTORE: 10,
 
@@ -60,14 +54,12 @@ export const CONFIG = {
   BOOST_QUIZ_WRONG: 25,
   REMEDIATION_CORRECT_STREAK: 1,
 
-  // Boost token quiz
-  BOOST_SLOW_SCALE: 0.35,
+  // Boost token quiz (gameplay pauses while answering)
   BOOST_DURATION: 5,
   /** Speed multiplier during boost */
   BOOST_SPEED_MULT: 1.55,
 
-  // Crash recovery quiz
-  RECOVERY_SLOW_SCALE: 0.2,
+  // Crash recovery quiz (same — full pause)
 
   // Automation Flow (streak of 3 correct)
   STREAK_FOR_FLOW: 3,
@@ -78,16 +70,10 @@ export const CONFIG = {
 
   // UI
   STATUS_MESSAGE_MS: 2200,
-  QUIZ_EXPLANATION_MS: 1000,
+  STATUS_HIT_MS: 3800,
+  /** How long CORRECT / WRONG result screen shows before applying & resuming */
+  QUIZ_RESULT_DISPLAY_MS: 2600,
 };
-
-export const OBSTACLE_TYPES = [
-  "CONFIG_DRIFT",
-  "PATCH_FAILURE",
-  "TICKET_FLOOD",
-  "ALERT_STORM",
-  "MANUAL_TOIL",
-];
 
 export const PICKUP_TYPES = [
   "PLAYBOOK",

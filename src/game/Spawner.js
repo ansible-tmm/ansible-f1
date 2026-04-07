@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CONFIG, OBSTACLE_TYPES } from "../data/config.js";
+import { CONFIG } from "../data/config.js";
 import { HIT, setEntityBoxFromMesh } from "./CollisionSystem.js";
 
 let _id = 0;
@@ -70,8 +70,14 @@ export class Spawner {
     }
 
     if (this.obstacleTimer >= obstacleInterval) {
-      this.obstacleTimer = 0;
-      this._spawnObstacleRow(elapsedRunSeconds, warm);
+      const zSpawn = CONFIG.SPAWN_Z - Math.random() * 4;
+      const lane = this._pickLaneForObstacle(zSpawn);
+      if (!this._laneHasSpace(lane, zSpawn)) {
+        this.obstacleTimer = obstacleInterval * 0.88;
+      } else {
+        this.obstacleTimer = 0;
+        this._addObstacle(CONFIG.OBSTACLE_KIND, lane, zSpawn);
+      }
     }
 
     if (this.pickupTimer >= pickupInterval) {
@@ -112,40 +118,50 @@ export class Spawner {
     setEntityBoxFromMesh(e.mesh, h.w, h.h, h.d, e.worldBox);
   }
 
-  _spawnObstacleRow(elapsed, warm) {
-    const fullWall =
-      !warm && Math.random() < CONFIG.FULL_WALL_CHANCE * (elapsed > 45 ? 1.2 : 0.5);
+  _laneHasSpace(lane, zSpawn) {
+    const minD = CONFIG.MIN_OBSTACLE_ALONG_Z;
+    for (const o of this.obstacles) {
+      if (!o.active || o.lane !== lane) continue;
+      if (Math.abs(o.mesh.position.z - zSpawn) < minD) return false;
+    }
+    return true;
+  }
 
-    let blocked = [];
-    if (fullWall) {
-      blocked = [0, 1, 2];
-    } else {
-      const count = warm
-        ? 1
-        : Math.random() < 0.52
-          ? 1
-          : Math.random() < 0.78
-            ? 2
-            : 3;
-      if (count === 1) {
-        blocked.push(lanes[Math.floor(Math.random() * 3)]);
-      } else if (count === 2) {
-        const a = Math.floor(Math.random() * 3);
-        let b = Math.floor(Math.random() * 3);
-        while (b === a) b = (b + 1) % 3;
-        blocked.push(a, b);
-      } else {
-        blocked.push(0, 1, 2);
+  /**
+   * One obstacle per wave; always leave two empty lanes.
+   * Prefer lanes with enough |Δz| spacing so same-lane “trains” don’t spawn.
+   */
+  _pickLaneForObstacle(zSpawn) {
+    const minD = CONFIG.MIN_OBSTACLE_ALONG_Z;
+    const clear = [];
+    for (let lane = 0; lane < 3; lane++) {
+      let ok = true;
+      for (const o of this.obstacles) {
+        if (!o.active || o.lane !== lane) continue;
+        if (Math.abs(o.mesh.position.z - zSpawn) < minD) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) clear.push(lane);
+    }
+    if (clear.length > 0) {
+      return clear[Math.floor(Math.random() * clear.length)];
+    }
+    let bestLane = 0;
+    let bestDist = -1;
+    for (let lane = 0; lane < 3; lane++) {
+      let dMin = 999;
+      for (const o of this.obstacles) {
+        if (!o.active || o.lane !== lane) continue;
+        dMin = Math.min(dMin, Math.abs(o.mesh.position.z - zSpawn));
+      }
+      if (dMin > bestDist) {
+        bestDist = dMin;
+        bestLane = lane;
       }
     }
-
-    const baseZ = CONFIG.SPAWN_Z - Math.random() * 4;
-    for (const lane of blocked) {
-      const type =
-        OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
-      const z = baseZ + (Math.random() - 0.5) * 0.4;
-      this._addObstacle(type, lane, z);
-    }
+    return bestLane;
   }
 
   _spawnPickup(elapsed, warm) {
@@ -182,21 +198,11 @@ export class Spawner {
   }
 
   _addObstacle(type, lane, z) {
-    const mesh = this._makeObstacleMesh(type);
+    const mesh = this._makeObstacleMesh();
     const x = CONFIG.LANES[lane];
     mesh.position.set(x, 0.75, z);
     this.scene.add(mesh);
     const hit = { ...HIT.obstacle };
-    if (type === "TICKET_FLOOD") {
-      hit.w = 1.1;
-      hit.h = 1.1;
-      hit.d = 0.85;
-    }
-    if (type === "PATCH_FAILURE") {
-      hit.w = 1.2;
-      hit.h = 0.75;
-      hit.d = 0.55;
-    }
     const e = {
       id: nextId(),
       kind: "obstacle",
@@ -234,99 +240,25 @@ export class Spawner {
     this.pickups.push(e);
   }
 
-  _makeObstacleMesh(type) {
+  /** Single MVP hazard: red “Outage” block + yellow warning strip (matches HUD legend). */
+  _makeObstacleMesh() {
     const g = new THREE.Group();
-    let mat;
-    switch (type) {
-      case "CONFIG_DRIFT": {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0xff2222,
-          emissive: 0xff0000,
-          emissiveIntensity: 0.45,
-        });
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.2, 1.2), mat);
-        cube.position.y = 0.2;
-        g.add(cube);
-        const warn = new THREE.Mesh(
-          new THREE.BoxGeometry(0.5, 0.15, 0.05),
-          new THREE.MeshBasicMaterial({ color: 0xffff00 })
-        );
-        warn.position.set(0, 0.85, 0.61);
-        g.add(warn);
-        break;
-      }
-      case "PATCH_FAILURE": {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0xff8800,
-          emissive: 0xaa4400,
-          emissiveIntensity: 0.35,
-        });
-        const bar = new THREE.Mesh(
-          new THREE.BoxGeometry(2.2, 1.0, 0.7),
-          mat
-        );
-        bar.position.y = 0.35;
-        g.add(bar);
-        break;
-      }
-      case "TICKET_FLOOD": {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0x8866ff,
-          metalness: 0.3,
-          roughness: 0.5,
-        });
-        for (let i = 0; i < 5; i++) {
-          const s = new THREE.Mesh(
-            new THREE.BoxGeometry(0.35 + Math.random() * 0.2, 0.25, 0.45),
-            mat.clone()
-          );
-          s.position.set(
-            (Math.random() - 0.5) * 0.5,
-            i * 0.28,
-            (Math.random() - 0.5) * 0.3
-          );
-          g.add(s);
-        }
-        break;
-      }
-      case "ALERT_STORM": {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0xff0044,
-          emissive: 0xff0000,
-          emissiveIntensity: 0.9,
-        });
-        const pillar = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.45, 0.55, 2.4, 8),
-          mat
-        );
-        pillar.position.y = 1.2;
-        g.add(pillar);
-        g.userData.flash = mat;
-        break;
-      }
-      case "MANUAL_TOIL":
-      default: {
-        mat = new THREE.MeshStandardMaterial({
-          color: 0x555560,
-          metalness: 0.4,
-          roughness: 0.55,
-        });
-        const body = new THREE.Mesh(
-          new THREE.BoxGeometry(1.3, 0.9, 1.0),
-          mat
-        );
-        body.position.y = 0.35;
-        g.add(body);
-        const handle = new THREE.Mesh(
-          new THREE.TorusGeometry(0.15, 0.04, 6, 12, Math.PI),
-          new THREE.MeshStandardMaterial({ color: 0x333340 })
-        );
-        handle.position.set(0.5, 0.55, 0);
-        handle.rotation.z = Math.PI / 2;
-        g.add(handle);
-        break;
-      }
-    }
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff2222,
+      emissive: 0xaa0000,
+      emissiveIntensity: 0.5,
+      metalness: 0.2,
+      roughness: 0.55,
+    });
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.2, 1.2), mat);
+    cube.position.y = 0.2;
+    g.add(cube);
+    const warn = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 0.16, 0.06),
+      new THREE.MeshBasicMaterial({ color: 0xffff00 })
+    );
+    warn.position.set(0, 0.85, 0.62);
+    g.add(warn);
     return g;
   }
 
@@ -362,14 +294,9 @@ export class Spawner {
   }
 
   _animateObstacles(dt) {
-    const t = performance.now() * 0.001;
     for (const e of this.obstacles) {
       if (!e.active) continue;
-      if (e.subtype === "ALERT_STORM" && e.mesh.userData.flash) {
-        const m = e.mesh.userData.flash;
-        m.emissiveIntensity = 0.5 + Math.sin(t * 12) * 0.45;
-      }
-      e.mesh.rotation.y += dt * 0.4;
+      e.mesh.rotation.y += dt * 0.35;
     }
   }
 

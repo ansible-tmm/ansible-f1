@@ -9,6 +9,7 @@ export class UI {
       gameOver: document.getElementById("game-over"),
       quiz: document.getElementById("quiz-overlay"),
       recovery: document.getElementById("recovery-overlay"),
+      recoveryFirstTip: document.getElementById("recovery-first-tip"),
       hud: document.getElementById("hud"),
       flash: document.getElementById("screen-flash"),
       canvasWrap: document.getElementById("game-root"),
@@ -32,7 +33,11 @@ export class UI {
 
       quizPrompt: document.getElementById("quiz-prompt"),
       quizOpts: document.getElementById("quiz-options"),
-      quizExplain: document.getElementById("quiz-explain"),
+      quizQuestionPanel: document.getElementById("quiz-question-panel"),
+      quizResultPanel: document.getElementById("quiz-result-panel"),
+      quizResultTitle: document.getElementById("quiz-result-title"),
+      quizResultLines: document.getElementById("quiz-result-lines"),
+      quizResultExplain: document.getElementById("quiz-result-explain"),
     };
 
     this._statusTimer = null;
@@ -76,10 +81,67 @@ export class UI {
 
   showQuiz(visible) {
     this.el.quiz.classList.toggle("hidden", !visible);
+    if (!visible) this.resetQuizOverlay();
   }
 
-  showRecovery(visible) {
+  resetQuizOverlay() {
+    const q = this.el.quizQuestionPanel;
+    const r = this.el.quizResultPanel;
+    if (q) q.classList.remove("hidden");
+    if (r) {
+      r.classList.add("hidden");
+      r.classList.remove("is-correct", "is-wrong");
+    }
+  }
+
+  /**
+   * @param {boolean} correct
+   * @param {string} title
+   * @param {string[]} lines
+   * @param {string} [explanation]
+   */
+  showQuizResult(correct, title, lines, explanation) {
+    if (this.el.quizQuestionPanel) {
+      this.el.quizQuestionPanel.classList.add("hidden");
+    }
+    const r = this.el.quizResultPanel;
+    if (!r) return;
+    r.classList.remove("hidden");
+    r.classList.toggle("is-correct", correct);
+    r.classList.toggle("is-wrong", !correct);
+
+    if (this.el.quizResultTitle) {
+      this.el.quizResultTitle.textContent = title;
+    }
+    if (this.el.quizResultLines) {
+      this.el.quizResultLines.innerHTML = "";
+      for (const line of lines) {
+        const li = document.createElement("li");
+        li.textContent = line;
+        this.el.quizResultLines.appendChild(li);
+      }
+    }
+    if (this.el.quizResultExplain) {
+      const ex = explanation || "";
+      this.el.quizResultExplain.textContent = ex;
+      this.el.quizResultExplain.style.display = ex ? "block" : "none";
+    }
+
+    void r.offsetWidth;
+  }
+
+  /**
+   * @param {boolean} visible
+   * @param {boolean} [showFirstTimeTip] — explain Yes vs No (once per browser; caller gates with storage)
+   */
+  showRecovery(visible, showFirstTimeTip = false) {
     this.el.recovery.classList.toggle("hidden", !visible);
+    if (this.el.recoveryFirstTip) {
+      this.el.recoveryFirstTip.classList.toggle(
+        "hidden",
+        !visible || !showFirstTimeTip
+      );
+    }
   }
 
   showHud(visible) {
@@ -139,6 +201,7 @@ export class UI {
   }
 
   renderQuizQuestion(q) {
+    this.resetQuizOverlay();
     if (!this.el.quizPrompt || !this.el.quizOpts) return;
     this.el.quizPrompt.textContent = q.prompt;
     this.el.quizOpts.innerHTML = "";
@@ -150,22 +213,6 @@ export class UI {
       b.dataset.index = String(i);
       this.el.quizOpts.appendChild(b);
     });
-    if (this.el.quizExplain) {
-      this.el.quizExplain.textContent = "";
-      this.el.quizExplain.classList.add("hidden");
-    }
-  }
-
-  showQuizExplanation(text) {
-    if (!this.el.quizExplain) return;
-    this.el.quizExplain.textContent = text;
-    this.el.quizExplain.classList.remove("hidden");
-  }
-
-  hideQuizExplanation() {
-    if (!this.el.quizExplain) return;
-    this.el.quizExplain.textContent = "";
-    this.el.quizExplain.classList.add("hidden");
   }
 
   flashDamage() {

@@ -26,10 +26,35 @@
 
       <div id="hud" class="hud hidden">
         <div class="hud-left">
-          <div>Stability <span id="hud-stability">100</span></div>
-          <div>Score <span id="hud-score">0</span></div>
-          <div>Speed <span id="hud-speed">0</span></div>
-          <div>Streak <span id="hud-streak">0</span></div>
+          <div class="hud-stats">
+            <div>Stability <span id="hud-stability">100</span></div>
+            <div>Score <span id="hud-score">0</span></div>
+            <div>Speed <span id="hud-speed">0</span></div>
+            <div>Streak <span id="hud-streak">0</span></div>
+          </div>
+          <div class="hud-legend" aria-label="What objects mean">
+            <div class="legend-title">Field guide</div>
+            <div class="legend-row">
+              <span class="swatch swatch-outage" aria-hidden="true"></span>
+              <span><strong>Outage</strong> — hazard · dodge it</span>
+            </div>
+            <div class="legend-row">
+              <span class="swatch swatch-playbook" aria-hidden="true"></span>
+              <span><strong>Playbook</strong> — +100 score</span>
+            </div>
+            <div class="legend-row">
+              <span class="swatch swatch-collection" aria-hidden="true"></span>
+              <span><strong>Collection</strong> — +150 score</span>
+            </div>
+            <div class="legend-row">
+              <span class="swatch swatch-shield" aria-hidden="true"></span>
+              <span><strong>Shield</strong> — blocks next hit</span>
+            </div>
+            <div class="legend-row">
+              <span class="swatch swatch-boost" aria-hidden="true"></span>
+              <span><strong>Boost token</strong> — quiz for speed</span>
+            </div>
+          </div>
         </div>
         <div class="hud-right">
           <div id="hud-shield">Shield: —</div>
@@ -82,6 +107,18 @@
       <div id="recovery-overlay" class="overlay panel compact hidden">
         <h3>Attempt remediation?</h3>
         <p class="hint">Answer a skill check to recover Stability.</p>
+        <div id="recovery-first-tip" class="recovery-first-tip hidden">
+          <p class="recovery-tip-title">First time? Here’s the tradeoff:</p>
+          <ul class="recovery-tip-list">
+            <li>
+              <strong>Yes — take the quiz:</strong> Correct → +10 Stability, streak up, counts toward Automation Flow.
+              Wrong → <strong>lose 5 more Stability</strong> (on top of the hit you already took).
+            </li>
+            <li>
+              <strong>No — skip:</strong> No quiz. You keep current Stability and continue immediately — no extra penalty, but no recovery or streak gain.
+            </li>
+          </ul>
+        </div>
         <div class="row">
           <button type="button" id="recovery-yes" class="btn primary">Yes</button>
           <button type="button" id="recovery-no" class="btn">No</button>
@@ -89,11 +126,18 @@
       </div>
 
       <div id="quiz-overlay" class="overlay panel quiz hidden">
-        <h3 id="quiz-title">Skill Check</h3>
-        <p id="quiz-prompt"></p>
-        <div id="quiz-options" class="quiz-options"></div>
-        <p id="quiz-explain" class="quiz-explain hidden"></p>
-        <p class="hint">Keys 1–4 or click</p>
+        <div id="quiz-question-panel">
+          <h3 id="quiz-title">Skill Check</h3>
+          <p id="quiz-prompt"></p>
+          <div id="quiz-options" class="quiz-options"></div>
+          <p class="hint">Keys 1–4 or click</p>
+        </div>
+        <div id="quiz-result-panel" class="quiz-result-panel hidden">
+          <div id="quiz-result-burst" class="quiz-result-burst" aria-hidden="true"></div>
+          <p id="quiz-result-title" class="quiz-result-title"></p>
+          <ul id="quiz-result-lines" class="quiz-result-lines"></ul>
+          <p id="quiz-result-explain" class="quiz-result-explain"></p>
+        </div>
       </div>
     </div>
 

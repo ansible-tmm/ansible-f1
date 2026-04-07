@@ -2,6 +2,7 @@ const KEYS = {
   BEST_SCORE: "builtToAutomate_bestScore",
   TOTAL_CORRECT: "builtToAutomate_totalCorrect",
   TOTAL_RUNS: "builtToAutomate_totalRuns",
+  RECOVERY_TIP: "builtToAutomate_recoveryTipSeen",
 };
 
 function readNumber(key, fallback = 0) {
@@ -51,4 +52,20 @@ export function getTotalRuns() {
 
 export function incrementTotalRuns() {
   writeNumber(KEYS.TOTAL_RUNS, getTotalRuns() + 1);
+}
+
+export function hasSeenRecoveryTip() {
+  try {
+    return localStorage.getItem(KEYS.RECOVERY_TIP) === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function markRecoveryTipSeen() {
+  try {
+    localStorage.setItem(KEYS.RECOVERY_TIP, "1");
+  } catch {
+    /* ignore */
+  }
 }
