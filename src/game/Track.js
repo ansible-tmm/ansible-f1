@@ -31,20 +31,27 @@ export class Track {
     road.receiveShadow = true;
     this.group.add(road);
 
-    const edgeL = new THREE.Mesh(
-      new THREE.BoxGeometry(0.35, 0.08, 420),
-      new THREE.MeshStandardMaterial({
-        color: 0x1a1a2e,
-        emissive: 0x220044,
-        emissiveIntensity: 0.6,
-      })
-    );
-    edgeL.position.set(-5.8, 0.05, -40);
-    this.group.add(edgeL);
-
-    const edgeR = edgeL.clone();
-    edgeR.position.x = 5.8;
-    this.group.add(edgeR);
+    this.edgeGroup = new THREE.Group();
+    this.group.add(this.edgeGroup);
+    this._edgeSpacing = 20;
+    this._edgeCount = 24;
+    const edgeMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1a2e,
+      emissive: 0x220044,
+      emissiveIntensity: 0.6,
+    });
+    for (let i = 0; i < this._edgeCount; i++) {
+      const z = -200 + i * this._edgeSpacing;
+      const el = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.08, this._edgeSpacing),
+        edgeMat
+      );
+      el.position.set(-5.8, 0.05, z);
+      this.edgeGroup.add(el);
+      const er = el.clone();
+      er.position.x = 5.8;
+      this.edgeGroup.add(er);
+    }
   }
 
   _laneMarkers() {
@@ -69,6 +76,9 @@ export class Track {
   }
 
   _sideProps() {
+    this.propsGroup = new THREE.Group();
+    this.group.add(this.propsGroup);
+
     const rackMat = new THREE.MeshStandardMaterial({
       color: 0x3d4658,
       metalness: 0.42,
@@ -83,27 +93,29 @@ export class Track {
       emissive: 0x1a1038,
       emissiveIntensity: 0.4,
     });
-    for (let i = 0; i < 24; i++) {
-      const z = -180 + i * 14;
+    this._propSpacing = 14;
+    this._propCount = 28;
+    for (let i = 0; i < this._propCount; i++) {
+      const z = -200 + i * this._propSpacing;
       const rack = new THREE.Mesh(
         new THREE.BoxGeometry(1.2, 3 + Math.random() * 1.5, 1.5),
         rackMat
       );
       rack.position.set(-8.5, 1.5, z);
-      this.group.add(rack);
+      this.propsGroup.add(rack);
       const rack2 = rack.clone();
       rack2.position.x = 8.5;
-      this.group.add(rack2);
+      this.propsGroup.add(rack2);
 
       const pole = new THREE.Mesh(
         new THREE.CylinderGeometry(0.15, 0.2, 5, 6),
         poleMat
       );
       pole.position.set(-11, 2.5, z + 4);
-      this.group.add(pole);
+      this.propsGroup.add(pole);
       const pole2 = pole.clone();
       pole2.position.x = 11;
-      this.group.add(pole2);
+      this.propsGroup.add(pole2);
     }
   }
 
@@ -166,14 +178,27 @@ export class Track {
    * @param {number} worldSpeed — current forward speed (units/s)
    */
   update(dt, worldSpeed) {
-    if (!this.markerGroup) return;
-    const totalLen = this._markerSpacing * this._markerCount;
-    this.markerGroup.position.z += worldSpeed * dt;
-    if (this.markerGroup.position.z > this._markerSpacing) {
-      this.markerGroup.position.z -= this._markerSpacing;
+    const dz = worldSpeed * dt;
+
+    if (this.markerGroup) {
+      this.markerGroup.position.z += dz;
+      if (this.markerGroup.position.z > this._markerSpacing) {
+        this.markerGroup.position.z -= this._markerSpacing;
+      }
     }
-    if (this.markerGroup.position.z > totalLen) {
-      this.markerGroup.position.z %= this._markerSpacing;
+
+    if (this.propsGroup) {
+      this.propsGroup.position.z += dz;
+      if (this.propsGroup.position.z > this._propSpacing) {
+        this.propsGroup.position.z -= this._propSpacing;
+      }
+    }
+
+    if (this.edgeGroup) {
+      this.edgeGroup.position.z += dz;
+      if (this.edgeGroup.position.z > this._edgeSpacing) {
+        this.edgeGroup.position.z -= this._edgeSpacing;
+      }
     }
   }
 

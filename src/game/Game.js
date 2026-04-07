@@ -195,8 +195,7 @@ export class Game {
     if (this.state === "main_menu" || this.state === "game_over") return;
     this.recoveryPrompt = false;
     this.timeScale = 1;
-    this._quizBusy = false;
-    this._quizPhase = "question";
+    this._resetQuizFlags();
     this.quizMode = null;
     this.currentQuestion = null;
     this.ui.showQuiz(false);
@@ -223,10 +222,12 @@ export class Game {
     const { title, lines } = this._quizResultCopy(ok);
     this.ui.showQuizResult(ok, title, lines, q.explanation);
 
-    window.setTimeout(() => {
+    clearTimeout(this._quizResultTimer);
+    this._quizResultTimer = setTimeout(() => {
       this._finishQuiz(ok);
       this._quizBusy = false;
       this._quizPhase = "question";
+      clearTimeout(this._quizSafetyTimer);
     }, CONFIG.QUIZ_RESULT_DISPLAY_MS);
   }
 
@@ -370,6 +371,7 @@ export class Game {
     if (!this.recoveryPrompt) return;
     markRecoveryTipSeen();
     this.recoveryPrompt = false;
+    this._resetQuizFlags();
     this.ui.showRecovery(false, false);
     this.currentQuestion = this.quiz.nextQuestion();
     this.quizMode = "recovery";
@@ -377,6 +379,7 @@ export class Game {
     this._quizPhase = "question";
     this.ui.renderQuizQuestion(this.currentQuestion);
     this.ui.showQuiz(true);
+    this._startQuizSafetyTimer();
   }
 
   onRecoveryNo() {
@@ -392,6 +395,7 @@ export class Game {
   }
 
   _openBoostQuiz() {
+    this._resetQuizFlags();
     this.currentQuestion = this.quiz.nextQuestion();
     this.quizMode = "boost";
     this.state = "quiz";
@@ -402,6 +406,23 @@ export class Game {
       "Pickup: Boost token — highway paused for skill quiz",
       CONFIG.STATUS_HIT_MS
     );
+    this._startQuizSafetyTimer();
+  }
+
+  _resetQuizFlags() {
+    this._quizBusy = false;
+    this._quizPhase = "question";
+    clearTimeout(this._quizResultTimer);
+    clearTimeout(this._quizSafetyTimer);
+  }
+
+  _startQuizSafetyTimer() {
+    clearTimeout(this._quizSafetyTimer);
+    this._quizSafetyTimer = setTimeout(() => {
+      if (this.state === "quiz") {
+        this.forceUnstick();
+      }
+    }, 30000);
   }
 
   update() {
