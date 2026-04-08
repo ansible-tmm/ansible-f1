@@ -403,9 +403,9 @@
     "id": 51,
     "category": "ai",
     "prompt": "What AI feature helps users create Ansible Playbooks within Visual Studio Code?",
-    "options": ["Red Hat Copilot", "Ansible Lightspeed", "Ansible AI Assist", "Automation Advisor"],
+    "options": ["Red Hat Copilot", "Automation code assistant", "Ansible AI Assist", "Automation Advisor"],
     "answer": 1,
-    "explanation": "Ansible Lightspeed uses AI to generate Ansible task recommendations in VS Code."
+    "explanation": "Automation code assistant (formerly Ansible Lightspeed) generates Ansible task recommendations in VS Code."
   },
   {
     "id": 52,
@@ -454,5 +454,935 @@
     "options": ["ansible_playbook_path", "playbook_dir", "ansible_base_dir", "play_path"],
     "answer": 1,
     "explanation": "playbook_dir is a magic variable that resolves to the directory containing the playbook."
+  },
+
+  {
+    "id": 58,
+    "category": "ansible-creator",
+    "prompt": "What is the primary purpose of ansible-creator?",
+    "options": ["To run Ansible playbooks in parallel", "To scaffold new Ansible collections, roles, and plugins", "To lint YAML files for syntax errors", "To manage container images for Ansible"],
+    "answer": 1,
+    "explanation": "ansible-creator scaffolds the directory structure and boilerplate for new Ansible content."
+  },
+  {
+    "id": 59,
+    "category": "ansible-creator",
+    "prompt": "Which command scaffolds a new collection with ansible-creator?",
+    "options": ["ansible-creator build myns.mycol", "ansible-creator init collection myns.mycol ./src", "ansible-creator new collection myns.mycol", "ansible-galaxy init collection myns.mycol"],
+    "answer": 1,
+    "explanation": "ansible-creator init collection creates the full collection skeleton in the specified directory."
+  },
+  {
+    "id": 60,
+    "category": "ansible-creator",
+    "prompt": "What does ansible-creator generate as part of a new collection?",
+    "options": ["A running container with ansible-core pre-installed", "SSH keys for connecting to managed hosts", "The proper directory layout, galaxy.yml, tests, and metadata", "A pre-configured Ansible Tower project"],
+    "answer": 2,
+    "explanation": "ansible-creator generates the standard collection structure including galaxy.yml and test scaffolding."
+  },
+  {
+    "id": 61,
+    "category": "ansible-lint",
+    "prompt": "Which command runs ansible-lint against a playbook named site.yml?",
+    "options": ["ansible-playbook --lint site.yml", "ansible-lint site.yml", "ansible check site.yml", "ansible-validator site.yml"],
+    "answer": 1,
+    "explanation": "Running ansible-lint directly with the playbook file as an argument checks it for issues."
+  },
+  {
+    "id": 62,
+    "category": "ansible-lint",
+    "prompt": "What does ansible-lint typically flag?",
+    "options": ["Network latency issues during playbook execution", "Deprecated modules, risky patterns, and style violations", "Missing SSH keys on managed hosts", "Incorrect inventory group names at runtime"],
+    "answer": 1,
+    "explanation": "ansible-lint catches deprecated usage, anti-patterns, and violations of Ansible best practices."
+  },
+  {
+    "id": 63,
+    "category": "molecule",
+    "prompt": "What is Molecule primarily used for?",
+    "options": ["Linting Ansible playbooks for style issues", "Full integration testing of Ansible roles and collections", "Building and publishing container images", "Managing secrets and vault passwords"],
+    "answer": 1,
+    "explanation": "Molecule provides integration testing for Ansible roles by creating, converging, and verifying instances."
+  },
+  {
+    "id": 64,
+    "category": "molecule",
+    "prompt": "What is the correct Molecule test lifecycle order?",
+    "options": ["dependency → create → prepare → converge → verify → destroy", "build → deploy → test → clean → report", "init → run → check → validate → end", "prepare → execute → assert → teardown → publish"],
+    "answer": 0,
+    "explanation": "Molecule follows dependency, create, prepare, converge, verify, destroy as its full test lifecycle."
+  },
+  {
+    "id": 65,
+    "category": "molecule",
+    "prompt": "Which Molecule command runs only the playbook without the full lifecycle?",
+    "options": ["molecule run", "molecule converge", "molecule apply", "molecule execute"],
+    "answer": 1,
+    "explanation": "molecule converge applies the role to the test instance without running verify or destroy."
+  },
+  {
+    "id": 66,
+    "category": "ade",
+    "prompt": "What does ade (Ansible Dev Environment) manage?",
+    "options": ["Production deployment pipelines", "Isolated development environments for collections", "Ansible Tower user permissions", "Container orchestration for EEs"],
+    "answer": 1,
+    "explanation": "ade creates and manages isolated development environments for Ansible collection development."
+  },
+  {
+    "id": 67,
+    "category": "ade",
+    "prompt": "Which command installs a collection in editable mode with ade?",
+    "options": ["ade setup --editable .", "ade install -e .", "ade dev mount .", "pip install -e ansible-collection"],
+    "answer": 1,
+    "explanation": "ade install -e . installs the collection in editable/development mode for live editing."
+  },
+  {
+    "id": 68,
+    "category": "pytest-ansible",
+    "prompt": "What is pytest-ansible?",
+    "options": ["A standalone test runner for Ansible", "A pytest plugin for testing Ansible modules and plugins", "A CI/CD pipeline tool for Ansible projects", "A linter extension for pytest configuration"],
+    "answer": 1,
+    "explanation": "pytest-ansible is a pytest plugin that provides fixtures for testing Ansible modules and plugins."
+  },
+  {
+    "id": 69,
+    "category": "pytest-ansible",
+    "prompt": "What fixture does pytest-ansible provide to call Ansible modules directly?",
+    "options": ["ansible_runner", "ansible_module", "ansible_host", "ansible_exec"],
+    "answer": 1,
+    "explanation": "The ansible_module fixture lets you call Ansible modules directly from pytest test functions."
+  },
+  {
+    "id": 70,
+    "category": "tox-ansible",
+    "prompt": "What does tox-ansible automatically discover?",
+    "options": ["Docker images on the local registry", "Test scenarios across multiple Python and ansible-core versions", "Cloud provider endpoints for deployment", "SSH keys and vault passwords in the project"],
+    "answer": 1,
+    "explanation": "tox-ansible auto-discovers test scenarios and creates environments for different Python/ansible-core combos."
+  },
+  {
+    "id": 71,
+    "category": "tox-ansible",
+    "prompt": "What configuration principle does tox-ansible follow for test discovery?",
+    "options": ["Explicit manifest-based registration", "Convention over configuration", "AI-powered automatic detection", "Manual YAML-based test mapping"],
+    "answer": 1,
+    "explanation": "tox-ansible uses convention over configuration to automatically find and run test scenarios."
+  },
+  {
+    "id": 72,
+    "category": "ansible-builder",
+    "prompt": "What file defines an Execution Environment for ansible-builder?",
+    "options": ["Dockerfile", "execution-environment.yml", "ansible.cfg", "builder.conf"],
+    "answer": 1,
+    "explanation": "execution-environment.yml specifies the base image, dependencies, and collections for the EE."
+  },
+  {
+    "id": 73,
+    "category": "ansible-builder",
+    "prompt": "Which ansible-builder command generates the Containerfile without actually building the image?",
+    "options": ["ansible-builder create", "ansible-builder generate", "ansible-builder init", "ansible-builder dry-run"],
+    "answer": 0,
+    "explanation": "ansible-builder create generates the build context and Containerfile without running the build."
+  },
+  {
+    "id": 74,
+    "category": "ansible-sign",
+    "prompt": "What cryptographic system does ansible-sign use to sign projects?",
+    "options": ["AES-256 symmetric encryption", "RSA key pairs via OpenSSL", "GPG (GNU Privacy Guard)", "SHA-512 hash verification only"],
+    "answer": 2,
+    "explanation": "ansible-sign uses GPG to cryptographically sign and verify Ansible project content."
+  },
+  {
+    "id": 75,
+    "category": "ansible-sign",
+    "prompt": "Which command verifies a signed Ansible project?",
+    "options": ["ansible-sign verify project .", "ansible-sign project gpg-verify .", "gpg --verify ansible-project .", "ansible-sign check --gpg ."],
+    "answer": 1,
+    "explanation": "ansible-sign project gpg-verify verifies the GPG signature of project files."
+  },
+  {
+    "id": 76,
+    "category": "ansible-navigator",
+    "prompt": "What type of interface does ansible-navigator provide?",
+    "options": ["A web-based dashboard", "A terminal user interface (TUI)", "A desktop GUI application", "A mobile companion app"],
+    "answer": 1,
+    "explanation": "ansible-navigator provides an interactive terminal user interface for Ansible workflows."
+  },
+  {
+    "id": 77,
+    "category": "ansible-navigator",
+    "prompt": "How do you run a playbook with a specific Execution Environment in ansible-navigator?",
+    "options": ["ansible-navigator run site.yml --ee my-ee", "ansible-navigator run site.yml --execution-environment-image my-ee", "ansible-navigator exec site.yml --container my-ee", "ansible-navigator play site.yml --image my-ee"],
+    "answer": 1,
+    "explanation": "The --execution-environment-image flag specifies which EE container to use for the run."
+  },
+  {
+    "id": 78,
+    "category": "ansible-navigator",
+    "prompt": "Which key navigates back or exits in the ansible-navigator TUI?",
+    "options": ["Q to quit", "Ctrl+C to terminate", "ESC to go back", "Backspace to return"],
+    "answer": 2,
+    "explanation": "The ESC key navigates back through ansible-navigator's TUI screens."
+  },
+
+  {
+    "id": 79,
+    "category": "eda",
+    "prompt": "What does EDA stand for in the Ansible ecosystem?",
+    "options": ["Enterprise Data Analytics", "Event-Driven Ansible", "Extended Deployment Architecture", "Endpoint Detection Agent"],
+    "answer": 1,
+    "explanation": "EDA stands for Event-Driven Ansible, which responds to events with automated actions."
+  },
+  {
+    "id": 80,
+    "category": "eda",
+    "prompt": "What file format defines rules in Event-Driven Ansible?",
+    "options": ["Playbook YAML", "Rulebook YAML", "Inventory INI", "Policy JSON"],
+    "answer": 1,
+    "explanation": "Rulebooks are YAML files that define event sources, conditions, and actions for EDA."
+  },
+  {
+    "id": 81,
+    "category": "eda",
+    "prompt": "What are the three main components of an EDA rulebook rule?",
+    "options": ["Source, condition, action", "Input, transform, output", "Trigger, filter, handler", "Event, rule, playbook"],
+    "answer": 0,
+    "explanation": "Each EDA rule has a source (where events come from), condition (when to act), and action (what to do)."
+  },
+  {
+    "id": 82,
+    "category": "eda",
+    "prompt": "What command runs an EDA rulebook locally?",
+    "options": ["ansible-playbook rulebook.yml", "ansible-rulebook --rulebook rules.yml", "eda run rules.yml", "ansible-events --rules rules.yml"],
+    "answer": 1,
+    "explanation": "ansible-rulebook is the CLI tool for running Event-Driven Ansible rulebooks."
+  },
+  {
+    "id": 83,
+    "category": "platform",
+    "prompt": "What is the web-based UI component of Ansible Automation Platform called?",
+    "options": ["Ansible Dashboard", "Automation controller", "Ansible Console", "AWX Portal"],
+    "answer": 1,
+    "explanation": "Automation controller (formerly Ansible Tower) is the web UI and API for managing automation."
+  },
+  {
+    "id": 84,
+    "category": "platform",
+    "prompt": "What is the open-source upstream project for Automation controller?",
+    "options": ["Ansible Core", "AWX", "Ansible Galaxy", "Ansible Engine"],
+    "answer": 1,
+    "explanation": "AWX is the open-source upstream project that Automation controller is built from."
+  },
+  {
+    "id": 85,
+    "category": "platform",
+    "prompt": "What does a Job Template define in Automation controller?",
+    "options": ["A container image spec", "The parameters to run an Ansible playbook", "A list of managed hosts", "A notification channel"],
+    "answer": 1,
+    "explanation": "A Job Template combines a project, inventory, credentials, and playbook to define a runnable job."
+  },
+  {
+    "id": 86,
+    "category": "platform",
+    "prompt": "What feature in Automation controller chains multiple job templates together?",
+    "options": ["Pipeline", "Workflow", "Sequence", "Job chain"],
+    "answer": 1,
+    "explanation": "Workflows link multiple job templates with conditional paths (success, failure, always)."
+  },
+  {
+    "id": 87,
+    "category": "platform",
+    "prompt": "What credential type is used to connect Automation controller to a Git repository?",
+    "options": ["Machine credential", "Source Control credential", "Vault credential", "Network credential"],
+    "answer": 1,
+    "explanation": "Source Control credentials provide authentication for Git repositories in Automation controller."
+  },
+  {
+    "id": 88,
+    "category": "inventory",
+    "prompt": "What type of inventory script or plugin generates host lists from external sources like cloud providers?",
+    "options": ["Static inventory", "Dynamic inventory", "Smart inventory", "Runtime inventory"],
+    "answer": 1,
+    "explanation": "Dynamic inventory plugins pull live host data from cloud APIs, CMDBs, and other external sources."
+  },
+  {
+    "id": 89,
+    "category": "inventory",
+    "prompt": "What is the default inventory file location if none is specified?",
+    "options": ["/etc/ansible/hosts", "/var/ansible/inventory", "~/.ansible/hosts", "/opt/ansible/inventory"],
+    "answer": 0,
+    "explanation": "/etc/ansible/hosts is the default inventory location, configurable in ansible.cfg."
+  },
+  {
+    "id": 90,
+    "category": "modules",
+    "prompt": "Which module copies files from the control node to managed nodes?",
+    "options": ["ansible.builtin.fetch", "ansible.builtin.copy", "ansible.builtin.synchronize", "ansible.builtin.transfer"],
+    "answer": 1,
+    "explanation": "ansible.builtin.copy transfers files from the control node to remote hosts."
+  },
+  {
+    "id": 91,
+    "category": "modules",
+    "prompt": "Which module is the opposite of copy — pulling files FROM managed nodes to the control node?",
+    "options": ["ansible.builtin.get", "ansible.builtin.fetch", "ansible.builtin.pull", "ansible.builtin.download"],
+    "answer": 1,
+    "explanation": "ansible.builtin.fetch retrieves files from remote hosts and stores them locally."
+  },
+  {
+    "id": 92,
+    "category": "modules",
+    "prompt": "Which module manages Linux user accounts?",
+    "options": ["ansible.builtin.account", "ansible.builtin.user", "ansible.builtin.useradd", "ansible.builtin.identity"],
+    "answer": 1,
+    "explanation": "ansible.builtin.user manages user accounts, groups, and home directories on Linux systems."
+  },
+  {
+    "id": 93,
+    "category": "modules",
+    "prompt": "What module sends arbitrary commands to managed nodes?",
+    "options": ["ansible.builtin.command", "ansible.builtin.exec", "ansible.builtin.run", "ansible.builtin.invoke"],
+    "answer": 0,
+    "explanation": "ansible.builtin.command executes commands on remote nodes without going through a shell."
+  },
+  {
+    "id": 94,
+    "category": "modules",
+    "prompt": "What is the key difference between the command and shell modules?",
+    "options": ["command runs faster", "shell processes through /bin/sh, supporting pipes and redirects", "command supports Windows", "shell runs asynchronously"],
+    "answer": 1,
+    "explanation": "The shell module runs commands through /bin/sh, enabling pipes, redirects, and shell built-ins."
+  },
+  {
+    "id": 95,
+    "category": "modules",
+    "prompt": "Which module manages firewall rules on RHEL systems?",
+    "options": ["ansible.builtin.iptables", "ansible.posix.firewalld", "ansible.builtin.firewall", "ansible.builtin.ufw"],
+    "answer": 1,
+    "explanation": "ansible.posix.firewalld manages firewalld rules, zones, and services on RHEL-based systems."
+  },
+  {
+    "id": 96,
+    "category": "modules",
+    "prompt": "Which module sets or modifies file permissions and ownership?",
+    "options": ["ansible.builtin.chmod", "ansible.builtin.file", "ansible.builtin.permission", "ansible.builtin.stat"],
+    "answer": 1,
+    "explanation": "ansible.builtin.file manages file properties including permissions, ownership, and symlinks."
+  },
+  {
+    "id": 97,
+    "category": "modules",
+    "prompt": "Which module manages cron jobs on remote systems?",
+    "options": ["ansible.builtin.schedule", "ansible.builtin.cron", "ansible.builtin.timer", "ansible.builtin.at"],
+    "answer": 1,
+    "explanation": "ansible.builtin.cron manages crontab entries for scheduled task execution."
+  },
+  {
+    "id": 98,
+    "category": "modules",
+    "prompt": "Which module creates, removes, and manages logical volumes?",
+    "options": ["ansible.builtin.disk", "community.general.lvol", "ansible.builtin.partition", "ansible.builtin.volume"],
+    "answer": 1,
+    "explanation": "community.general.lvol manages LVM logical volumes on Linux systems."
+  },
+  {
+    "id": 99,
+    "category": "modules",
+    "prompt": "What module is used to download files from HTTP, HTTPS, or FTP to managed nodes?",
+    "options": ["ansible.builtin.fetch", "ansible.builtin.get_url", "ansible.builtin.download", "ansible.builtin.wget"],
+    "answer": 1,
+    "explanation": "ansible.builtin.get_url downloads files from the web to managed nodes."
+  },
+  {
+    "id": 100,
+    "category": "modules",
+    "prompt": "What module interacts with web services by sending HTTP requests?",
+    "options": ["ansible.builtin.http", "ansible.builtin.uri", "ansible.builtin.curl", "ansible.builtin.request"],
+    "answer": 1,
+    "explanation": "ansible.builtin.uri sends HTTP/HTTPS requests and can validate responses."
+  },
+  {
+    "id": 101,
+    "category": "roles",
+    "prompt": "What is the standard directory for role default variables?",
+    "options": ["roles/myrole/vars/", "roles/myrole/defaults/", "roles/myrole/group_vars/", "roles/myrole/config/"],
+    "answer": 1,
+    "explanation": "defaults/main.yml contains the lowest-precedence default variables for a role."
+  },
+  {
+    "id": 102,
+    "category": "roles",
+    "prompt": "What is the difference between defaults/ and vars/ in a role?",
+    "options": ["defaults is for Python vars, vars is for YAML vars", "defaults has low precedence and is easily overridden; vars has high precedence", "They are identical and interchangeable", "defaults is deprecated in favor of vars"],
+    "answer": 1,
+    "explanation": "Role defaults are easily overridden; role vars have higher precedence and are harder to override."
+  },
+  {
+    "id": 103,
+    "category": "roles",
+    "prompt": "What file inside a role's meta/ directory defines dependencies on other roles?",
+    "options": ["requirements.yml", "meta/main.yml", "dependencies.yml", "galaxy.yml"],
+    "answer": 1,
+    "explanation": "meta/main.yml defines role metadata including dependencies, platforms, and Galaxy info."
+  },
+  {
+    "id": 104,
+    "category": "security",
+    "prompt": "Which ansible-vault subcommand encrypts an existing plaintext file?",
+    "options": ["ansible-vault lock", "ansible-vault encrypt", "ansible-vault seal", "ansible-vault protect"],
+    "answer": 1,
+    "explanation": "ansible-vault encrypt converts a plaintext file to an encrypted vault file."
+  },
+  {
+    "id": 105,
+    "category": "security",
+    "prompt": "How do you edit an encrypted vault file in place?",
+    "options": ["ansible-vault decrypt, edit, re-encrypt", "ansible-vault edit filename.yml", "ansible-vault open filename.yml", "ansible-vault modify filename.yml"],
+    "answer": 1,
+    "explanation": "ansible-vault edit decrypts the file into a temporary buffer, opens an editor, and re-encrypts on save."
+  },
+  {
+    "id": 106,
+    "category": "security",
+    "prompt": "What flag passes the vault password when running a playbook?",
+    "options": ["--vault-key", "--ask-vault-pass", "--vault-secret", "--decrypt-pass"],
+    "answer": 1,
+    "explanation": "--ask-vault-pass prompts for the vault password interactively at runtime."
+  },
+  {
+    "id": 107,
+    "category": "templating",
+    "prompt": "What Jinja2 delimiter is used for expressions (variables) in Ansible templates?",
+    "options": ["{% %}", "{{ }}", "{# #}", "<% %>"],
+    "answer": 1,
+    "explanation": "Double curly braces {{ }} are used to output variable values in Jinja2 templates."
+  },
+  {
+    "id": 108,
+    "category": "templating",
+    "prompt": "What Jinja2 delimiter is used for control statements like loops and conditionals?",
+    "options": ["{{ }}", "{% %}", "{# #}", "[% %]"],
+    "answer": 1,
+    "explanation": "{% %} delimiters wrap control flow statements like for loops and if blocks in Jinja2."
+  },
+  {
+    "id": 109,
+    "category": "templating",
+    "prompt": "What Jinja2 filter converts a variable to an integer?",
+    "options": ["| to_int", "| int", "| integer", "| cast_int"],
+    "answer": 1,
+    "explanation": "The int filter converts a value to an integer in Jinja2 expressions."
+  },
+  {
+    "id": 110,
+    "category": "templating",
+    "prompt": "What Jinja2 filter provides a fallback value if a variable is undefined?",
+    "options": ["| fallback", "| default", "| or_else", "| coalesce"],
+    "answer": 1,
+    "explanation": "The default filter returns a specified value when the variable is undefined."
+  },
+  {
+    "id": 111,
+    "category": "inventory",
+    "prompt": "What special group automatically contains every host in the inventory?",
+    "options": ["everything", "all", "global", "hosts"],
+    "answer": 1,
+    "explanation": "The 'all' group is a built-in group that includes every host defined in the inventory."
+  },
+  {
+    "id": 112,
+    "category": "inventory",
+    "prompt": "What special group contains hosts that are not members of any other group?",
+    "options": ["default", "ungrouped", "orphans", "none"],
+    "answer": 1,
+    "explanation": "The 'ungrouped' group automatically contains hosts not assigned to any explicit group."
+  },
+  {
+    "id": 113,
+    "category": "advanced",
+    "prompt": "What Ansible feature allows a task to run on the control node instead of the managed host?",
+    "options": ["local_action", "delegate_to: localhost", "connection: local", "All of the above"],
+    "answer": 3,
+    "explanation": "local_action, delegate_to: localhost, and connection: local all execute tasks on the control node."
+  },
+  {
+    "id": 114,
+    "category": "advanced",
+    "prompt": "What does the 'delegate_to' directive do?",
+    "options": ["Assigns the task to another user", "Runs the task on a different host than the current play target", "Queues the task for later execution", "Sends the task to Automation controller"],
+    "answer": 1,
+    "explanation": "delegate_to runs a task on a specified host while still using variables from the original host."
+  },
+  {
+    "id": 115,
+    "category": "advanced",
+    "prompt": "What does 'serial' control in an Ansible play?",
+    "options": ["Execution order of tasks", "How many hosts to process in each batch", "The number of retries", "The timeout per task"],
+    "answer": 1,
+    "explanation": "The serial keyword limits how many hosts are processed at once, enabling rolling updates."
+  },
+  {
+    "id": 116,
+    "category": "advanced",
+    "prompt": "What Ansible strategy plugin allows you to step through tasks one at a time?",
+    "options": ["debug", "step", "interactive", "manual"],
+    "answer": 0,
+    "explanation": "The debug strategy lets you step through tasks interactively for troubleshooting."
+  },
+  {
+    "id": 117,
+    "category": "advanced",
+    "prompt": "What does 'run_once: true' do on a task?",
+    "options": ["Caches the result permanently", "Ensures the task runs on only one host in the batch", "Prevents the task from being retried", "Locks the task to a single thread"],
+    "answer": 1,
+    "explanation": "run_once ensures the task executes on only one host, useful for one-time setup actions."
+  },
+  {
+    "id": 118,
+    "category": "collections",
+    "prompt": "What command installs an Ansible collection from Galaxy?",
+    "options": ["ansible-galaxy install collection", "ansible-galaxy collection install", "ansible-collection install", "pip install ansible-collection"],
+    "answer": 1,
+    "explanation": "ansible-galaxy collection install downloads and installs collections from Galaxy or Automation Hub."
+  },
+  {
+    "id": 119,
+    "category": "collections",
+    "prompt": "What file lists collection dependencies for a project?",
+    "options": ["galaxy.yml", "requirements.yml", "collections.cfg", "dependencies.yml"],
+    "answer": 1,
+    "explanation": "requirements.yml lists collections (and roles) to install with ansible-galaxy install -r."
+  },
+  {
+    "id": 120,
+    "category": "plugins",
+    "prompt": "What type of Ansible plugin transforms data within a task — like converting JSON or encoding strings?",
+    "options": ["Action plugin", "Filter plugin", "Lookup plugin", "Callback plugin"],
+    "answer": 1,
+    "explanation": "Filter plugins transform data within Jinja2 expressions used in playbooks."
+  },
+  {
+    "id": 121,
+    "category": "plugins",
+    "prompt": "What type of Ansible plugin retrieves data from external sources like files, databases, or APIs?",
+    "options": ["Filter plugin", "Lookup plugin", "Inventory plugin", "Vars plugin"],
+    "answer": 1,
+    "explanation": "Lookup plugins access external data sources and return values for use in playbooks."
+  },
+  {
+    "id": 122,
+    "category": "plugins",
+    "prompt": "What type of plugin controls how Ansible output is displayed during playbook runs?",
+    "options": ["Display plugin", "Callback plugin", "Stdout plugin", "Logger plugin"],
+    "answer": 1,
+    "explanation": "Callback plugins customize the output and event handling during playbook execution."
+  },
+  {
+    "id": 123,
+    "category": "plugins",
+    "prompt": "What Ansible plugin type determines how to connect to managed hosts?",
+    "options": ["Transport plugin", "Connection plugin", "Network plugin", "Channel plugin"],
+    "answer": 1,
+    "explanation": "Connection plugins (ssh, local, winrm, etc.) control how Ansible communicates with hosts."
+  },
+  {
+    "id": 124,
+    "category": "network",
+    "prompt": "What connection plugin is typically used to manage network devices that don't support SSH+Python?",
+    "options": ["ansible.netcommon.ssh", "ansible.netcommon.network_cli", "ansible.builtin.paramiko", "ansible.builtin.telnet"],
+    "answer": 1,
+    "explanation": "network_cli connects to network devices over SSH using the device's CLI interface."
+  },
+  {
+    "id": 125,
+    "category": "network",
+    "prompt": "What Ansible module backs up the running configuration of a network device?",
+    "options": ["network_backup", "cli_config with backup: yes", "config_manager", "network_save"],
+    "answer": 1,
+    "explanation": "cli_config with backup: yes saves the current running configuration before making changes."
+  },
+  {
+    "id": 126,
+    "category": "cloud",
+    "prompt": "What collection provides Ansible modules for managing Amazon Web Services?",
+    "options": ["amazon.cloud", "amazon.aws", "aws.ansible", "community.cloud.aws"],
+    "answer": 1,
+    "explanation": "amazon.aws is the FQCN for the official AWS collection with EC2, S3, IAM, and more."
+  },
+  {
+    "id": 127,
+    "category": "cloud",
+    "prompt": "What collection provides Ansible modules for managing Microsoft Azure resources?",
+    "options": ["microsoft.cloud", "azure.azcollection", "azure.rm", "microsoft.azure"],
+    "answer": 1,
+    "explanation": "azure.azcollection is the collection for managing Azure resources with Ansible."
+  },
+  {
+    "id": 128,
+    "category": "cloud",
+    "prompt": "What collection provides Ansible modules for managing Google Cloud Platform?",
+    "options": ["gcp.ansible", "google.cloud", "gcloud.modules", "google.gcp"],
+    "answer": 1,
+    "explanation": "google.cloud is the FQCN for the Google Cloud Platform Ansible collection."
+  },
+  {
+    "id": 129,
+    "category": "configuration",
+    "prompt": "What is the primary configuration file for Ansible?",
+    "options": ["ansible.ini", "ansible.cfg", "ansible.conf", "ansible.yaml"],
+    "answer": 1,
+    "explanation": "ansible.cfg is the main configuration file, searched in current directory, home, then /etc/ansible/."
+  },
+  {
+    "id": 130,
+    "category": "configuration",
+    "prompt": "What environment variable overrides the default Ansible configuration file location?",
+    "options": ["ANSIBLE_HOME", "ANSIBLE_CONFIG", "ANSIBLE_CFG_PATH", "ANSIBLE_SETTINGS"],
+    "answer": 1,
+    "explanation": "ANSIBLE_CONFIG points Ansible to a specific configuration file, overriding all other locations."
+  },
+  {
+    "id": 131,
+    "category": "basics",
+    "prompt": "What is a play in Ansible?",
+    "options": ["A single task execution", "A mapping of hosts to roles and tasks", "A collection of modules", "A type of inventory"],
+    "answer": 1,
+    "explanation": "A play maps a group of hosts to tasks, roles, and variables that should be applied to them."
+  },
+  {
+    "id": 132,
+    "category": "basics",
+    "prompt": "What is a task in Ansible?",
+    "options": ["A group of hosts", "A call to an Ansible module with specific arguments", "A variable definition", "A handler notification"],
+    "answer": 1,
+    "explanation": "A task is a single action — a call to a module with parameters — within a play."
+  },
+  {
+    "id": 133,
+    "category": "handlers",
+    "prompt": "When do handlers actually execute during a playbook run?",
+    "options": ["Immediately when notified", "At the end of each task", "At the end of the play, after all tasks", "Only on the second run"],
+    "answer": 2,
+    "explanation": "Handlers are queued by notify and run once at the end of the play (or when flush_handlers is called)."
+  },
+  {
+    "id": 134,
+    "category": "handlers",
+    "prompt": "What meta task forces all pending handlers to run immediately?",
+    "options": ["meta: run_handlers", "meta: flush_handlers", "meta: trigger_handlers", "meta: exec_handlers"],
+    "answer": 1,
+    "explanation": "meta: flush_handlers forces all notified handlers to execute at that point in the play."
+  },
+  {
+    "id": 135,
+    "category": "facts",
+    "prompt": "What module lets you define custom facts on managed nodes?",
+    "options": ["ansible.builtin.custom_fact", "ansible.builtin.set_fact", "ansible.builtin.define_var", "ansible.builtin.register_fact"],
+    "answer": 1,
+    "explanation": "set_fact creates or updates host-scoped variables (custom facts) during a play."
+  },
+  {
+    "id": 136,
+    "category": "facts",
+    "prompt": "How can you disable automatic fact gathering for a play?",
+    "options": ["no_facts: true", "gather_facts: false", "skip_facts: yes", "facts: disabled"],
+    "answer": 1,
+    "explanation": "Setting gather_facts: false at the play level skips the automatic setup module call."
+  },
+  {
+    "id": 137,
+    "category": "advanced",
+    "prompt": "What does 'async' do when set on a task?",
+    "options": ["Makes the task run in a container", "Runs the task asynchronously with a time limit", "Enables parallel module execution", "Queues the task for the next play"],
+    "answer": 1,
+    "explanation": "async sets a maximum runtime and allows the task to run in the background on the remote host."
+  },
+  {
+    "id": 138,
+    "category": "advanced",
+    "prompt": "What keyword works with async to control how often Ansible checks if the task is done?",
+    "options": ["interval", "poll", "check_every", "wait"],
+    "answer": 1,
+    "explanation": "The poll keyword sets how frequently (in seconds) Ansible checks the async task's status."
+  },
+  {
+    "id": 139,
+    "category": "advanced",
+    "prompt": "What does 'poll: 0' mean on an async task?",
+    "options": ["Check immediately", "Fire and forget — don't wait for it", "Poll as fast as possible", "Disable async mode"],
+    "answer": 1,
+    "explanation": "Setting poll: 0 means Ansible starts the task and moves on without waiting for the result."
+  },
+  {
+    "id": 140,
+    "category": "tags",
+    "prompt": "What feature allows you to selectively run or skip specific tasks in a playbook?",
+    "options": ["Labels", "Tags", "Markers", "Selectors"],
+    "answer": 1,
+    "explanation": "Tags let you run or skip specific tasks using --tags or --skip-tags on the command line."
+  },
+  {
+    "id": 141,
+    "category": "tags",
+    "prompt": "What flag runs only tasks tagged with 'deploy'?",
+    "options": ["--only deploy", "--tags deploy", "--filter deploy", "--select deploy"],
+    "answer": 1,
+    "explanation": "--tags deploy tells ansible-playbook to only run tasks that have the 'deploy' tag."
+  },
+  {
+    "id": 142,
+    "category": "platform",
+    "prompt": "What Automation controller feature stores sensitive data like SSH keys and API tokens?",
+    "options": ["Secrets", "Credentials", "Vaults", "Keyrings"],
+    "answer": 1,
+    "explanation": "Credentials in Automation controller securely store authentication data for jobs."
+  },
+  {
+    "id": 143,
+    "category": "platform",
+    "prompt": "What Automation controller feature restricts which users can run which job templates?",
+    "options": ["Policies", "Role-Based Access Control (RBAC)", "Firewalls", "User quotas"],
+    "answer": 1,
+    "explanation": "RBAC controls who can view, use, and administer resources in Automation controller."
+  },
+  {
+    "id": 144,
+    "category": "platform",
+    "prompt": "What type of Automation controller project syncs content from a Git repository?",
+    "options": ["Manual project", "SCM project", "Upload project", "Archive project"],
+    "answer": 1,
+    "explanation": "SCM (Source Control Management) projects pull playbooks directly from Git repositories."
+  },
+  {
+    "id": 145,
+    "category": "ai",
+    "prompt": "What large language model family powers the Automation code assistant in VS Code?",
+    "options": ["GPT-4", "IBM watsonx Code Assistant", "LLaMA", "PaLM"],
+    "answer": 1,
+    "explanation": "The Automation code assistant is powered by IBM watsonx Code Assistant, trained on Ansible data."
+  },
+  {
+    "id": 146,
+    "category": "ai",
+    "prompt": "What do you type in VS Code to trigger an Automation code assistant suggestion?",
+    "options": ["A YAML comment describing the task in natural language", "codegen: generate", "A special #AI directive", "Press Ctrl+Shift+L"],
+    "answer": 0,
+    "explanation": "Writing a natural language task description as a YAML comment triggers the Automation code assistant's suggestion."
+  },
+  {
+    "id": 147,
+    "category": "basics",
+    "prompt": "What protocol does Ansible primarily use to communicate with Linux managed nodes?",
+    "options": ["HTTP", "SSH", "SNMP", "RPC"],
+    "answer": 1,
+    "explanation": "Ansible uses SSH as its default transport for communicating with Linux managed nodes."
+  },
+  {
+    "id": 148,
+    "category": "basics",
+    "prompt": "What protocol does Ansible use to communicate with Windows managed nodes?",
+    "options": ["SSH", "WinRM", "RDP", "SMB"],
+    "answer": 1,
+    "explanation": "Ansible uses WinRM (Windows Remote Management) to manage Windows hosts."
+  },
+  {
+    "id": 149,
+    "category": "basics",
+    "prompt": "What is the minimum requirement on a managed Linux node for Ansible to work?",
+    "options": ["Ansible agent installed", "Python interpreter", "Java runtime", "Docker daemon"],
+    "answer": 1,
+    "explanation": "Ansible requires only a Python interpreter (and SSH access) on managed Linux nodes."
+  },
+  {
+    "id": 150,
+    "category": "advanced",
+    "prompt": "What lookup plugin reads the contents of a file on the control node?",
+    "options": ["lookup('read', 'file.txt')", "lookup('file', '/path/to/file')", "lookup('cat', 'file.txt')", "lookup('load', '/path/to/file')"],
+    "answer": 1,
+    "explanation": "The file lookup reads and returns the contents of a file from the Ansible control node."
+  },
+  {
+    "id": 151,
+    "category": "advanced",
+    "prompt": "What lookup plugin retrieves values from environment variables?",
+    "options": ["lookup('env_var', 'HOME')", "lookup('env', 'HOME')", "lookup('getenv', 'HOME')", "lookup('environ', 'HOME')"],
+    "answer": 1,
+    "explanation": "lookup('env', 'VAR_NAME') retrieves the value of an environment variable on the control node."
+  },
+  {
+    "id": 152,
+    "category": "advanced",
+    "prompt": "What does the 'become' directive do in Ansible?",
+    "options": ["Switches to a different playbook", "Escalates privileges (typically to root)", "Changes the connection plugin", "Enables verbose output"],
+    "answer": 1,
+    "explanation": "become: true escalates privileges, commonly using sudo to run tasks as root."
+  },
+  {
+    "id": 153,
+    "category": "advanced",
+    "prompt": "What is the default become method in Ansible?",
+    "options": ["su", "sudo", "runas", "doas"],
+    "answer": 1,
+    "explanation": "sudo is the default privilege escalation method used by Ansible's become system."
+  },
+  {
+    "id": 154,
+    "category": "testing",
+    "prompt": "What tool included with ansible-core runs unit and integration tests for collections?",
+    "options": ["ansible-check", "ansible-test", "ansible-verify", "ansible-qa"],
+    "answer": 1,
+    "explanation": "ansible-test provides sanity, unit, and integration test frameworks for Ansible collections."
+  },
+  {
+    "id": 155,
+    "category": "testing",
+    "prompt": "What type of ansible-test target checks for coding standards like PEP 8 and documentation?",
+    "options": ["lint tests", "sanity tests", "style tests", "compliance tests"],
+    "answer": 1,
+    "explanation": "Sanity tests check for coding standards, documentation, and common issues in collection code."
+  },
+  {
+    "id": 156,
+    "category": "error_handling",
+    "prompt": "What does 'any_errors_fatal: true' do at the play level?",
+    "options": ["Logs all errors to a file", "Stops execution on ALL hosts if ANY host fails", "Sends an alert email on error", "Retries failed tasks once"],
+    "answer": 1,
+    "explanation": "any_errors_fatal stops the entire play across all hosts if any single host encounters a failure."
+  },
+  {
+    "id": 157,
+    "category": "error_handling",
+    "prompt": "What section of a block runs regardless of whether the block succeeded or failed?",
+    "options": ["finally", "always", "cleanup", "ensure"],
+    "answer": 1,
+    "explanation": "The 'always' section of a block runs no matter what — useful for cleanup tasks."
+  },
+  {
+    "id": 158,
+    "category": "performance",
+    "prompt": "What Ansible feature caches facts between playbook runs to speed up execution?",
+    "options": ["Fact caching", "Persistent facts", "Fact pooling", "Fact storage"],
+    "answer": 0,
+    "explanation": "Fact caching (via redis, jsonfile, etc.) stores gathered facts to avoid re-gathering each run."
+  },
+  {
+    "id": 159,
+    "category": "performance",
+    "prompt": "What does 'pipelining = True' in ansible.cfg improve?",
+    "options": ["Network bandwidth", "SSH performance by reducing the number of connections", "Parallel task execution", "Disk I/O speed"],
+    "answer": 1,
+    "explanation": "Pipelining reduces SSH operations by sending and executing modules in a single SSH session."
+  },
+  {
+    "id": 160,
+    "category": "collections",
+    "prompt": "What command lists all installed Ansible collections?",
+    "options": ["ansible-galaxy collection list", "ansible collection show", "ansible-galaxy list --collections", "ansible info collections"],
+    "answer": 0,
+    "explanation": "ansible-galaxy collection list shows all collections installed on the system."
+  },
+  {
+    "id": 161,
+    "category": "modules",
+    "prompt": "What module manages SELinux settings on RHEL systems?",
+    "options": ["ansible.builtin.selinux", "ansible.posix.selinux", "ansible.builtin.security", "ansible.builtin.linux_security"],
+    "answer": 1,
+    "explanation": "ansible.posix.selinux manages SELinux mode (enforcing, permissive, disabled) and policy."
+  },
+  {
+    "id": 162,
+    "category": "modules",
+    "prompt": "What module manages systemd services and units?",
+    "options": ["ansible.builtin.service", "ansible.builtin.systemd_service", "ansible.builtin.systemctl", "ansible.builtin.daemon"],
+    "answer": 1,
+    "explanation": "ansible.builtin.systemd_service provides full systemd control including daemon-reload."
+  },
+  {
+    "id": 163,
+    "category": "modules",
+    "prompt": "What module adds or modifies lines in a file?",
+    "options": ["ansible.builtin.replace", "ansible.builtin.lineinfile", "ansible.builtin.edit", "ansible.builtin.sed"],
+    "answer": 1,
+    "explanation": "ansible.builtin.lineinfile ensures a particular line is present (or absent) in a file."
+  },
+  {
+    "id": 164,
+    "category": "modules",
+    "prompt": "What is the difference between lineinfile and blockinfile?",
+    "options": ["lineinfile manages single lines; blockinfile manages multi-line blocks", "They are aliases for the same module", "blockinfile is for binary files", "lineinfile is deprecated"],
+    "answer": 0,
+    "explanation": "lineinfile handles single lines while blockinfile inserts or updates multi-line text blocks."
+  },
+  {
+    "id": 165,
+    "category": "modules",
+    "prompt": "What module prints variable values or messages during playbook execution for debugging?",
+    "options": ["ansible.builtin.log", "ansible.builtin.debug", "ansible.builtin.print", "ansible.builtin.echo"],
+    "answer": 1,
+    "explanation": "ansible.builtin.debug prints messages or variable values during play execution."
+  },
+  {
+    "id": 166,
+    "category": "history",
+    "prompt": "What year did Red Hat acquire Ansible?",
+    "options": ["2013", "2015", "2017", "2019"],
+    "answer": 1,
+    "explanation": "Red Hat acquired Ansible Inc. in October 2015."
+  },
+  {
+    "id": 167,
+    "category": "community",
+    "prompt": "Where does the Ansible community primarily collaborate on development?",
+    "options": ["Slack only", "GitHub and Matrix/IRC", "Stack Overflow only", "Red Hat forums only"],
+    "answer": 1,
+    "explanation": "The Ansible community uses GitHub for code and Matrix/IRC for real-time discussion."
+  },
+  {
+    "id": 168,
+    "category": "platform",
+    "prompt": "What component of AAP provides a curated catalog of certified Ansible content?",
+    "options": ["Galaxy", "Private Automation Hub", "Ansible Registry", "Content Depot"],
+    "answer": 1,
+    "explanation": "Private Automation Hub hosts curated, certified, and custom Ansible content for organizations."
+  },
+  {
+    "id": 169,
+    "category": "basics",
+    "prompt": "What does the 'hosts' keyword in a play specify?",
+    "options": ["The DNS servers to use", "Which managed nodes the play runs against", "The control node address", "The proxy servers for SSH"],
+    "answer": 1,
+    "explanation": "The hosts keyword defines which inventory hosts or groups the play targets."
+  },
+  {
+    "id": 170,
+    "category": "basics",
+    "prompt": "What happens when state: absent is used with the file module?",
+    "options": ["The file is backed up", "The file or directory is deleted", "The file is hidden", "The file permissions are removed"],
+    "answer": 1,
+    "explanation": "state: absent ensures the specified file or directory does not exist (deletes it)."
+  },
+  {
+    "id": 171,
+    "category": "ai",
+    "prompt": "What is the chat-based AI assistant built into the Ansible Automation Platform web UI?",
+    "options": ["Automation code assistant", "Ansible intelligent assistant", "Red Hat Copilot", "Ansible Chatbot"],
+    "answer": 1,
+    "explanation": "The Ansible intelligent assistant is a chat interface inside the AAP web UI for interactive help."
+  },
+  {
+    "id": 172,
+    "category": "ai",
+    "prompt": "What is the difference between Automation code assistant and Ansible intelligent assistant?",
+    "options": ["They are the same product on different platforms", "Code assistant works in VS Code; intelligent assistant is a chat UI in AAP", "Code assistant is open source; intelligent assistant is proprietary", "Code assistant is for YAML; intelligent assistant is for Python"],
+    "answer": 1,
+    "explanation": "Automation code assistant generates playbook code in VS Code, while Ansible intelligent assistant provides a chat interface inside the AAP web UI."
+  },
+  {
+    "id": 173,
+    "category": "ai",
+    "prompt": "What replaced the product formerly known as Ansible Lightspeed?",
+    "options": ["Red Hat Copilot", "Automation code assistant", "Ansible intelligent assistant", "Ansible AI Engine"],
+    "answer": 1,
+    "explanation": "Automation code assistant replaced Ansible Lightspeed as the AI-powered VS Code experience for Ansible."
   }
 ]
