@@ -131,6 +131,11 @@ export class Game {
         this._quizPhase === "question" &&
         this.currentQuestion
       ) {
+        if (e.code === "Escape") {
+          this.skipQuiz();
+          e.preventDefault();
+          return;
+        }
         const k = e.key;
         if (k >= "1" && k <= "4") {
           this._answerQuiz(Number(k) - 1);
@@ -434,6 +439,7 @@ export class Game {
     }
     this._quizBusy = true;
     this._quizPhase = "result";
+    this.ui.stopQuizCountdown();
     const q = this.currentQuestion;
     const ok = this.quiz.isCorrect(q, optionIndex);
 
@@ -609,6 +615,7 @@ export class Game {
     this._quizPhase = "question";
     this.ui.renderQuizQuestion(this.currentQuestion);
     this.ui.showQuiz(true);
+    this.ui.startQuizCountdown(() => this.skipQuiz());
     this._startQuizSafetyTimer();
   }
 
@@ -636,7 +643,20 @@ export class Game {
       "Pickup: Boost token — highway paused for skill quiz",
       CONFIG.STATUS_HIT_MS
     );
+    this.ui.startQuizCountdown(() => this.skipQuiz());
     this._startQuizSafetyTimer();
+  }
+
+  skipQuiz() {
+    if (this.state !== "quiz" || this._quizPhase !== "question") return;
+    this.ui.stopQuizCountdown();
+    this.ui.showQuiz(false);
+    this.state = "running";
+    this.quizMode = null;
+    this.currentQuestion = null;
+    this.timeScale = 1;
+    this._resetQuizFlags();
+    this.ui.setStatus("Quiz skipped — no boost, no penalty.", CONFIG.STATUS_MESSAGE_MS);
   }
 
   _resetQuizFlags() {
@@ -807,6 +827,7 @@ export class Game {
     this.obstaclesHit += 1;
     play(SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
+    this.ui.showDamagePopup(dmg);
     this.ui.shake();
     this.shakeUntil = performance.now() + 200;
     this.shakeAmp = 0.35;
@@ -843,6 +864,7 @@ export class Game {
     this.obstaclesHit += 1;
     play(SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
+    this.ui.showDamagePopup(dmg);
     this.ui.shake();
     this.shakeUntil = performance.now() + 200;
     this.shakeAmp = 0.35;

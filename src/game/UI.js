@@ -57,11 +57,16 @@ export class UI {
 
       levelSelect: document.getElementById("level-select"),
       hudLevelName: document.getElementById("hud-level-name"),
+
+      quizCountdown: document.getElementById("quiz-countdown"),
+      damagePopup: document.getElementById("damage-popup"),
     };
 
     this._statusTimer = null;
     this._recoveryCountdownId = null;
     this._recoveryAutoTimer = null;
+    this._quizCountdownId = null;
+    this._quizAutoTimer = null;
     this._levelSelectReturnTo = "main_menu";
     this._bindButtons();
     this._drawLevelPreviews();
@@ -96,10 +101,8 @@ export class UI {
     on("btn-billboard-close", () => this.onBillboardClose && this.onBillboardClose());
     on("btn-touch-pause", () => this.onTouchPause && this.onTouchPause());
 
-    on("btn-choose-level", () => {
-      if (this.onPauseForLevelSelect) this.onPauseForLevelSelect();
-      this._openLevelSelect("running");
-    });
+    on("btn-quiz-skip", () => this.onQuizSkip && this.onQuizSkip());
+    on("btn-choose-level-pause", () => this._openLevelSelect("running"));
     on("btn-choose-level-menu", () => this._openLevelSelect("main_menu"));
     on("btn-choose-level-go", () => this._openLevelSelect("game_over"));
     on("btn-level-back", () => this._closeLevelSelect());
@@ -127,7 +130,7 @@ export class UI {
     this.onBillboardClose = h.onBillboardClose;
     this.onTouchPause = h.onTouchPause;
     this.onLevelSelect = h.onLevelSelect;
-    this.onPauseForLevelSelect = h.onPauseForLevelSelect;
+    this.onQuizSkip = h.onQuizSkip;
   }
 
   showMainMenu(visible) {
@@ -144,7 +147,10 @@ export class UI {
 
   showQuiz(visible) {
     this.el.quiz.classList.toggle("hidden", !visible);
-    if (!visible) this.resetQuizOverlay();
+    if (!visible) {
+      this.resetQuizOverlay();
+      this.stopQuizCountdown();
+    }
   }
 
   resetQuizOverlay() {
@@ -155,6 +161,45 @@ export class UI {
       r.classList.add("hidden");
       r.classList.remove("is-correct", "is-wrong");
     }
+  }
+
+  startQuizCountdown(onExpire) {
+    this.stopQuizCountdown();
+    let remaining = 5;
+    const cd = this.el.quizCountdown;
+    if (cd) {
+      cd.textContent = String(remaining);
+      cd.classList.remove("urgent");
+    }
+    this._quizCountdownId = setInterval(() => {
+      remaining--;
+      if (cd) {
+        cd.textContent = String(Math.max(0, remaining));
+        cd.classList.toggle("urgent", remaining <= 2);
+      }
+      if (remaining <= 0) {
+        this.stopQuizCountdown();
+        if (onExpire) onExpire();
+      }
+    }, 1000);
+  }
+
+  stopQuizCountdown() {
+    clearInterval(this._quizCountdownId);
+    this._quizCountdownId = null;
+    if (this.el.quizCountdown) {
+      this.el.quizCountdown.classList.remove("urgent");
+    }
+  }
+
+  showDamagePopup(amount) {
+    const el = this.el.damagePopup;
+    if (!el) return;
+    el.classList.remove("show");
+    el.textContent = `−${amount}`;
+    void el.offsetWidth;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 1500);
   }
 
   /**

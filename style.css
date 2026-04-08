@@ -1223,15 +1223,85 @@ body {
   letter-spacing: 0.05em;
 }
 
-.btn-choose-level {
-  font-size: 0.65rem !important;
-  padding: 0.25rem 0.6rem !important;
-  margin-top: 0.3rem;
-  opacity: 0.7;
+/* Quiz countdown */
+.quiz-countdown {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: rgba(0, 255, 204, 0.85);
+  text-align: center;
+  margin: 0 0 0.3rem;
+  transition: color 0.15s, transform 0.15s;
 }
 
-.btn-choose-level:hover {
+.quiz-countdown.urgent {
+  color: #ff4444;
+  animation: countdown-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+.quiz-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  gap: 0.8rem;
+}
+
+.quiz-bottom-row .hint {
+  margin: 0;
+  flex: 1;
+}
+
+.btn-quiz-skip {
+  font-size: 0.7rem !important;
+  padding: 0.3rem 0.9rem !important;
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+.btn-quiz-skip:hover {
   opacity: 1;
+}
+
+/* Floating damage popup */
+.damage-popup {
+  position: fixed;
+  top: 25%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  font-family: "Orbitron", sans-serif;
+  font-size: 4rem;
+  font-weight: 900;
+  color: #ff2222;
+  text-shadow: 0 0 20px rgba(255, 0, 0, 0.7), 0 0 40px rgba(255, 0, 0, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 200;
+  transition: none;
+}
+
+.damage-popup.show {
+  animation: damage-float 1.4s ease-out forwards;
+}
+
+@keyframes damage-float {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.2);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80px) scale(0.7);
+  }
 }
 
 .hidden {

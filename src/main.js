@@ -53,12 +53,8 @@ ui.setHandlers({
       ui.showPause(true);
     }
   },
+  onQuizSkip: () => game.skipQuiz(),
   onLevelSelect: (levelId, returnTo) => game.switchLevel(levelId, returnTo),
-  onPauseForLevelSelect: () => {
-    if (game.state === "running") {
-      game.state = "paused";
-    }
-  },
 });
 
 game.state = "main_menu";
