@@ -107,8 +107,10 @@ export class UI {
     document.querySelectorAll(".level-card").forEach((card) => {
       card.addEventListener("click", () => {
         const id = card.dataset.level;
-        if (id && this.onLevelSelect) this.onLevelSelect(id);
-        this._closeLevelSelect();
+        if (id && this.onLevelSelect) {
+          this.onLevelSelect(id, this._levelSelectReturnTo);
+        }
+        this.showLevelSelect(false);
       });
     });
   }

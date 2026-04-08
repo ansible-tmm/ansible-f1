@@ -109,6 +109,7 @@ export class Track {
     this.group.add(this.propsGroup);
     this._propSpacing = 14;
     this._propCount = 28;
+    this._propSlots = [];
 
     if (this.theme.scenery === "city") {
       this._cityProps();
@@ -117,6 +118,9 @@ export class Track {
     } else if (this.theme.scenery === "desert") {
       this._desertProps();
     }
+
+    // Total wrap range for props
+    this._propTotalRange = this._propSpacing * this._propCount;
   }
 
   _cityProps() {
@@ -160,21 +164,26 @@ export class Track {
     });
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
+      const slot = new THREE.Group();
+      slot.position.z = z;
+      this.propsGroup.add(slot);
+      this._propSlots.push(slot);
+
       for (const side of [-1, 1]) {
         const x = side * (8 + Math.random() * 5);
         const trunkH = 3 + Math.random() * 2;
         const trunk = new THREE.Mesh(
           new THREE.CylinderGeometry(0.2, 0.35, trunkH, 6), trunkMat
         );
-        trunk.position.set(x, trunkH / 2, z + Math.random() * 4);
-        this.propsGroup.add(trunk);
+        trunk.position.set(x, trunkH / 2, Math.random() * 4);
+        slot.add(trunk);
 
         const crownR = 1.2 + Math.random() * 1;
         const crown = new THREE.Mesh(
           new THREE.SphereGeometry(crownR, 6, 5), leafMat
         );
         crown.position.set(x, trunkH + crownR * 0.5, trunk.position.z);
-        this.propsGroup.add(crown);
+        slot.add(crown);
 
         if (Math.random() < 0.4) {
           const x2 = side * (14 + Math.random() * 4);
@@ -182,13 +191,13 @@ export class Track {
           const t2 = new THREE.Mesh(
             new THREE.CylinderGeometry(0.15, 0.3, h2, 6), trunkMat
           );
-          t2.position.set(x2, h2 / 2, z + 3);
-          this.propsGroup.add(t2);
+          t2.position.set(x2, h2 / 2, 3);
+          slot.add(t2);
           const c2 = new THREE.Mesh(
             new THREE.SphereGeometry(1 + Math.random() * 0.8, 6, 5), leafMat
           );
-          c2.position.set(x2, h2 + 0.5, z + 3);
-          this.propsGroup.add(c2);
+          c2.position.set(x2, h2 + 0.5, 3);
+          slot.add(c2);
         }
       }
     }
@@ -204,17 +213,20 @@ export class Track {
     });
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
+      const slot = new THREE.Group();
+      slot.position.z = z;
+      this.propsGroup.add(slot);
+      this._propSlots.push(slot);
+
       for (const side of [-1, 1]) {
         const x = side * (8 + Math.random() * 6);
         if (Math.random() < 0.6) {
-          // Cactus
           const h = 2 + Math.random() * 3;
           const cactus = new THREE.Mesh(
             new THREE.CylinderGeometry(0.25, 0.3, h, 8), cactusMat
           );
-          cactus.position.set(x, h / 2, z + Math.random() * 3);
-          this.propsGroup.add(cactus);
-          // Arms
+          cactus.position.set(x, h / 2, Math.random() * 3);
+          slot.add(cactus);
           if (h > 3) {
             const armH = 1 + Math.random();
             const arm = new THREE.Mesh(
@@ -222,18 +234,17 @@ export class Track {
             );
             arm.position.set(x + side * 0.5, h * 0.6, cactus.position.z);
             arm.rotation.z = side * -0.8;
-            this.propsGroup.add(arm);
+            slot.add(arm);
           }
         } else {
-          // Rock
           const rw = 0.8 + Math.random() * 1.5;
           const rh = 0.5 + Math.random() * 1;
           const rock = new THREE.Mesh(
             new THREE.DodecahedronGeometry(rw, 0), rockMat
           );
-          rock.position.set(x, rh * 0.3, z + Math.random() * 3);
+          rock.position.set(x, rh * 0.3, Math.random() * 3);
           rock.scale.set(1, rh / rw, 1);
-          this.propsGroup.add(rock);
+          slot.add(rock);
         }
       }
     }
@@ -651,17 +662,28 @@ export class Track {
       }
     }
 
-    if (this.propsGroup) {
-      this.propsGroup.position.z += dz;
-      if (this.propsGroup.position.z > this._propSpacing) {
-        this.propsGroup.position.z -= this._propSpacing;
-      }
-    }
-
     if (this.edgeGroup) {
       this.edgeGroup.position.z += dz;
       if (this.edgeGroup.position.z > this._edgeSpacing) {
         this.edgeGroup.position.z -= this._edgeSpacing;
+      }
+    }
+
+    // Props: slot-based wrapping for forest/desert (individual groups),
+    // group-based for city (simpler shapes that wrap cleanly)
+    if (this._propSlots.length > 0) {
+      const despawn = 20;
+      const range = this._propTotalRange;
+      for (const slot of this._propSlots) {
+        slot.position.z += dz;
+        if (slot.position.z > despawn) {
+          slot.position.z -= range;
+        }
+      }
+    } else if (this.propsGroup) {
+      this.propsGroup.position.z += dz;
+      if (this.propsGroup.position.z > this._propSpacing) {
+        this.propsGroup.position.z -= this._propSpacing;
       }
     }
   }

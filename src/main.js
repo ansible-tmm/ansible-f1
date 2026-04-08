@@ -53,7 +53,7 @@ ui.setHandlers({
       ui.showPause(true);
     }
   },
-  onLevelSelect: (levelId) => game.switchLevel(levelId),
+  onLevelSelect: (levelId, returnTo) => game.switchLevel(levelId, returnTo),
   onPauseForLevelSelect: () => {
     if (game.state === "running") {
       game.state = "paused";

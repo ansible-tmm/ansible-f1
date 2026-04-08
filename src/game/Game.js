@@ -387,7 +387,7 @@ export class Game {
     this.ui.updateMenuBest(getBestScore());
   }
 
-  switchLevel(levelId) {
+  switchLevel(levelId, returnTo = "main_menu") {
     if (!["A", "B", "C"].includes(levelId)) return;
     this.currentLevel = levelId;
 
