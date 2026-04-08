@@ -7,9 +7,9 @@ export const CONFIG = {
   LANE_INDEX: { LEFT: 0, CENTER: 1, RIGHT: 2 },
 
   // Movement
-  BASE_SPEED: 23.5,
+  BASE_SPEED: 28.2,
   /** Units per second²-ish scaling for forward speed over time */
-  SPEED_RAMP: 0.134,
+  SPEED_RAMP: 0.161,
   /** Max multiplier on base speed from ramp + boosts */
   MAX_SPEED_MULT: 2.4,
   LANE_LERP: 8,

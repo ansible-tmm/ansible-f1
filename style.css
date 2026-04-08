@@ -300,6 +300,12 @@ body {
   background-size: 100% 100%;
 }
 
+.swatch-rival {
+  background: linear-gradient(135deg, #ff4422 40%, #ffaa00 100%);
+  clip-path: polygon(10% 30%, 0% 70%, 20% 100%, 80% 100%, 100% 70%, 90% 30%, 70% 0%, 30% 0%);
+  box-shadow: 0 0 6px rgba(255, 100, 0, 0.5);
+}
+
 .swatch-shield {
   background: #9944ff;
   box-shadow: 0 0 8px rgba(180, 100, 255, 0.4);

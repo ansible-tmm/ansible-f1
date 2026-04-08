@@ -15,6 +15,14 @@ function nextId() {
   return _id;
 }
 
+const RIVAL_COLORS = [
+  { livery: 0xff4422, accent: 0xffaa00, emissive: 0x301000, glow: 0xff6600 },
+  { livery: 0xeedd00, accent: 0x222222, emissive: 0x302800, glow: 0xffee44 },
+  { livery: 0xcc44ff, accent: 0x22ffaa, emissive: 0x200030, glow: 0xbb66ff },
+  { livery: 0x22dd44, accent: 0xffffff, emissive: 0x002810, glow: 0x44ff66 },
+  { livery: 0xff66aa, accent: 0x220022, emissive: 0x300020, glow: 0xff88cc },
+];
+
 export class Spawner {
   constructor(scene) {
     this.scene = scene;
@@ -22,17 +30,24 @@ export class Spawner {
     this.obstacles = [];
     /** @type {any[]} */
     this.pickups = [];
+    /** @type {any[]} */
+    this.rivals = [];
     this.obstacleTimer = 0;
     this.pickupTimer = 1.2;
+    this.rivalTimer = 0;
+    this._nextRivalColorIdx = 0;
   }
 
   reset() {
     for (const e of this.obstacles) this._removeEntity(e);
     for (const e of this.pickups) this._removeEntity(e);
+    for (const e of this.rivals) this._removeEntity(e);
     this.obstacles.length = 0;
     this.pickups.length = 0;
+    this.rivals.length = 0;
     this.obstacleTimer = 0;
     this.pickupTimer = 1.2;
+    this.rivalTimer = 0;
   }
 
   _removeEntity(e) {
@@ -97,10 +112,21 @@ export class Spawner {
     this._animateObstacles(dt);
     this._animatePickups(dt);
 
+    // Rivals: spawn, move, AI
+    this.rivalTimer += dt * timeScale;
+    if (this.rivals.length === 0 && this.rivalTimer > 6 && elapsedRunSeconds > 4) {
+      this.rivalTimer = 0;
+      this._spawnRival();
+    }
+    this._updateRivals(dz, dt, worldSpeed);
+
     for (const e of this.obstacles) {
       if (e.active) this._syncBox(e);
     }
     for (const e of this.pickups) {
+      if (e.active) this._syncBox(e);
+    }
+    for (const e of this.rivals) {
       if (e.active) this._syncBox(e);
     }
   }
@@ -458,6 +484,247 @@ export class Spawner {
     }
   }
 
+  // ─── Rival cars ───
+
+  _spawnRival() {
+    const lane = Math.floor(Math.random() * 3);
+    const z = CONFIG.SPAWN_Z - Math.random() * 10;
+    const colors = RIVAL_COLORS[this._nextRivalColorIdx % RIVAL_COLORS.length];
+    this._nextRivalColorIdx++;
+    const mesh = this._makeRivalMesh(colors);
+    mesh.position.set(CONFIG.LANES[lane], CONFIG.PLAYER_Y, z);
+    this.scene.add(mesh);
+    const e = {
+      id: nextId(),
+      kind: "rival",
+      subtype: "RIVAL",
+      lane,
+      targetLane: lane,
+      mesh,
+      z,
+      active: true,
+      worldBox: new THREE.Box3(),
+      hit: { w: 0.7, h: 0.6, d: 2.0 },
+      aiTimer: 0,
+    };
+    this._syncBox(e);
+    this.rivals.push(e);
+  }
+
+  _updateRivals(dz, dt, worldSpeed) {
+    const rivalDz = dz * 0.8;
+    for (let i = this.rivals.length - 1; i >= 0; i--) {
+      const r = this.rivals[i];
+      if (!r.active) continue;
+
+      r.mesh.position.z += dz - rivalDz;
+      r.z = r.mesh.position.z;
+
+      // Smooth lane lerp
+      const tx = CONFIG.LANES[r.targetLane];
+      r.mesh.position.x = THREE.MathUtils.lerp(r.mesh.position.x, tx, 1 - Math.exp(-6 * dt));
+      r.lane = r.targetLane;
+
+      // Simple AI: look ahead for obstacles, dodge them
+      r.aiTimer -= dt;
+      if (r.aiTimer <= 0) {
+        r.aiTimer = 0.4 + Math.random() * 0.3;
+        this._rivalDodge(r);
+      }
+
+      // Bob like pickups
+      r.mesh.position.y = CONFIG.PLAYER_Y + Math.sin(performance.now() * 0.003 + r.id) * 0.03;
+
+      if (r.mesh.position.z > CONFIG.DESPAWN_Z) {
+        r.active = false;
+        this.rivals.splice(i, 1);
+        this._removeEntity(r);
+      }
+    }
+  }
+
+  _rivalDodge(r) {
+    const lookAhead = 30;
+    const blocked = [false, false, false];
+    for (const o of this.obstacles) {
+      if (!o.active) continue;
+      const dz = o.mesh.position.z - r.mesh.position.z;
+      if (dz > -lookAhead && dz < 0) {
+        blocked[o.lane] = true;
+      }
+    }
+    if (!blocked[r.targetLane]) return;
+    const candidates = [0, 1, 2].filter((l) => !blocked[l]);
+    if (candidates.length > 0) {
+      // Prefer adjacent lanes
+      const adjacent = candidates.filter((l) => Math.abs(l - r.targetLane) === 1);
+      r.targetLane = adjacent.length > 0
+        ? adjacent[Math.floor(Math.random() * adjacent.length)]
+        : candidates[Math.floor(Math.random() * candidates.length)];
+    }
+  }
+
+  explodeRival(e) {
+    if (!e || !e.mesh) return;
+    const pos = e.mesh.position.clone();
+    const parts = [];
+    e.mesh.traverse((c) => {
+      if (c.isMesh) parts.push(c);
+    });
+
+    // Detach parts and scatter them
+    const debrisGroup = new THREE.Group();
+    debrisGroup.position.copy(pos);
+    this.scene.add(debrisGroup);
+
+    for (const part of parts) {
+      const p = part.clone();
+      p.position.set(
+        (Math.random() - 0.5) * 0.5,
+        Math.random() * 0.3,
+        (Math.random() - 0.5) * 0.5
+      );
+      debrisGroup.add(p);
+    }
+
+    // Animate debris flying outward
+    const velocities = [];
+    for (let i = 0; i < debrisGroup.children.length; i++) {
+      velocities.push(new THREE.Vector3(
+        (Math.random() - 0.5) * 12,
+        3 + Math.random() * 8,
+        (Math.random() - 0.5) * 10
+      ));
+    }
+
+    let elapsed = 0;
+    const animate = () => {
+      elapsed += 0.016;
+      if (elapsed > 1.2) {
+        this.scene.remove(debrisGroup);
+        debrisGroup.traverse((c) => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach((m) => m.dispose());
+            else c.material.dispose();
+          }
+        });
+        return;
+      }
+      const children = debrisGroup.children;
+      for (let i = 0; i < children.length; i++) {
+        const v = velocities[i];
+        if (!v) continue;
+        children[i].position.x += v.x * 0.016;
+        children[i].position.y += v.y * 0.016;
+        children[i].position.z += v.z * 0.016;
+        v.y -= 15 * 0.016; // gravity
+        children[i].rotation.x += 5 * 0.016;
+        children[i].rotation.z += 3 * 0.016;
+      }
+      const fade = 1 - elapsed / 1.2;
+      debrisGroup.traverse((c) => {
+        if (c.isMesh && c.material && c.material.opacity !== undefined) {
+          c.material.transparent = true;
+          c.material.opacity = fade;
+        }
+      });
+      requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+
+    // Remove the original rival
+    e.active = false;
+    const idx = this.rivals.indexOf(e);
+    if (idx >= 0) this.rivals.splice(idx, 1);
+    this._removeEntity(e);
+  }
+
+  _makeRivalMesh(colors) {
+    const g = new THREE.Group();
+
+    const livery = new THREE.MeshStandardMaterial({
+      color: colors.livery, metalness: 0.45, roughness: 0.38,
+      emissive: colors.emissive, emissiveIntensity: 0.35,
+    });
+    const carbon = new THREE.MeshStandardMaterial({
+      color: 0x1a1a22, metalness: 0.55, roughness: 0.42,
+      emissive: 0x050508, emissiveIntensity: 0.15,
+    });
+    const accent = new THREE.MeshStandardMaterial({
+      color: colors.accent, metalness: 0.35, roughness: 0.45,
+      emissive: colors.emissive, emissiveIntensity: 0.35,
+    });
+    const rubber = new THREE.MeshStandardMaterial({
+      color: 0x0d0d0d, metalness: 0.15, roughness: 0.92,
+    });
+    const rim = new THREE.MeshStandardMaterial({
+      color: 0x88aacc, metalness: 0.75, roughness: 0.28,
+    });
+
+    // Front wing
+    const fw1 = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.045, 0.38), carbon.clone());
+    fw1.position.set(0, 0.11, -1.02); g.add(fw1);
+    const fw2 = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.035, 0.22), carbon.clone());
+    fw2.position.set(0, 0.07, -1.14); g.add(fw2);
+    const epL = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.26, 0.32), accent.clone());
+    epL.position.set(-1.06, 0.16, -1.02); g.add(epL);
+    const epR = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.26, 0.32), accent.clone());
+    epR.position.set(1.06, 0.16, -1.02); g.add(epR);
+
+    // Nose
+    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.32, 0.55, 10), livery.clone());
+    nose.rotation.x = Math.PI / 2; nose.position.set(0, 0.2, -1.32); g.add(nose);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), livery.clone());
+    tip.rotation.x = Math.PI / 2; tip.position.set(0, 0.2, -1.72); g.add(tip);
+
+    // Cockpit
+    const cockpit = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.34, 0.62), livery.clone());
+    cockpit.position.set(0, 0.38, -0.38); g.add(cockpit);
+    const airbox = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.12, 0.2), carbon.clone());
+    airbox.position.set(0, 0.52, -0.12); g.add(airbox);
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.025, 6, 12, Math.PI * 0.92), carbon.clone());
+    halo.rotation.y = Math.PI / 2; halo.rotation.x = Math.PI / 2;
+    halo.position.set(0, 0.58, -0.28); g.add(halo);
+
+    // Sidepods
+    const podGeo = new THREE.BoxGeometry(0.38, 0.22, 0.72);
+    const pL = new THREE.Mesh(podGeo, livery.clone()); pL.position.set(-0.64, 0.24, 0.08); g.add(pL);
+    const pR = new THREE.Mesh(podGeo.clone(), livery.clone()); pR.position.set(0.64, 0.24, 0.08); g.add(pR);
+
+    // Engine cover
+    const cover = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.26, 0.82), livery.clone());
+    cover.position.set(0, 0.36, 0.42); cover.rotation.x = -0.08; g.add(cover);
+
+    // Rear wing
+    const rw1 = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.04, 0.24), carbon.clone());
+    rw1.position.set(0, 0.44, 0.66); g.add(rw1);
+    const rw2 = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.035, 0.18), carbon.clone());
+    rw2.position.set(0, 0.58, 0.62); g.add(rw2);
+    const rwL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.48), accent.clone());
+    rwL.position.set(-0.9, 0.5, 0.64); g.add(rwL);
+    const rwR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.48), accent.clone());
+    rwR.position.set(0.9, 0.5, 0.64); g.add(rwR);
+    const rain = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 0.05), accent.clone());
+    rain.position.set(0, 0.38, 0.82); g.add(rain);
+
+    // Wheels
+    const addWheel = (x, z) => {
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.16, 18), rubber.clone());
+      tire.rotation.z = Math.PI / 2; tire.position.set(x, 0.21, z); g.add(tire);
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 12), rim.clone());
+      disc.rotation.z = Math.PI / 2; disc.position.set(x, 0.21, z); g.add(disc);
+    };
+    addWheel(-0.78, -0.92); addWheel(0.78, -0.92);
+    addWheel(-0.78, 0.38); addWheel(0.78, 0.38);
+
+    const glow = new THREE.PointLight(colors.glow, 0.4, 7);
+    glow.position.set(0, 0.42, 0.72); g.add(glow);
+
+    livery.dispose(); carbon.dispose(); accent.dispose(); rubber.dispose(); rim.dispose();
+    return g;
+  }
+
   /**
    * Pull pickups toward player X when magnet active
    */
@@ -471,13 +738,13 @@ export class Spawner {
   }
 
   getAllCollidable() {
-    return [...this.obstacles, ...this.pickups].filter((e) => e.active);
+    return [...this.obstacles, ...this.pickups, ...this.rivals].filter((e) => e.active);
   }
 
   removeEntity(e) {
     if (!e) return;
     e.active = false;
-    const list = e.kind === "obstacle" ? this.obstacles : this.pickups;
+    const list = e.kind === "obstacle" ? this.obstacles : e.kind === "rival" ? this.rivals : this.pickups;
     const i = list.indexOf(e);
     if (i >= 0) list.splice(i, 1);
     this._removeEntity(e);

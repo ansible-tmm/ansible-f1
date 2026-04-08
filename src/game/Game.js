@@ -741,12 +741,13 @@ export class Game {
     const entities = this.spawner.getAllCollidable();
     const hits = this.collision.testEntities(entities);
     const obstacleHits = hits.filter((h) => h.entity.kind === "obstacle");
+    const rivalHits = hits.filter((h) => h.entity.kind === "rival");
     const pickupHits = hits.filter((h) => h.entity.kind === "pickup");
 
-    // Process one collision per frame: obstacles take priority, and skip
-    // pickups while recovery prompt is open (prevents boost-quiz getting stuck).
     if (obstacleHits.length && !this.recoveryPrompt) {
       this._onHitObstacle(obstacleHits[0].entity);
+    } else if (rivalHits.length && !this.recoveryPrompt) {
+      this._onHitRival(rivalHits[0].entity);
     } else if (pickupHits.length && !this.recoveryPrompt) {
       this._onPickup(pickupHits[0].entity);
     }
@@ -790,6 +791,42 @@ export class Game {
     this.shakeAmp = 0.35;
     this.ui.setStatus(
       `Obstacle hit! −${dmg} health (Outage). You’re at ${Math.max(0, Math.floor(this.health))}.`,
+      CONFIG.STATUS_HIT_MS
+    );
+
+    if (this.health <= 0) {
+      this._gameOver();
+      return;
+    }
+
+    this.recoveryPrompt = true;
+    const showTip = !hasSeenRecoveryTip();
+    this.ui.showRecovery(true, showTip, () => this.onRecoveryNo());
+  }
+
+  _onHitRival(e) {
+    this.spawner.explodeRival(e);
+    if (this.shield) {
+      this.shield = false;
+      this.player.setShieldActive(false);
+      play(SFX.SHIELD_HIT, 0.7);
+      this.ui.setStatus(
+        "Rival car hit — shield absorbed the crash!",
+        CONFIG.STATUS_HIT_MS
+      );
+      return;
+    }
+
+    const dmg = CONFIG.OBSTACLE_DAMAGE;
+    this.health -= dmg;
+    this.obstaclesHit += 1;
+    play(SFX.OBSTACLE_HIT, 0.8);
+    this.ui.flashDamage();
+    this.ui.shake();
+    this.shakeUntil = performance.now() + 200;
+    this.shakeAmp = 0.35;
+    this.ui.setStatus(
+      `Rival car crash! −${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`,
       CONFIG.STATUS_HIT_MS
     );
 
