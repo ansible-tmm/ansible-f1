@@ -107,6 +107,7 @@ export class Game {
     this._bindKeys();
     this._bindQuizUi();
     this._bindBillboardInput();
+    this._bindTouch();
     this._quizBusy = false;
     /** @type {'question'|'result'} */
     this._quizPhase = "question";
@@ -205,6 +206,56 @@ export class Game {
       }
       this._pointerDown = null;
     });
+  }
+
+  _bindTouch() {
+    if (!("ontouchstart" in window)) return;
+
+    const canvas = this.renderer.domElement;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    canvas.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touchStartTime = performance.now();
+    }, { passive: true });
+
+    canvas.addEventListener("touchend", (e) => {
+      if (e.changedTouches.length !== 1) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      const elapsed = performance.now() - touchStartTime;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Swipe detection: horizontal swipe > 30px and faster than 300ms
+      if (dist > 30 && Math.abs(dx) > Math.abs(dy) * 1.5 && elapsed < 300) {
+        if (this.state === "running" && !this.recoveryPrompt) {
+          if (dx < 0) this.player.moveLeft();
+          else this.player.moveRight();
+        }
+        e.preventDefault();
+        return;
+      }
+
+      // Tap detection: short distance, quick tap
+      if (dist < 15 && elapsed < 250) {
+        if (this.state === "running" && !this.recoveryPrompt) {
+          const half = window.innerWidth / 2;
+          if (t.clientX < half) this.player.moveLeft();
+          else this.player.moveRight();
+        } else if (this.state === "running" && this.recoveryPrompt) {
+          // ignore taps during recovery
+        } else if (this.state === "paused") {
+          this.state = "running";
+          this.ui.showPause(false);
+        }
+      }
+    }, { passive: false });
   }
 
   _checkBillboardHover() {
@@ -793,7 +844,7 @@ export class Game {
   }
 
   _applyPickupSpeedUp(type, count) {
-    this.pickupSpeedMult += 0.10;
+    this.pickupSpeedMult += 0.15;
     const pct = Math.round((this.pickupSpeedMult - 1) * 100);
     this.ui.setStatus(
       `${count} ${type}s collected! Speed +10% (total +${pct}%)`,

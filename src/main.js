@@ -47,6 +47,12 @@ ui.setHandlers({
   onRecoveryNo: () => game.onRecoveryNo(),
   onUnstick: () => game.forceUnstick(),
   onBillboardClose: () => game.closeBillboard(),
+  onTouchPause: () => {
+    if (game.state === "running") {
+      game.state = "paused";
+      ui.showPause(true);
+    }
+  },
 });
 
 game.state = "main_menu";

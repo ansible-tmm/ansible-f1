@@ -975,6 +975,42 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* Touch-only pause button */
+.touch-pause {
+  display: none;
+  position: absolute;
+  top: 0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  border-radius: 50%;
+  background: rgba(5, 10, 20, 0.6);
+  color: rgba(200, 220, 255, 0.7);
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(6px);
+  padding: 0;
+  line-height: 1;
+  z-index: 5;
+}
+
+.touch-pause:active {
+  background: rgba(10, 25, 40, 0.85);
+  border-color: rgba(0, 255, 204, 0.5);
+}
+
+@media (pointer: coarse) {
+  .touch-pause {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 /* Billboard demo overlay */
 #billboard-overlay {
   background: rgba(0, 0, 0, 0.88);

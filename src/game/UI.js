@@ -89,6 +89,7 @@ export class UI {
     on("recovery-no", () => this.onRecoveryNo && this.onRecoveryNo());
     on("btn-unstick", () => this.onUnstick && this.onUnstick());
     on("btn-billboard-close", () => this.onBillboardClose && this.onBillboardClose());
+    on("btn-touch-pause", () => this.onTouchPause && this.onTouchPause());
   }
 
   setHandlers(h) {
@@ -101,6 +102,7 @@ export class UI {
     this.onRecoveryNo = h.onRecoveryNo;
     this.onUnstick = h.onUnstick;
     this.onBillboardClose = h.onBillboardClose;
+    this.onTouchPause = h.onTouchPause;
   }
 
   showMainMenu(visible) {
