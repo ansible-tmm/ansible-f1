@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Game } from "./game/Game.js";
 import { UI } from "./game/UI.js";
-import { getBestScore } from "./utils/storage.js";
+import { getBestScore, loadAchievements, ACHIEVEMENT_DEFS } from "./utils/storage.js";
 import { startBgm, toggleMusicMute, toggleSfxMute } from "./utils/audio.js";
 import { loadQuestions } from "./data/questions.js";
 
@@ -79,6 +79,37 @@ if (btnSfx) {
     const muted = toggleSfxMute();
     btnSfx.classList.toggle("muted", muted);
     btnSfx.title = muted ? "SFX off" : "Toggle sound effects";
+  });
+}
+
+// Quiz toggle
+const quizToggle = document.getElementById("quiz-toggle");
+if (quizToggle) {
+  quizToggle.addEventListener("change", () => {
+    game.quizEnabled = quizToggle.checked;
+  });
+}
+
+// Achievements menu
+const btnAch = document.getElementById("btn-achievements");
+const btnAchBack = document.getElementById("btn-ach-back");
+const menuAch = document.getElementById("menu-achievements");
+if (btnAch) {
+  btnAch.addEventListener("click", () => {
+    ui.showAchievementsMenu(ACHIEVEMENT_DEFS, loadAchievements());
+    document.getElementById("btn-start").classList.add("hidden");
+    document.getElementById("btn-choose-level-menu").classList.add("hidden");
+    document.getElementById("btn-highscores").classList.add("hidden");
+    btnAch.classList.add("hidden");
+  });
+}
+if (btnAchBack && menuAch) {
+  btnAchBack.addEventListener("click", () => {
+    menuAch.classList.add("hidden");
+    document.getElementById("btn-start").classList.remove("hidden");
+    document.getElementById("btn-choose-level-menu").classList.remove("hidden");
+    document.getElementById("btn-highscores").classList.remove("hidden");
+    btnAch.classList.remove("hidden");
   });
 }
 

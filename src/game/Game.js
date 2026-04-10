@@ -15,6 +15,9 @@ import {
   addLeaderboardEntry,
   getLastName,
   setLastName,
+  loadAchievements,
+  unlockAchievement,
+  ACHIEVEMENT_DEFS,
 } from "../utils/storage.js";
 import { preload, play, startLoop, stopLoop, startBgm } from "../utils/audio.js";
 
@@ -88,6 +91,24 @@ export class Game {
 
     this.recoveryPrompt = false;
     this.timeScale = 1;
+
+    // Combo multiplier
+    this.comboCount = 0;
+    this.comboTimer = 0;
+
+    // Near-miss tracking
+    this._nearMissChecked = new Set();
+
+    // Quiz toggle
+    this.quizEnabled = true;
+
+    // Achievements
+    this._achievements = loadAchievements();
+    this._runBoostCount = 0;
+    this._runMaxCombo = 0;
+
+    // Speed tier FOV
+    this._baseFov = 58;
 
     this.cameraBase = new THREE.Vector3(0, 5.2, 12);
     this.shakeUntil = 0;
@@ -404,6 +425,11 @@ export class Game {
     this.pickupSpeedMult = 1;
     this.recoveryPrompt = false;
     this.timeScale = 1;
+    this.comboCount = 0;
+    this.comboTimer = 0;
+    this._nearMissChecked.clear();
+    this._runBoostCount = 0;
+    this._runMaxCombo = 0;
     this.player.targetLaneIndex = 1;
     this.player.laneIndex = 1;
     this.player.mesh.position.x = CONFIG.LANES[1];
@@ -594,9 +620,16 @@ export class Game {
         this.score += CONFIG.BOOST_QUIZ_CORRECT * this._flowMult();
         this.sessionCorrect += 1;
         addTotalCorrectAnswers(1);
-        this.boostUntil = performance.now() + CONFIG.BOOST_DURATION * 1000;
+        const now = performance.now();
+        const base = now < this.boostUntil ? this.boostUntil : now;
+        this.boostUntil = base + CONFIG.BOOST_DURATION * 1000;
+        this._runBoostCount += 1;
         play(SFX.BOOST_WHOOSH, 0.85);
-        this.ui.setStatus("Correct: Speed Boost", CONFIG.STATUS_MESSAGE_MS);
+        const stacking = base > now;
+        this.ui.setStatus(
+          stacking ? "Boost extended! Keep it going!" : "Correct: Speed Boost",
+          CONFIG.STATUS_MESSAGE_MS
+        );
         this._checkStreakAutomation();
       } else {
         this.streak = 0;
@@ -905,6 +938,16 @@ export class Game {
 
     this.player.update(effDt);
 
+    // Combo timer countdown
+    if (this.comboTimer > 0) {
+      this.comboTimer -= effDt;
+      if (this.comboTimer <= 0) {
+        this.comboCount = 0;
+        this.comboTimer = 0;
+        this.ui.showCombo(0);
+      }
+    }
+
     const entities = this.spawner.getAllCollidable();
     const hits = this.collision.testEntities(entities);
     const obstacleHits = hits.filter((h) => h.entity.kind === "obstacle");
@@ -918,6 +961,19 @@ export class Game {
     } else if (pickupHits.length && !this.recoveryPrompt) {
       this._onPickup(pickupHits[0].entity);
     }
+
+    // Near-miss detection
+    this._checkNearMisses(entities);
+
+    // Achievement check (periodic, not every frame)
+    this._achievementClock = (this._achievementClock || 0) + effDt;
+    if (this._achievementClock > 1) {
+      this._achievementClock = 0;
+      this._checkAchievements();
+    }
+
+    // Speed tier FOV
+    this._updateSpeedFov(ws);
 
     // Re-apply curve offsets for rendering
     this._applyCurve();
@@ -939,6 +995,8 @@ export class Game {
       mbState,
       mbProgress,
       braking: this.braking,
+      comboCount: this.comboCount,
+      comboTimer: this.comboTimer,
     });
   }
 
@@ -975,12 +1033,14 @@ export class Game {
       return;
     }
 
-    this.recoveryPrompt = true;
-    const showTip = !hasSeenRecoveryTip();
-    this.ui.showRecovery(true, showTip, () => {
-      play(SFX.WRONG, 0.8);
-      this.onRecoveryNo();
-    });
+    if (this.quizEnabled) {
+      this.recoveryPrompt = true;
+      const showTip = !hasSeenRecoveryTip();
+      this.ui.showRecovery(true, showTip, () => {
+        play(SFX.WRONG, 0.8);
+        this.onRecoveryNo();
+      });
+    }
   }
 
   _onHitRival(e) {
@@ -1015,12 +1075,14 @@ export class Game {
       return;
     }
 
-    this.recoveryPrompt = true;
-    const showTip = !hasSeenRecoveryTip();
-    this.ui.showRecovery(true, showTip, () => {
-      play(SFX.WRONG, 0.8);
-      this.onRecoveryNo();
-    });
+    if (this.quizEnabled) {
+      this.recoveryPrompt = true;
+      const showTip = !hasSeenRecoveryTip();
+      this.ui.showRecovery(true, showTip, () => {
+        play(SFX.WRONG, 0.8);
+        this.onRecoveryNo();
+      });
+    }
   }
 
   _onPickup(e) {
@@ -1030,23 +1092,44 @@ export class Game {
 
     if (t !== "POLICY_SHIELD") play(SFX.PICKUP, 0.6);
 
+    // Combo multiplier
+    const isScoring = t === "PLAYBOOK" || t === "CERTIFIED_COLLECTION";
+    let comboMult = 1;
+    if (isScoring) {
+      if (this.comboTimer > 0) {
+        this.comboCount += 1;
+      } else {
+        this.comboCount = 1;
+      }
+      this.comboTimer = CONFIG.COMBO_WINDOW;
+      comboMult = this.comboCount;
+      if (this.comboCount > this._runMaxCombo) this._runMaxCombo = this.comboCount;
+      if (this.comboCount >= 2) {
+        this.ui.showCombo(this.comboCount);
+      }
+    }
+
     if (t === "PLAYBOOK") {
-      const pts = Math.floor(CONFIG.PICKUP_SCORE.PLAYBOOK * this._flowMult());
+      const base = Math.floor(CONFIG.PICKUP_SCORE.PLAYBOOK * this._flowMult());
+      const pts = base * comboMult;
       this.score += pts;
       this.playbookCount += 1;
       this.playbookPts += pts;
-      this.ui.showPickupPopup(`Playbook +${pts}`);
+      const label = comboMult > 1 ? `Playbook +${pts} (x${comboMult})` : `Playbook +${pts}`;
+      this.ui.showPickupPopup(label);
       if (this.playbookCount % 3 === 0) {
         this._applyPickupSpeedUp("Playbook", this.playbookCount);
       } else {
         this.ui.setStatus(`Pickup: Playbook — +${pts} score`, CONFIG.STATUS_HIT_MS);
       }
     } else if (t === "CERTIFIED_COLLECTION") {
-      const pts = Math.floor(CONFIG.PICKUP_SCORE.COLLECTION * this._flowMult());
+      const base = Math.floor(CONFIG.PICKUP_SCORE.COLLECTION * this._flowMult());
+      const pts = base * comboMult;
       this.score += pts;
       this.collectionCount += 1;
       this.collectionPts += pts;
-      this.ui.showPickupPopup(`Collection +${pts}`);
+      const label = comboMult > 1 ? `Collection +${pts} (x${comboMult})` : `Collection +${pts}`;
+      this.ui.showPickupPopup(label);
       if (this.collectionCount % 3 === 0) {
         this._applyPickupSpeedUp("Collection", this.collectionCount);
       } else {
@@ -1062,7 +1145,17 @@ export class Game {
         CONFIG.STATUS_HIT_MS
       );
     } else if (t === "BOOST_TOKEN") {
-      this._openBoostQuiz();
+      if (this.quizEnabled) {
+        this._openBoostQuiz();
+      } else {
+        const now = performance.now();
+        const base = now < this.boostUntil ? this.boostUntil : now;
+        this.boostUntil = base + CONFIG.BOOST_DURATION * 1000;
+        this._runBoostCount += 1;
+        play(SFX.BOOST_WHOOSH, 0.85);
+        this.ui.showPickupPopup("Speed Boost!");
+        this.ui.setStatus("Boost token: Speed Boost!", CONFIG.STATUS_MESSAGE_MS);
+      }
     }
   }
 
@@ -1073,6 +1166,75 @@ export class Game {
       `${count} ${type}s collected! Speed +15% (total +${pct}%)`,
       CONFIG.STATUS_HIT_MS
     );
+  }
+
+  // Near-miss detection
+  _nearMissCount = 0;
+
+  _checkNearMisses(entities) {
+    const px = this.player.mesh.position.x;
+    const pz = this.player.mesh.position.z;
+    const margin = CONFIG.NEAR_MISS_MARGIN;
+
+    for (const e of entities) {
+      if (e.kind !== "obstacle" && e.kind !== "rival") continue;
+      if (!e.active) continue;
+      const eid = e.mesh.uuid;
+      if (this._nearMissChecked.has(eid)) continue;
+
+      const ez = e.mesh.position.z;
+      // Entity just passed the player (moved behind)
+      if (ez > pz + 1 && ez < pz + 4) {
+        const dx = Math.abs(e.mesh.position.x - px);
+        if (dx < margin + 1.2 && dx > 0.3) {
+          this._nearMissChecked.add(eid);
+          this._nearMissCount += 1;
+          this.score += CONFIG.NEAR_MISS_BONUS;
+          this.ui.showPickupPopup(`CLOSE CALL! +${CONFIG.NEAR_MISS_BONUS}`);
+          this._checkAchievements();
+        } else {
+          // Mark as checked once past to avoid repeat checks
+          if (ez > pz + 3) this._nearMissChecked.add(eid);
+        }
+      }
+    }
+  }
+
+  // Achievement checking
+  _checkAchievements() {
+    const checks = [
+      { id: "score_10k", test: () => this.score >= 10000 },
+      { id: "score_50k", test: () => this.score >= 50000 },
+      { id: "combo_5", test: () => this._runMaxCombo >= 5 },
+      { id: "combo_10", test: () => this._runMaxCombo >= 10 },
+      { id: "streak_5", test: () => this.streak >= 5 },
+      { id: "boost_5", test: () => this._runBoostCount >= 5 },
+      { id: "playbooks_20", test: () => this.playbookCount >= 20 },
+      { id: "collections_15", test: () => this.collectionCount >= 15 },
+      { id: "survive_60", test: () => this.runTime >= 60 },
+      { id: "survive_120", test: () => this.runTime >= 120 },
+      { id: "near_miss_10", test: () => this._nearMissCount >= 10 },
+      { id: "no_damage", test: () => this.score >= 5000 && this.obstaclesHit === 0 },
+    ];
+    for (const c of checks) {
+      if (this._achievements[c.id]) continue;
+      if (c.test()) {
+        const unlocked = unlockAchievement(c.id);
+        if (unlocked) {
+          this._achievements[c.id] = Date.now();
+          const def = ACHIEVEMENT_DEFS.find((d) => d.id === c.id);
+          if (def) this.ui.showAchievement(def.name, def.desc);
+        }
+      }
+    }
+  }
+
+  // Speed tier FOV
+  _updateSpeedFov(ws) {
+    const ratio = ws / CONFIG.BASE_SPEED;
+    const targetFov = this._baseFov + Math.min(12, (ratio - 1) * 10);
+    this.camera.fov += (targetFov - this.camera.fov) * 0.05;
+    this.camera.updateProjectionMatrix();
   }
 
   _updateBillboardCamera(dt) {

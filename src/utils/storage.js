@@ -5,6 +5,7 @@ const KEYS = {
   RECOVERY_TIP: "builtToAutomate_recoveryTipSeen",
   LEADERBOARD: "builtToAutomate_leaderboard",
   LAST_NAME: "builtToAutomate_lastName",
+  ACHIEVEMENTS: "builtToAutomate_achievements",
 };
 
 function readNumber(key, fallback = 0) {
@@ -114,4 +115,41 @@ export function setLastName(name) {
   try {
     localStorage.setItem(KEYS.LAST_NAME, name);
   } catch { /* ignore */ }
+}
+
+// --- Achievements ---
+
+export const ACHIEVEMENT_DEFS = [
+  { id: "score_10k", name: "10K Club", desc: "Score 10,000 in a single run" },
+  { id: "score_50k", name: "50K Legend", desc: "Score 50,000 in a single run" },
+  { id: "combo_5", name: "Combo x5", desc: "Reach a 5x pickup combo" },
+  { id: "combo_10", name: "Combo x10", desc: "Reach a 10x pickup combo" },
+  { id: "streak_5", name: "Quiz Master", desc: "5 correct quiz answers in a row" },
+  { id: "boost_5", name: "Boost Hog", desc: "Use 5 boosts in one run" },
+  { id: "playbooks_20", name: "Bookworm", desc: "Collect 20 playbooks in one run" },
+  { id: "collections_15", name: "Curator", desc: "Collect 15 collections in one run" },
+  { id: "survive_60", name: "Endurance", desc: "Survive 60 seconds" },
+  { id: "survive_120", name: "Iron Will", desc: "Survive 120 seconds" },
+  { id: "near_miss_10", name: "Daredevil", desc: "10 near-misses in one run" },
+  { id: "no_damage", name: "Untouchable", desc: "Score 5,000+ without taking damage" },
+];
+
+export function loadAchievements() {
+  try {
+    const raw = localStorage.getItem(KEYS.ACHIEVEMENTS);
+    if (!raw) return {};
+    return JSON.parse(raw) || {};
+  } catch {
+    return {};
+  }
+}
+
+export function unlockAchievement(id) {
+  const all = loadAchievements();
+  if (all[id]) return false;
+  all[id] = Date.now();
+  try {
+    localStorage.setItem(KEYS.ACHIEVEMENTS, JSON.stringify(all));
+  } catch { /* ignore */ }
+  return true;
 }

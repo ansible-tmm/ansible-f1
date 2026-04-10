@@ -70,6 +70,12 @@ export class UI {
 
       attractScores: document.getElementById("attract-scores"),
       attractScoresList: document.getElementById("attract-scores-list"),
+
+      comboDisplay: document.getElementById("combo-display"),
+      achievementPopup: document.getElementById("achievement-popup"),
+      quizToggle: document.getElementById("quiz-toggle"),
+      menuAchievements: document.getElementById("menu-achievements"),
+      achievementsGrid: document.getElementById("achievements-grid"),
     };
 
     this._statusTimer = null;
@@ -245,6 +251,49 @@ export class UI {
     void el.offsetWidth;
     el.classList.add("show");
     setTimeout(() => el.classList.remove("show"), 1700);
+  }
+
+  showCombo(count) {
+    const el = this.el.comboDisplay;
+    if (!el) return;
+    if (count < 2) {
+      el.classList.add("hidden");
+      el.classList.remove("active");
+      return;
+    }
+    el.textContent = `COMBO x${count}`;
+    el.classList.remove("hidden", "active");
+    void el.offsetWidth;
+    el.classList.add("active");
+  }
+
+  showAchievement(name, desc) {
+    const el = this.el.achievementPopup;
+    if (!el) return;
+    el.classList.remove("hidden", "show");
+    el.innerHTML = `<div class="ach-title">Achievement Unlocked</div><div class="ach-name">${name}</div><div class="ach-desc">${desc}</div>`;
+    void el.offsetWidth;
+    el.classList.add("show");
+    clearTimeout(this._achTimer);
+    this._achTimer = setTimeout(() => {
+      el.classList.remove("show");
+      el.classList.add("hidden");
+    }, 4000);
+  }
+
+  showAchievementsMenu(defs, unlocked) {
+    const grid = this.el.achievementsGrid;
+    const panel = this.el.menuAchievements;
+    if (!grid || !panel) return;
+    grid.innerHTML = "";
+    for (const d of defs) {
+      const isUnlocked = !!unlocked[d.id];
+      const card = document.createElement("div");
+      card.className = `ach-card ${isUnlocked ? "unlocked" : "locked"}`;
+      card.innerHTML = `<div class="ach-card-name">${isUnlocked ? d.name : "???"}</div><div class="ach-card-desc">${d.desc}</div>`;
+      grid.appendChild(card);
+    }
+    panel.classList.remove("hidden");
   }
 
   /**

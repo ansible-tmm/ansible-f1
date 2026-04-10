@@ -47,6 +47,8 @@
       <div id="brake-vignette" class="brake-vignette" aria-hidden="true"></div>
       <div id="damage-popup" class="damage-popup" aria-hidden="true"></div>
       <div id="pickup-popup" class="pickup-popup" aria-hidden="true"></div>
+      <div id="combo-display" class="combo-display hidden" aria-hidden="true"></div>
+      <div id="achievement-popup" class="achievement-popup hidden" aria-hidden="true"></div>
 
       <div id="hud" class="hud hidden">
         <div class="hud-left">
@@ -109,6 +111,11 @@
               <span class="swatch swatch-flow" aria-hidden="true">⚡</span>
               <span><strong>Automation Flow</strong> — 3 correct answers in a row triggers 8s of 1.2× score + pickup magnet</span>
             </div>
+            <div class="legend-divider"></div>
+            <label class="legend-row quiz-toggle-row">
+              <input type="checkbox" id="quiz-toggle" checked />
+              <span>Quiz Mode</span>
+            </label>
           </div>
           <div id="hud-level-name" class="hud-level-name">Level A</div>
         </div>
@@ -146,6 +153,13 @@
         <button type="button" id="btn-start" class="btn primary">Start Run</button>
         <button type="button" id="btn-choose-level-menu" class="btn">Choose Level</button>
         <button type="button" id="btn-highscores" class="btn">High Scores</button>
+        <button type="button" id="btn-achievements" class="btn">Achievements</button>
+
+        <div id="menu-achievements" class="menu-achievements hidden">
+          <h3 class="lb-title">Achievements</h3>
+          <div class="achievements-grid" id="achievements-grid"></div>
+          <button type="button" id="btn-ach-back" class="btn" style="margin-top:0.6rem">Back</button>
+        </div>
 
         <div id="menu-leaderboard" class="go-leaderboard hidden">
           <h3 class="lb-title">Leaderboard</h3>

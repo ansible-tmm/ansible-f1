@@ -76,6 +76,14 @@ export const CONFIG = {
   /** Pickup pull strength toward player X */
   FLOW_MAGNET: 2.8,
 
+  // Combo multiplier
+  COMBO_WINDOW: 3,
+  COMBO_BONUS: 25,
+
+  // Near-miss
+  NEAR_MISS_MARGIN: 1.2,
+  NEAR_MISS_BONUS: 25,
+
   // UI
   STATUS_MESSAGE_MS: 2200,
   STATUS_HIT_MS: 3800,
