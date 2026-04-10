@@ -6,6 +6,7 @@ const KEYS = {
   LEADERBOARD: "builtToAutomate_leaderboard",
   LAST_NAME: "builtToAutomate_lastName",
   LAST_COUNTRY: "builtToAutomate_lastCountry",
+  LAST_LEVEL: "builtToAutomate_lastLevel",
   ACHIEVEMENTS: "builtToAutomate_achievements",
 };
 
@@ -129,6 +130,20 @@ export function getLastCountry() {
 export function setLastCountry(code) {
   try {
     localStorage.setItem(KEYS.LAST_COUNTRY, code);
+  } catch { /* ignore */ }
+}
+
+export function getLastLevel() {
+  try {
+    return localStorage.getItem(KEYS.LAST_LEVEL) || "A";
+  } catch {
+    return "A";
+  }
+}
+
+export function setLastLevel(id) {
+  try {
+    localStorage.setItem(KEYS.LAST_LEVEL, id);
   } catch { /* ignore */ }
 }
 

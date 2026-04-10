@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { Game } from "./game/Game.js";
 import { UI } from "./game/UI.js";
-import { getBestScore } from "./utils/storage.js";
-import { startBgm, toggleMusicMute, toggleSfxMute } from "./utils/audio.js";
+import { getLastLevel } from "./utils/storage.js";
+import { toggleMusicMute, toggleSfxMute } from "./utils/audio.js";
 import { loadQuestions } from "./data/questions.js";
 
 await loadQuestions();
@@ -57,13 +57,7 @@ ui.setHandlers({
   onLevelSelect: (levelId, returnTo) => game.switchLevel(levelId, returnTo),
 });
 
-game.state = "main_menu";
-ui.showMainMenu(true);
-ui.updateMenuBest(getBestScore());
-ui.setActiveLevel("A");
-game._startAttractMode();
-
-startBgm("./assets/audio/bgm.m4a", 0.1);
+game.switchLevel(getLastLevel());
 
 const btnMusic = document.getElementById("btn-music");
 const btnSfx = document.getElementById("btn-sfx");

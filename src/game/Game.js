@@ -17,6 +17,7 @@ import {
   setLastName,
   getLastCountry,
   setLastCountry,
+  setLastLevel,
   loadAchievements,
   unlockAchievement,
   ACHIEVEMENT_DEFS,
@@ -481,6 +482,7 @@ export class Game {
   switchLevel(levelId, returnTo = "main_menu") {
     if (!LEVELS[levelId]) return;
     this.currentLevel = levelId;
+    setLastLevel(levelId);
 
     this.track.dispose();
     this.track = new Track(this.scene, levelId);
