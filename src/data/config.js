@@ -116,6 +116,14 @@ export const DRIVERS = {
     origin: "Johannesburg, South Africa",
     bio: "Part security researcher, part mad scientist, fully unhinged. Nuno reverse-engineers malware before breakfast and builds Faraday cages out of braai grills for fun. When he's not dissecting zero-days, he's riding wild hippos through the Kruger bushveld — the only man the hippos respect. Father of three junior hackers, connoisseur of obscure horror films (the gorier the better), and proud owner of the most heavily fortified home lab in the Southern Hemisphere. His truck runs on diesel, paranoia, and pure adrenaline. The dark web fears him. The hippos obey him.",
   },
+  alex: {
+    id: "alex",
+    name: "Alex Walczyk",
+    car: "f1_yellow",
+    photo: "./assets/alex_tron.png",
+    origin: "Raleigh, North Carolina",
+    bio: "The youngest driver on the grid and already the most dangerous. Alex graduated from NC State University with a degree in computer science and a minor in terrifying his professors. Cracked his first firewall at age 12, broke the campus speed record at 19, and had three job offers from alphabet agencies before he finished his senior thesis. Built his own racing simulator out of a stolen server rack and a go-kart chassis. Holds the unofficial world record for fastest lap while simultaneously compiling a kernel. His car is yellow because he wants you to see him coming. You still won't react in time. They call him 'The Kid.' The kid has never lost.",
+  },
 };
 
 export const PICKUP_TYPES = [
