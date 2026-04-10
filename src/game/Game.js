@@ -150,6 +150,11 @@ export class Game {
 
   _bindKeys() {
     window.addEventListener("keydown", (e) => {
+      if (this.state === "main_menu" && this._attractScoreShowing) {
+        this._attractScoreShowing = false;
+        this.ui.showAttractScores(false);
+        return;
+      }
       if (this.state === "main_menu" || this.state === "game_over") return;
 
       if (this.state === "billboard") {

@@ -545,6 +545,7 @@ body {
   background: rgba(5, 8, 18, 0.85);
   backdrop-filter: blur(6px);
   animation: attract-fade-in 0.6s ease-out;
+  cursor: pointer;
 }
 
 .attract-scores.hidden {
@@ -1652,6 +1653,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  pointer-events: auto;
 }
 
 .quiz-toggle-row input[type="checkbox"] {

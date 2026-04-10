@@ -1,4 +1,4 @@
-import { getLeaderboard } from "../utils/storage.js";
+import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS } from "../utils/storage.js";
 
 /**
  * DOM overlays + HUD updates (Built to Automate)
@@ -96,6 +96,8 @@ export class UI {
     on("btn-start", () => this.onStart && this.onStart());
     on("btn-highscores", () => this._showMenuLeaderboard());
     on("btn-lb-back", () => this._hideMenuLeaderboard());
+    on("btn-achievements", () => this._showMenuAchievements());
+    on("btn-ach-back", () => this._hideMenuAchievements());
     on("btn-resume", () => this.onResume && this.onResume());
     on("btn-restart-pause", () => this.onRestart && this.onRestart());
     on("btn-menu-pause", () => this.onMenu && this.onMenu());
@@ -155,6 +157,12 @@ export class UI {
 
   showAttractScores(visible) {
     if (!this.el.attractScores) return;
+    if (visible && !this._attractClickBound) {
+      this._attractClickBound = true;
+      this.el.attractScores.addEventListener("click", () => {
+        this.showAttractScores(false);
+      });
+    }
     if (visible) {
       const board = getLeaderboard();
       const list = this.el.attractScoresList;
@@ -642,11 +650,33 @@ export class UI {
       }
     }
     lb.classList.remove("hidden");
+    this._toggleMenuButtons(false);
   }
 
   _hideMenuLeaderboard() {
     const lb = document.getElementById("menu-leaderboard");
     if (lb) lb.classList.add("hidden");
+    this._toggleMenuButtons(true);
+  }
+
+  _showMenuAchievements() {
+    this.showAchievementsMenu(ACHIEVEMENT_DEFS, loadAchievements());
+    this._toggleMenuButtons(false);
+  }
+
+  _hideMenuAchievements() {
+    if (this.el.menuAchievements) {
+      this.el.menuAchievements.classList.add("hidden");
+    }
+    this._toggleMenuButtons(true);
+  }
+
+  _toggleMenuButtons(visible) {
+    const ids = ["btn-start", "btn-choose-level-menu", "btn-highscores", "btn-achievements"];
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("hidden", !visible);
+    }
   }
 
   // --- Level select ---
