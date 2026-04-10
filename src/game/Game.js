@@ -768,6 +768,10 @@ export class Game {
   }
 
   async saveScore() {
+    if (this._isSemiTruck()) {
+      this.ui.setStatus("Nice try, but you can't set a high score as Andrius. Too easy!", 4000);
+      return;
+    }
     const name = this.ui.getEnteredName() || "AAA";
     const country = this.ui.getSelectedCountry() || "US";
     setLastName(name);
