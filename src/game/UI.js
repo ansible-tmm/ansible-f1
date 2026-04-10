@@ -65,6 +65,9 @@ export class UI {
       manualBoost: document.getElementById("hud-manual-boost"),
       mbFill: document.getElementById("mb-fill"),
       brakeVignette: document.getElementById("brake-vignette"),
+
+      attractScores: document.getElementById("attract-scores"),
+      attractScoresList: document.getElementById("attract-scores-list"),
     };
 
     this._statusTimer = null;
@@ -140,6 +143,31 @@ export class UI {
 
   showMainMenu(visible) {
     this.el.mainMenu.classList.toggle("hidden", !visible);
+  }
+
+  showAttractScores(visible) {
+    if (!this.el.attractScores) return;
+    if (visible) {
+      const board = getLeaderboard();
+      const list = this.el.attractScoresList;
+      list.innerHTML = "";
+      if (board.length === 0) {
+        list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:1rem">No scores yet — be the first!</div>';
+      } else {
+        const top = board.slice(0, 10);
+        top.forEach((entry, i) => {
+          const row = document.createElement("div");
+          row.className = "attract-score-row";
+          row.style.animationDelay = `${i * 0.08}s`;
+          row.innerHTML = `<span class="rank">${i + 1}.</span><span class="name">${entry.name}</span><span class="pts">${Math.floor(entry.score).toLocaleString()}</span>`;
+          list.appendChild(row);
+        });
+      }
+      this.el.mainMenu.classList.add("hidden");
+    } else {
+      this.el.mainMenu.classList.remove("hidden");
+    }
+    this.el.attractScores.classList.toggle("hidden", !visible);
   }
 
   showPause(visible) {

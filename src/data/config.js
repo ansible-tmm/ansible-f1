@@ -127,6 +127,7 @@ export const LEVELS = {
     sky:      0x6699bb,
     sceneBg:  0x7799aa,
     scenery: "forest",
+    music: "./assets/audio/bgm-alpine.m4a",
     billboards: [
       { id: "demo4", label: "Demo 4", accent: 0x44bb66 },
       { id: "demo5", label: "Demo 5", accent: 0xddaa22 },
@@ -148,6 +149,7 @@ export const LEVELS = {
     sky:      0xccaa77,
     sceneBg:  0xc4a870,
     scenery: "desert",
+    music: "./assets/audio/bgm-desert.m4a",
     billboards: [
       { id: "demo7", label: "Demo 7", accent: 0xff8844 },
       { id: "demo8", label: "Demo 8", accent: 0xcc4466 },
@@ -169,6 +171,7 @@ export const LEVELS = {
     sky:      0x556644,
     sceneBg:  0x3a4a2a,
     scenery: "swamp",
+    music: "./assets/audio/bgm-swamp.m4a",
     billboards: [
       { id: "demo10", label: "Demo 10", accent: 0x66aa44 },
       { id: "demo11", label: "Demo 11", accent: 0xaacc22 },
@@ -190,6 +193,7 @@ export const LEVELS = {
     sky:      0xaabbcc,
     sceneBg:  0xbccada,
     scenery: "snow",
+    music: "./assets/audio/bgm-snow.m4a",
     billboards: [
       { id: "demo13", label: "Demo 13", accent: 0x44aaff },
       { id: "demo14", label: "Demo 14", accent: 0xaaddff },
@@ -211,6 +215,7 @@ export const LEVELS = {
     sky:      0x4488bb,
     sceneBg:  0x5599bb,
     scenery: "water",
+    music: "./assets/audio/bgm-ocean.m4a",
     billboards: [
       { id: "demo16", label: "Demo 16", accent: 0x22ccff },
       { id: "demo17", label: "Demo 17", accent: 0x44ffcc },
@@ -232,6 +237,7 @@ export const LEVELS = {
     sky:      0x6699cc,
     sceneBg:  0x88aacc,
     scenery: "coast",
+    music: "./assets/audio/bgm-coast.m4a",
     curve: { amplitude: 5, frequency: 0.018 },
     billboards: [
       { id: "demo19", label: "Demo 19", accent: 0xff8822 },

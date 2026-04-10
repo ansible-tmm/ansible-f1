@@ -61,6 +61,7 @@ game.state = "main_menu";
 ui.showMainMenu(true);
 ui.updateMenuBest(getBestScore());
 ui.setActiveLevel("A");
+game._startAttractMode();
 
 startBgm("./assets/audio/bgm.m4a", 0.1);
 

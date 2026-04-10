@@ -108,6 +108,14 @@ export class Game {
     this._bbReturning = false;
     this._bbLabel = "";
 
+    // Attract mode (demo play behind main menu)
+    this._attractActive = false;
+    this._attractDodgeTimer = 0;
+    this._attractSpeed = CONFIG.BASE_SPEED * 0.85;
+    this._gameOverTimer = null;
+    this._attractScoreFlashTimer = null;
+    this._attractScoreShowing = false;
+
     this._lastTs = performance.now();
 
     this._bindKeys();
@@ -346,6 +354,8 @@ export class Game {
   }
 
   startFromMenu() {
+    this._stopAttractMode();
+    clearTimeout(this._gameOverTimer);
     this.resetRun();
     this.state = "running";
     this.ui.showMainMenu(false);
@@ -408,6 +418,7 @@ export class Game {
     this.recoveryPrompt = false;
     this.timeScale = 1;
     this._activeBillboard = null;
+    clearTimeout(this._gameOverTimer);
     stopLoop();
     this.ui.showBillboard(false);
     this.ui.showGameOver(false);
@@ -418,6 +429,7 @@ export class Game {
     this.ui.showHud(false);
     this.ui.showMainMenu(true);
     this.ui.updateMenuBest(getBestScore());
+    this._startAttractMode();
   }
 
   switchLevel(levelId, returnTo = "main_menu") {
@@ -657,6 +669,13 @@ export class Game {
     this.ui.resetGameOver(getLastName());
     this.ui.showHud(false);
     this.ui.showGameOver(true);
+
+    clearTimeout(this._gameOverTimer);
+    this._gameOverTimer = setTimeout(() => {
+      if (this.state === "game_over") {
+        this.backToMenu();
+      }
+    }, 30000);
   }
 
   saveScore() {
@@ -745,7 +764,15 @@ export class Game {
     let dt = Math.min(0.05, (now - this._lastTs) / 1000);
     this._lastTs = now;
 
-    if (this.state === "boot" || this.state === "main_menu") {
+    if (this.state === "boot") {
+      this._updateCamera(dt, now);
+      return;
+    }
+
+    if (this.state === "main_menu") {
+      if (this._attractActive) {
+        this._updateAttract(dt, now);
+      }
       this._updateCamera(dt, now);
       return;
     }
@@ -1073,6 +1100,91 @@ export class Game {
       const ecx = this.track.getCurveX(e.mesh.position.z);
       e._curveX = ecx;
       e.mesh.position.x += ecx;
+    }
+  }
+
+  // ── Attract mode (demo play behind main menu) ──
+
+  _startAttractMode() {
+    this._attractActive = true;
+    this._attractDodgeTimer = 0;
+    this.spawner.reset();
+    this.player.mesh.visible = true;
+    this.player.targetLaneIndex = 1;
+    this.player.laneIndex = 1;
+    this.player.mesh.position.set(CONFIG.LANES[1], CONFIG.PLAYER_Y, 0);
+    this.player._curveX = 0;
+    this._attractSpeed = CONFIG.BASE_SPEED * 0.85;
+
+    this._attractScoreShowing = false;
+    this.ui.showAttractScores(false);
+    clearInterval(this._attractScoreFlashTimer);
+    this._attractScoreFlashTimer = setInterval(() => {
+      if (!this._attractActive || this.state !== "main_menu") return;
+      this._attractScoreShowing = true;
+      this.ui.showAttractScores(true);
+      setTimeout(() => {
+        this._attractScoreShowing = false;
+        this.ui.showAttractScores(false);
+      }, 10000);
+    }, 30000);
+  }
+
+  _stopAttractMode() {
+    this._attractActive = false;
+    this.spawner.reset();
+    this.ui.showAttractScores(false);
+    clearInterval(this._attractScoreFlashTimer);
+    this._attractScoreFlashTimer = null;
+  }
+
+  _updateAttract(dt, now) {
+    this.track.update(dt, this._attractSpeed);
+    this.spawner.update(dt, this._attractSpeed, 15, 1);
+
+    // AI dodge logic — look ahead for obstacles and switch lanes
+    this._attractDodgeTimer -= dt;
+    if (this._attractDodgeTimer <= 0) {
+      this._attractDodgeTimer = 0.25;
+      const lane = this.player.targetLaneIndex;
+      const blocked = [false, false, false];
+      for (const o of this.spawner.obstacles) {
+        if (!o.active) continue;
+        const dz = o.mesh.position.z - this.player.mesh.position.z;
+        if (dz > -35 && dz < -5) {
+          blocked[o.lane] = true;
+        }
+      }
+      for (const r of this.spawner.rivals) {
+        if (!r.active) continue;
+        const dz = r.mesh.position.z - this.player.mesh.position.z;
+        if (dz > -25 && dz < -3) {
+          blocked[r.targetLane] = true;
+        }
+      }
+      if (blocked[lane]) {
+        const adj = [0, 1, 2].filter((l) => !blocked[l] && Math.abs(l - lane) === 1);
+        const any = [0, 1, 2].filter((l) => !blocked[l]);
+        const pick = adj.length > 0 ? adj : any;
+        if (pick.length > 0) {
+          this.player.targetLaneIndex = pick[Math.floor(Math.random() * pick.length)];
+        }
+      } else if (Math.random() < 0.03) {
+        // Occasional random lane change for visual interest
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const nl = lane + dir;
+        if (nl >= 0 && nl <= 2) this.player.targetLaneIndex = nl;
+      }
+    }
+
+    this.player.update(dt);
+
+    // Auto-collect pickups (pass through them), remove obstacles that pass the player
+    const entities = this.spawner.getAllCollidable();
+    for (const e of entities) {
+      if (e.mesh.position.z > CONFIG.DESPAWN_Z) {
+        this.spawner.removeEntity(e);
+      }
     }
   }
 
