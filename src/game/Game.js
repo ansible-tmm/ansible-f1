@@ -414,6 +414,7 @@ export class Game {
     this.currentQuestion = null;
     this.quiz.resetPool();
     this.spawner.reset();
+    this.spawner.levelId = this.currentLevel;
     this.runTime = 0;
     this.health = CONFIG.STARTING_HEALTH;
     this.score = 0;
@@ -1076,29 +1077,32 @@ export class Game {
   }
 
   _onHitRival(e) {
+    const isBus = e.subtype === "SCHOOL_BUS";
     this.spawner.explodeRival(e);
     if (this.shield) {
       this.shield = false;
       this.player.setShieldActive(false);
       play(SFX.SHIELD_HIT, 0.7);
       this.ui.setStatus(
-        "Rival car hit — shield absorbed the crash!",
+        isBus ? "School bus hit — shield absorbed the crash!" : "Rival car hit — shield absorbed the crash!",
         CONFIG.STATUS_HIT_MS
       );
       return;
     }
 
-    const dmg = CONFIG.OBSTACLE_DAMAGE;
+    const dmg = isBus ? CONFIG.BUS_DAMAGE : CONFIG.OBSTACLE_DAMAGE;
     this.health -= dmg;
     this.obstaclesHit += 1;
     play(SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
     this.ui.showDamagePopup(dmg);
     this.ui.shake();
-    this.shakeUntil = performance.now() + 200;
-    this.shakeAmp = 0.35;
+    this.shakeUntil = performance.now() + (isBus ? 350 : 200);
+    this.shakeAmp = isBus ? 0.5 : 0.35;
     this.ui.setStatus(
-      `Rival car crash! −${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`,
+      isBus
+        ? `School bus crash! −${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`
+        : `Rival car crash! −${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`,
       CONFIG.STATUS_HIT_MS
     );
 

@@ -35,7 +35,9 @@ export class Spawner {
     this.obstacleTimer = 0;
     this.pickupTimer = 1.2;
     this.rivalTimer = 0;
+    this.busTimer = 0;
     this._nextRivalColorIdx = 0;
+    this.levelId = "A";
   }
 
   reset() {
@@ -48,6 +50,7 @@ export class Spawner {
     this.obstacleTimer = 0;
     this.pickupTimer = 1.2;
     this.rivalTimer = 0;
+    this.busTimer = 0;
   }
 
   _removeEntity(e) {
@@ -118,6 +121,17 @@ export class Spawner {
       this.rivalTimer = 0;
       this._spawnRival();
     }
+
+    // School bus: Level F only, spawns periodically
+    if (this.levelId === "F") {
+      this.busTimer += dt * timeScale;
+      const hasBus = this.rivals.some((r) => r.subtype === "SCHOOL_BUS");
+      if (!hasBus && this.busTimer > 12 && elapsedRunSeconds > 6) {
+        this.busTimer = 0;
+        this._spawnBus();
+      }
+    }
+
     this._updateRivals(dz, dt, worldSpeed);
 
     for (const e of this.obstacles) {
@@ -514,11 +528,14 @@ export class Spawner {
   _updateRivals(dz, dt, worldSpeed) {
     const rivalSpeed = CONFIG.BASE_SPEED * 0.8;
     const rivalDz = rivalSpeed * dt;
+    const busSpeed = CONFIG.BASE_SPEED * CONFIG.BUS_SPEED_MULT;
+    const busDz = busSpeed * dt;
     for (let i = this.rivals.length - 1; i >= 0; i--) {
       const r = this.rivals[i];
       if (!r.active) continue;
 
-      r.mesh.position.z += dz - rivalDz;
+      const isBus = r.subtype === "SCHOOL_BUS";
+      r.mesh.position.z += dz - (isBus ? busDz : rivalDz);
       r.z = r.mesh.position.z;
 
       // Smooth lane lerp
@@ -526,20 +543,34 @@ export class Spawner {
       r.mesh.position.x = THREE.MathUtils.lerp(r.mesh.position.x, tx, 1 - Math.exp(-6 * dt));
       r.lane = r.targetLane;
 
-      // Simple AI: look ahead for obstacles, dodge them
-      r.aiTimer -= dt;
-      if (r.aiTimer <= 0) {
-        r.aiTimer = 0.4 + Math.random() * 0.3;
-        this._rivalDodge(r);
+      if (!isBus) {
+        r.aiTimer -= dt;
+        if (r.aiTimer <= 0) {
+          r.aiTimer = 0.4 + Math.random() * 0.3;
+          this._rivalDodge(r);
+        }
+        r.mesh.position.y = CONFIG.PLAYER_Y + Math.sin(performance.now() * 0.003 + r.id) * 0.03;
+      } else {
+        // Bus plows through obstacles in its lane
+        this._busSmashObstacles(r);
       }
 
-      // Bob like pickups
-      r.mesh.position.y = CONFIG.PLAYER_Y + Math.sin(performance.now() * 0.003 + r.id) * 0.03;
-
-      if (r.mesh.position.z > CONFIG.DESPAWN_Z) {
+      const tooFarAhead = r.mesh.position.z < CONFIG.SPAWN_Z - 80;
+      if (r.mesh.position.z > CONFIG.DESPAWN_Z || tooFarAhead) {
         r.active = false;
         this.rivals.splice(i, 1);
         this._removeEntity(r);
+      }
+    }
+  }
+
+  _busSmashObstacles(bus) {
+    for (let i = this.obstacles.length - 1; i >= 0; i--) {
+      const o = this.obstacles[i];
+      if (!o.active || o.lane !== bus.lane) continue;
+      const dz = o.mesh.position.z - bus.mesh.position.z;
+      if (dz > -3.5 && dz < 3.5) {
+        this.explodeObstacle(o);
       }
     }
   }
@@ -799,6 +830,154 @@ export class Spawner {
     glow.position.set(0, 0.42, 0.72); g.add(glow);
 
     livery.dispose(); carbon.dispose(); accent.dispose(); rubber.dispose(); rim.dispose();
+    return g;
+  }
+
+  // ─── School bus (Level F) ───
+
+  _spawnBus() {
+    const lane = Math.floor(Math.random() * 3);
+    const z = CONFIG.SPAWN_Z - 10;
+    const mesh = this._makeBusMesh();
+    mesh.position.set(CONFIG.LANES[lane], 0, z);
+    this.scene.add(mesh);
+    const e = {
+      id: nextId(),
+      kind: "rival",
+      subtype: "SCHOOL_BUS",
+      lane,
+      targetLane: lane,
+      mesh,
+      z,
+      active: true,
+      worldBox: new THREE.Box3(),
+      hit: { w: 0.9, h: 1.0, d: 2.8 },
+      aiTimer: 999,
+    };
+    this._syncBox(e);
+    this.rivals.push(e);
+  }
+
+  _makeBusMesh() {
+    const g = new THREE.Group();
+
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0xffaa00, metalness: 0.2, roughness: 0.5,
+      emissive: 0x442200, emissiveIntensity: 0.3,
+    });
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: 0x111111, metalness: 0.3, roughness: 0.6,
+    });
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x88ccff, metalness: 0.6, roughness: 0.2,
+      emissive: 0x224466, emissiveIntensity: 0.3,
+      transparent: true, opacity: 0.7,
+    });
+    const rubber = new THREE.MeshStandardMaterial({
+      color: 0x0d0d0d, metalness: 0.15, roughness: 0.92,
+    });
+    const bumperMat = new THREE.MeshStandardMaterial({
+      color: 0x222222, metalness: 0.4, roughness: 0.6,
+    });
+
+    const bW = 1.6, bH = 1.6, bD = 4.5;
+
+    // Main body
+    const body = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), bodyMat);
+    body.position.y = bH / 2 + 0.35;
+    g.add(body);
+
+    // Roof
+    const roof = new THREE.Mesh(
+      new THREE.BoxGeometry(bW + 0.04, 0.08, bD + 0.04), trimMat
+    );
+    roof.position.y = bH + 0.35 + 0.04;
+    g.add(roof);
+
+    // Hood (front lower section)
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(bW, 0.9, 0.8), bodyMat.clone());
+    hood.position.set(0, 0.8, -(bD / 2) - 0.4);
+    g.add(hood);
+
+    // Front bumper
+    const fBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, 0.35, 0.15), bumperMat);
+    fBumper.position.set(0, 0.5, -(bD / 2) - 0.82);
+    g.add(fBumper);
+
+    // Rear bumper
+    const rBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, 0.35, 0.15), bumperMat);
+    rBumper.position.set(0, 0.5, bD / 2 + 0.08);
+    g.add(rBumper);
+
+    // Black stripe along bottom
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(bW + 0.02, 0.2, bD + 0.02), trimMat
+    );
+    stripe.position.y = 0.45;
+    g.add(stripe);
+
+    // Windows (both sides)
+    const winH = 0.6, winW = 0.7, winGap = 0.15;
+    const winY = bH / 2 + 0.35 + 0.25;
+    const winCount = Math.floor((bD - 0.8) / (winW + winGap));
+    const winStartZ = -(winCount * (winW + winGap)) / 2 + (winW + winGap) / 2;
+    for (let i = 0; i < winCount; i++) {
+      const wz = winStartZ + i * (winW + winGap);
+      for (const side of [-1, 1]) {
+        const win = new THREE.Mesh(
+          new THREE.PlaneGeometry(winW, winH), windowMat
+        );
+        win.position.set(side * (bW / 2 + 0.01), winY, wz);
+        win.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+        g.add(win);
+      }
+    }
+
+    // Windshield
+    const ws = new THREE.Mesh(
+      new THREE.PlaneGeometry(bW * 0.8, 0.7), windowMat
+    );
+    ws.position.set(0, bH / 2 + 0.55, -(bD / 2) - 0.01);
+    g.add(ws);
+
+    // Headlights
+    const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+    for (const side of [-0.55, 0.55]) {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.15, 0.06), headlightMat);
+      hl.position.set(side, 0.85, -(bD / 2) - 0.83);
+      g.add(hl);
+    }
+
+    // Taillights
+    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+    for (const side of [-0.55, 0.55]) {
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.06), tailMat);
+      tl.position.set(side, 0.75, bD / 2 + 0.08);
+      g.add(tl);
+    }
+
+    // Stop sign arm (left side, folded flat)
+    const stopArm = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 0.4, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0xcc0000, emissive: 0x440000, emissiveIntensity: 0.4 })
+    );
+    stopArm.position.set(-(bW / 2) - 0.02, bH / 2 + 0.5, -(bD / 4));
+    g.add(stopArm);
+
+    // Wheels
+    const addWheel = (x, z) => {
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 12), rubber);
+      tire.rotation.z = Math.PI / 2;
+      tire.position.set(x, 0.3, z);
+      g.add(tire);
+    };
+    addWheel(-0.85, -1.5); addWheel(0.85, -1.5);
+    addWheel(-0.85, 1.3); addWheel(0.85, 1.3);
+    // Rear duals
+    addWheel(-0.85, 1.7); addWheel(0.85, 1.7);
+
+    bodyMat.dispose(); trimMat.dispose(); windowMat.dispose();
+    rubber.dispose(); bumperMat.dispose();
     return g;
   }
 

@@ -1263,44 +1263,39 @@ export class Track {
     const legPositions = [
       [-1, -1], [1, -1], [-1, 1], [1, 1]
     ];
+    const _up = new THREE.Vector3(0, 1, 0);
     for (const [lx, lz] of legPositions) {
-      const topX = wtX + lx * topR;
-      const topZ = lz * topR;
-      const botX = wtX + lx * botR;
-      const botZ = lz * botR;
-      const dx = botX - topX;
-      const dz = botZ - topZ;
-      const legLen = Math.sqrt(dx * dx + dz * dz + wtBaseH * wtBaseH);
+      const top = new THREE.Vector3(wtX + lx * topR, wtBaseH, lz * topR);
+      const bot = new THREE.Vector3(wtX + lx * botR, 0, lz * botR);
+      const dir = new THREE.Vector3().subVectors(top, bot);
+      const legLen = dir.length();
+      dir.normalize();
       const leg = new THREE.Mesh(
         new THREE.CylinderGeometry(0.35, 0.5, legLen, 6), wtPoleMat
       );
-      leg.position.set((topX + botX) / 2, wtBaseH / 2, (topZ + botZ) / 2);
-      const angleZ = -Math.atan2(dx, wtBaseH);
-      const angleX = Math.atan2(dz, wtBaseH);
-      leg.rotation.set(angleX, 0, angleZ);
+      leg.position.lerpVectors(bot, top, 0.5);
+      leg.quaternion.setFromUnitVectors(_up, dir);
       skylineGroup.add(leg);
     }
 
     const braceMat = bldgMat(0x666666, 0x1a1a1a);
+    const _braceUp = new THREE.Vector3(0, 1, 0);
     for (const braceFrac of [0.3, 0.6]) {
       const r = topR + (botR - topR) * (1 - braceFrac);
       const y = wtBaseH * braceFrac;
       for (let i = 0; i < 4; i++) {
         const a1 = (Math.PI / 4) + (i * Math.PI / 2);
         const a2 = a1 + Math.PI / 2;
-        const x1 = wtX + Math.cos(a1) * r;
-        const z1 = Math.sin(a1) * r;
-        const x2 = wtX + Math.cos(a2) * r;
-        const z2 = Math.sin(a2) * r;
-        const bx = (x1 + x2) / 2;
-        const bz = (z1 + z2) / 2;
-        const bLen = Math.sqrt((x2 - x1) ** 2 + (z2 - z1) ** 2);
+        const p1 = new THREE.Vector3(wtX + Math.cos(a1) * r, y, Math.sin(a1) * r);
+        const p2 = new THREE.Vector3(wtX + Math.cos(a2) * r, y, Math.sin(a2) * r);
+        const brDir = new THREE.Vector3().subVectors(p2, p1);
+        const bLen = brDir.length();
+        brDir.normalize();
         const brace = new THREE.Mesh(
           new THREE.CylinderGeometry(0.15, 0.15, bLen, 4), braceMat
         );
-        brace.position.set(bx, y, bz);
-        brace.rotation.y = Math.atan2(z2 - z1, x2 - x1);
-        brace.rotation.z = Math.PI / 2;
+        brace.position.lerpVectors(p1, p2, 0.5);
+        brace.quaternion.setFromUnitVectors(_braceUp, brDir);
         skylineGroup.add(brace);
       }
     }

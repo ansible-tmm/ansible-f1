@@ -88,6 +88,10 @@ export const CONFIG = {
   NEAR_MISS_MARGIN: 1.2,
   NEAR_MISS_BONUS: 25,
 
+  // School bus (Level F only)
+  BUS_SPEED_MULT: 1.2,
+  BUS_DAMAGE: 35,
+
   // UI
   STATUS_MESSAGE_MS: 2200,
   STATUS_HIT_MS: 3800,
