@@ -5,6 +5,7 @@ const KEYS = {
   RECOVERY_TIP: "builtToAutomate_recoveryTipSeen",
   LEADERBOARD: "builtToAutomate_leaderboard",
   LAST_NAME: "builtToAutomate_lastName",
+  LAST_COUNTRY: "builtToAutomate_lastCountry",
   ACHIEVEMENTS: "builtToAutomate_achievements",
 };
 
@@ -90,9 +91,9 @@ export function getLeaderboard() {
 /**
  * @returns {{ rank: number, board: Array<{name:string, score:number, ts:number}> }}
  */
-export function addLeaderboardEntry(name, score) {
+export function addLeaderboardEntry(name, score, country = "US") {
   const board = getLeaderboard();
-  const entry = { name, score: Math.floor(score), ts: Date.now() };
+  const entry = { name, score: Math.floor(score), country, ts: Date.now() };
   board.push(entry);
   board.sort((a, b) => b.score - a.score);
   if (board.length > MAX_LEADERBOARD) board.length = MAX_LEADERBOARD;
@@ -114,6 +115,20 @@ export function getLastName() {
 export function setLastName(name) {
   try {
     localStorage.setItem(KEYS.LAST_NAME, name);
+  } catch { /* ignore */ }
+}
+
+export function getLastCountry() {
+  try {
+    return localStorage.getItem(KEYS.LAST_COUNTRY) || "US";
+  } catch {
+    return "US";
+  }
+}
+
+export function setLastCountry(code) {
+  try {
+    localStorage.setItem(KEYS.LAST_COUNTRY, code);
   } catch { /* ignore */ }
 }
 

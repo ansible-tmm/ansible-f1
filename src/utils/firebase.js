@@ -30,12 +30,13 @@ const scoresRef = collection(db, "scores");
  * @param {string} level
  * @returns {Promise<void>}
  */
-export async function submitGlobalScore(name, score, level) {
+export async function submitGlobalScore(name, score, level, country = "US") {
   try {
     await addDoc(scoresRef, {
       name: (name || "AAA").slice(0, 20),
       score: Math.floor(Math.max(0, Math.min(score, 999999))),
       level,
+      country: (country || "US").slice(0, 2).toUpperCase(),
       ts: serverTimestamp(),
     });
   } catch (err) {
@@ -54,7 +55,7 @@ export async function fetchGlobalLeaderboard(max = 50) {
     const snap = await getDocs(q);
     return snap.docs.map((d) => {
       const data = d.data();
-      return { name: data.name, score: data.score, level: data.level || "?" };
+      return { name: data.name, score: data.score, level: data.level || "?", country: data.country || "US" };
     });
   } catch (err) {
     console.warn("Failed to fetch global leaderboard:", err);

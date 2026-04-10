@@ -15,6 +15,8 @@ import {
   addLeaderboardEntry,
   getLastName,
   setLastName,
+  getLastCountry,
+  setLastCountry,
   loadAchievements,
   unlockAchievement,
   ACHIEVEMENT_DEFS,
@@ -736,7 +738,7 @@ export class Game {
       pickups: this.pickupsCollected,
       correct: this.sessionCorrect,
     });
-    this.ui.resetGameOver(getLastName());
+    this.ui.resetGameOver(getLastName(), getLastCountry());
     this.ui.showHud(false);
     this.ui.showGameOver(true);
 
@@ -750,10 +752,12 @@ export class Game {
 
   async saveScore() {
     const name = this.ui.getEnteredName() || "AAA";
+    const country = this.ui.getSelectedCountry() || "US";
     setLastName(name);
-    const { rank, board } = addLeaderboardEntry(name, this.score);
+    setLastCountry(country);
+    const { rank, board } = addLeaderboardEntry(name, this.score, country);
     this.ui.showLeaderboard(board, rank);
-    await submitGlobalScore(name, this.score, this.currentLevel);
+    await submitGlobalScore(name, this.score, this.currentLevel, country);
   }
 
   /** Recovery prompt */

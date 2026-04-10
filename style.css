@@ -904,6 +904,29 @@ body {
   box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
 }
 
+.go-country {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid rgba(0, 255, 204, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 20, 30, 0.7);
+  color: #fff;
+  outline: none;
+  max-width: 5.5rem;
+  cursor: pointer;
+}
+
+.go-country:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+}
+
+.lb-flag {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
 .go-leaderboard {
   width: 100%;
   max-width: 400px;
