@@ -849,9 +849,11 @@ export class Spawner {
 
   _spawnGator() {
     const pair = Math.random() < 0.5 ? [0, 1] : [1, 2];
+    const freeLane = pair[0] === 0 ? 2 : 0;
     const cx = (CONFIG.LANES[pair[0]] + CONFIG.LANES[pair[1]]) / 2;
     const z = CONFIG.SPAWN_Z - Math.random() * 6;
     const mesh = this._makeGatorMesh();
+    mesh.rotation.y = Math.PI / 2;
     mesh.position.set(cx, 0, z);
     this.scene.add(mesh);
     const e = {
@@ -864,11 +866,21 @@ export class Spawner {
       z,
       active: true,
       worldBox: new THREE.Box3(),
-      hit: { w: 2.8, h: 0.6, d: 2.5 },
+      hit: { w: 3.2, h: 0.6, d: 1.4 },
       flashT: 0,
     };
     this._syncBox(e);
     this.obstacles.push(e);
+
+    // Clear obstacles near the gator so the free lane is passable
+    for (let i = this.obstacles.length - 1; i >= 0; i--) {
+      const o = this.obstacles[i];
+      if (o === e || !o.active) continue;
+      if (o.lane === freeLane && Math.abs(o.z - z) < CONFIG.MIN_OBSTACLE_ALONG_Z * 1.5) {
+        this.obstacles.splice(i, 1);
+        this._removeEntity(o);
+      }
+    }
   }
 
   _makeGatorMesh() {
