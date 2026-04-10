@@ -755,7 +755,7 @@ export class Game {
     const country = this.ui.getSelectedCountry() || "US";
     setLastName(name);
     setLastCountry(country);
-    const { rank, board } = addLeaderboardEntry(name, this.score, country);
+    const { rank, board } = addLeaderboardEntry(name, this.score, country, this.currentLevel);
     this.ui.showLeaderboard(board, rank);
     await submitGlobalScore(name, this.score, this.currentLevel, country);
   }

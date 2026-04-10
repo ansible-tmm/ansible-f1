@@ -1,5 +1,6 @@
 import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS } from "../utils/storage.js";
 import { fetchGlobalLeaderboard } from "../utils/firebase.js";
+import { LEVELS } from "../data/config.js";
 
 /**
  * DOM overlays + HUD updates (Built to Automate)
@@ -41,6 +42,7 @@ export class UI {
       goCorrect: document.getElementById("go-correct"),
       goEntry: document.getElementById("go-entry"),
       goNameInput: document.getElementById("go-name-input"),
+      goCountry: document.getElementById("go-country"),
       goLeaderboard: document.getElementById("go-leaderboard"),
       lbBody: document.getElementById("lb-body"),
       lbScroll: document.getElementById("lb-scroll"),
@@ -86,8 +88,29 @@ export class UI {
     this._quizCountdownId = null;
     this._quizAutoTimer = null;
     this._levelSelectReturnTo = "main_menu";
+    this._populateCountrySelect();
     this._bindButtons();
     this._drawLevelPreviews();
+  }
+
+  _populateCountrySelect() {
+    const sel = this.el.goCountry;
+    if (!sel) return;
+    const countries = [
+      "US","GB","CA","AU","DE","FR","ES","IT","PT","NL","BE","AT","CH",
+      "SE","NO","DK","FI","IE","PL","CZ","RO","HU","BG","HR","SK","SI",
+      "LT","LV","EE","UA","RU","TR","GR","IL","IN","JP","KR","CN","TW",
+      "SG","MY","TH","PH","ID","VN","BR","MX","AR","CL","CO","PE","ZA",
+      "NG","EG","KE","NZ","SA","AE","QA","PK",
+    ];
+    sel.innerHTML = "";
+    for (const code of countries) {
+      const opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = this._countryFlag(code);
+      sel.appendChild(opt);
+    }
+    sel.value = "US";
   }
 
   _bindButtons() {
@@ -182,7 +205,9 @@ export class UI {
           const row = document.createElement("div");
           row.className = "attract-score-row";
           row.style.animationDelay = `${i * 0.08}s`;
-          row.innerHTML = `<span class="rank">${i + 1}.</span><span class="name">${entry.name}</span><span class="pts">${Math.floor(entry.score).toLocaleString()}</span>`;
+          const flag = this._countryFlag(entry.country);
+          const lvl = this._levelLabel(entry.level);
+          row.innerHTML = `<span class="rank">${i + 1}.</span>${flag ? `<span class="flag">${flag}</span>` : ""}<span class="name">${entry.name}</span>${lvl ? `<span class="level">${lvl}</span>` : ""}<span class="pts">${Math.floor(entry.score).toLocaleString()}</span>`;
           list.appendChild(row);
         });
       }
@@ -576,17 +601,24 @@ export class UI {
   }
 
   /** Reset game over screen to entry mode (name input visible, leaderboard hidden). */
-  resetGameOver(lastName) {
+  resetGameOver(lastName, lastCountry) {
     if (this.el.goEntry) this.el.goEntry.classList.remove("hidden");
     if (this.el.goLeaderboard) this.el.goLeaderboard.classList.add("hidden");
     if (this.el.goNameInput) {
       this.el.goNameInput.value = lastName || "";
       setTimeout(() => this.el.goNameInput.focus(), 80);
     }
+    if (this.el.goCountry) {
+      this.el.goCountry.value = lastCountry || "US";
+    }
   }
 
   getEnteredName() {
     return this.el.goNameInput ? this.el.goNameInput.value.trim() : "";
+  }
+
+  getSelectedCountry() {
+    return this.el.goCountry ? this.el.goCountry.value : "US";
   }
 
   /** Switch from entry to leaderboard view and render the table. */
@@ -628,12 +660,24 @@ export class UI {
     this.el.canvasWrap.classList.add("shake");
   }
 
+  _countryFlag(code) {
+    if (!code || code.length !== 2) return "";
+    return String.fromCodePoint(
+      ...[...code.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)
+    );
+  }
+
+  _levelLabel(id) {
+    const lvl = LEVELS[id];
+    return lvl ? lvl.subtitle : "";
+  }
+
   _renderBoardInto(body, board) {
     body.innerHTML = "";
     if (board.length === 0) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
-      td.colSpan = 3;
+      td.colSpan = 5;
       td.textContent = "No scores yet — play a round!";
       td.style.textAlign = "center";
       td.style.color = "var(--muted)";
@@ -645,11 +689,17 @@ export class UI {
         const tr = document.createElement("tr");
         const tdRank = document.createElement("td");
         tdRank.textContent = String(i + 1);
+        const tdFlag = document.createElement("td");
+        tdFlag.className = "lb-flag";
+        tdFlag.textContent = this._countryFlag(entry.country);
         const tdName = document.createElement("td");
         tdName.textContent = entry.name || "???";
+        const tdLevel = document.createElement("td");
+        tdLevel.className = "lb-level";
+        tdLevel.textContent = this._levelLabel(entry.level);
         const tdScore = document.createElement("td");
         tdScore.textContent = String(Math.floor(entry.score));
-        tr.append(tdRank, tdName, tdScore);
+        tr.append(tdRank, tdFlag, tdName, tdLevel, tdScore);
         body.appendChild(tr);
       });
     }

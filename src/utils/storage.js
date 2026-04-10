@@ -91,9 +91,9 @@ export function getLeaderboard() {
 /**
  * @returns {{ rank: number, board: Array<{name:string, score:number, ts:number}> }}
  */
-export function addLeaderboardEntry(name, score, country = "US") {
+export function addLeaderboardEntry(name, score, country = "US", level = "A") {
   const board = getLeaderboard();
-  const entry = { name, score: Math.floor(score), country, ts: Date.now() };
+  const entry = { name, score: Math.floor(score), country, level, ts: Date.now() };
   board.push(entry);
   board.sort((a, b) => b.score - a.score);
   if (board.length > MAX_LEADERBOARD) board.length = MAX_LEADERBOARD;
