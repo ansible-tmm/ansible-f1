@@ -473,10 +473,15 @@ export class UI {
     this.el.hud.classList.toggle("hidden", !visible);
   }
 
-  updateMenuBest(score) {
-    if (this.el.bestScoreMenu) {
-      this.el.bestScoreMenu.textContent = String(Math.floor(score));
-    }
+  async updateMenuBest(localBest) {
+    if (!this.el.bestScoreMenu) return;
+    this.el.bestScoreMenu.textContent = String(Math.floor(localBest));
+    try {
+      const board = await fetchGlobalLeaderboard(1);
+      const globalBest = board.length > 0 ? board[0].score : 0;
+      const best = Math.max(localBest, globalBest);
+      this.el.bestScoreMenu.textContent = String(Math.floor(best));
+    } catch { /* keep local value */ }
   }
 
   updateHud(data) {
