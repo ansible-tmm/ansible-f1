@@ -163,6 +163,15 @@ export const DRIVERS = {
     origin: "Austin, Texas",
     bio: "Son of Cuban immigrants who taught him two things: never give up and always season the rice properly. Roger containerized his first application at age fourteen — in 2005, before Docker existed — using a hand-rolled chroot jail he built on a Pentium 4 in his parents' garage. By twenty he was orchestrating Kubernetes clusters so large they had their own weather patterns. Holds the unofficial record for most pods running on a single OpenShift cluster: 847,000, deployed via an Ansible playbook he wrote during a brisket smoke at Franklin BBQ. Speaking of brisket, Roger has a standing reservation at every smokehouse on South Congress and once slow-cooked a 14-pound prime brisket for exactly 16 hours — timed to the minute his Helm chart rollout completed. Races his hover-converted DeLorean through the streets of Austin at 2 AM because the traffic is finally reasonable. His wife says he loves Kubernetes more than her. He has not denied it. His three kids can recite pod lifecycle phases before the alphabet. Wrote a custom CRI runtime that runs containers inside containers inside containers — inception-style — just to prove a point at KubeCon. Red Hat gave him a lifetime OpenShift license after he automated an entire Fortune 500 migration in a single weekend using nothing but Ansible, espresso, and sheer willpower. When 1.21 gigawatts isn't enough, Roger adds more replicas. They call him 'El Orquestador.' Where he's going, he doesn't need roads.",
   },
+  andrius: {
+    id: "andrius",
+    name: "Andrius Benokraitis",
+    car: "semi_truck",
+    country: "US",
+    photo: "./assets/andrius_tron.png",
+    origin: "Durham, North Carolina",
+    bio: "Virginia Tech Hokie, Baltimore-born, Durham-adopted, and absolutely insufferable about AI — in the best way. Andrius will corner you at any gathering and explain why large language models are going to automate your breakfast. And you'll listen, because he's right. Leads a black-ops squad of open-source hackers dedicated to liberating enterprise software from proprietary prisons using Ansible, AI, and sheer audacity. His son Austin already has a GitHub profile with more stars than most senior engineers. His wife Kristin is the only person who can shut down an AI monologue with a single look. Has a Costco Executive membership so elite they named an aisle after him — he once bought 400 pounds of chicken tenders in a single trip because 'bulk is a lifestyle, not a strategy.' Refuses to eat seafood with a conviction that makes allergies look casual — once left a five-star restaurant because the bread had a hint of anchovy. Built a custom AI pipeline that auto-generates Ansible playbooks from Slack conversations. His 18-wheeler runs on diesel, hubris, and a fine layer of smoke. They call him 'The Evangelist.' If you see the smoke, the sermon has already begun.",
+  },
 };
 
 export const PICKUP_TYPES = [

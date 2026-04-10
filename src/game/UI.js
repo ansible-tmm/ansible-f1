@@ -780,6 +780,7 @@ export class UI {
     if (carType === "truck") return "Pickup Truck";
     if (carType === "lightcycle") return "Lightcycle";
     if (carType === "delorean") return "DeLorean";
+    if (carType === "semi_truck") return "18-Wheeler";
     return "F1 Racer";
   }
 

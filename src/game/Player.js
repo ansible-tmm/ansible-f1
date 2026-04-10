@@ -9,6 +9,7 @@ export class Player {
     this.scene = scene;
     this.laneIndex = 1;
     this.targetLaneIndex = 1;
+    this._smokeParticles = null;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.set(
@@ -29,6 +30,7 @@ export class Player {
     const pos = this.mesh.position.clone();
     const vis = this.mesh.visible;
     this.dispose();
+    this._smokeParticles = null;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.copy(pos);
@@ -44,6 +46,7 @@ export class Player {
     if (type === "truck") return this._buildTruckMesh();
     if (type === "lightcycle") return this._buildLightcycleMesh();
     if (type === "delorean") return this._buildDeloreanMesh();
+    if (type === "semi_truck") return this._buildSemiTruckMesh();
     if (type === "f1_yellow") return this._buildF1({
       livery: 0xffd000, liveryEmit: 0x332800,
       accent: 0xff6600, accentEmit: 0x331100,
@@ -783,6 +786,211 @@ export class Player {
     return g;
   }
 
+  _buildSemiTruckMesh() {
+    const g = new THREE.Group();
+
+    const paint = new THREE.MeshStandardMaterial({
+      color: 0x881100, metalness: 0.4, roughness: 0.4,
+      emissive: 0x220000, emissiveIntensity: 0.25,
+    });
+    const chrome = new THREE.MeshStandardMaterial({
+      color: 0xccddee, metalness: 0.9, roughness: 0.12,
+    });
+    const dark = new THREE.MeshStandardMaterial({
+      color: 0x1a1a22, metalness: 0.5, roughness: 0.45,
+      emissive: 0x050508, emissiveIntensity: 0.15,
+    });
+    const rubber = new THREE.MeshStandardMaterial({
+      color: 0x0d0d0d, metalness: 0.15, roughness: 0.92,
+    });
+    const glass = new THREE.MeshStandardMaterial({
+      color: 0x88ccff, metalness: 0.5, roughness: 0.15,
+      transparent: true, opacity: 0.5,
+    });
+    const red = new THREE.MeshStandardMaterial({
+      color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 0.5,
+      metalness: 0.3, roughness: 0.4,
+    });
+
+    // ── Cab ──
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.1, 1.3), paint.clone());
+    cab.position.set(0, 0.85, -0.8);
+    g.add(cab);
+
+    // Cab roof
+    const cabRoof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 1.3), dark.clone());
+    cabRoof.position.set(0, 1.42, -0.8);
+    g.add(cabRoof);
+
+    // Roof fairing / air deflector
+    const fairing = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 0.06), paint.clone());
+    fairing.position.set(0, 1.55, -0.18);
+    fairing.rotation.x = -0.5;
+    g.add(fairing);
+
+    // Windshield
+    const ws = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.8), glass.clone());
+    ws.position.set(0, 1.05, -1.46);
+    g.add(ws);
+
+    // Side windows
+    for (const side of [-1, 1]) {
+      const sw = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55), glass.clone());
+      sw.rotation.y = side * Math.PI / 2;
+      sw.position.set(side * 0.81, 1.05, -0.75);
+      g.add(sw);
+    }
+
+    // Front bumper (massive chrome)
+    const fBump = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.25, 0.15), chrome.clone());
+    fBump.position.set(0, 0.35, -1.5);
+    g.add(fBump);
+
+    // Grille
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.45, 0.08), chrome.clone());
+    grille.position.set(0, 0.6, -1.48);
+    g.add(grille);
+
+    // Headlights
+    const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+    for (const side of [-0.6, 0.6]) {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.06), hlMat);
+      hl.position.set(side, 0.6, -1.5);
+      g.add(hl);
+    }
+
+    // ── Exhaust stacks (twin chrome pipes — smoke source!) ──
+    for (const side of [-0.65, 0.65]) {
+      const stack = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.07, 1.2, 8), chrome.clone()
+      );
+      stack.position.set(side, 1.3, -0.2);
+      g.add(stack);
+
+      // Stack cap
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.06, 0.06, 8), dark.clone()
+      );
+      cap.position.set(side, 1.92, -0.2);
+      g.add(cap);
+    }
+
+    // ── Trailer ──
+    const trailer = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.2, 2.8), dark.clone());
+    trailer.position.set(0, 0.85, 1.2);
+    g.add(trailer);
+
+    // Trailer side accents
+    for (const side of [-1, 1]) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.06, 2.6), paint.clone());
+      stripe.position.set(side * 0.76, 0.85, 1.2);
+      g.add(stripe);
+    }
+
+    // Trailer rear doors
+    const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.72, 1.05, 0.04), dark.clone());
+    doorL.position.set(-0.37, 0.82, 2.62);
+    g.add(doorL);
+    const doorR = new THREE.Mesh(new THREE.BoxGeometry(0.72, 1.05, 0.04), dark.clone());
+    doorR.position.set(0.37, 0.82, 2.62);
+    g.add(doorR);
+
+    // Door seam
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.0, 0.06), chrome.clone());
+    seam.position.set(0, 0.82, 2.63);
+    g.add(seam);
+
+    // Rear bumper
+    const rBump = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.1), chrome.clone());
+    rBump.position.set(0, 0.28, 2.64);
+    g.add(rBump);
+
+    // Taillights
+    for (const side of [-0.6, 0.6]) {
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.06), red);
+      tl.position.set(side, 0.45, 2.65);
+      g.add(tl);
+    }
+
+    // Mud flaps
+    for (const side of [-0.7, 0.7]) {
+      const flap = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.02), rubber.clone());
+      flap.position.set(side, 0.3, 2.55);
+      g.add(flap);
+    }
+
+    // ── Wheels (lots of them!) ──
+    const addAxle = (z, count) => {
+      for (const side of [-1, 1]) {
+        for (let i = 0; i < count; i++) {
+          const zOff = z + i * 0.35;
+          const tire = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.28, 0.28, 0.16, 14), rubber.clone()
+          );
+          tire.rotation.z = Math.PI / 2;
+          tire.position.set(side * 0.82, 0.28, zOff);
+          g.add(tire);
+          const hub = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.1, 0.04, 8), chrome.clone()
+          );
+          hub.rotation.z = Math.PI / 2;
+          hub.position.set(side * 0.82, 0.28, zOff);
+          g.add(hub);
+        }
+      }
+    };
+    addAxle(-1.1, 1);       // Front steer axle
+    addAxle(-0.15, 2);      // Cab rear tandem
+    addAxle(1.6, 2);        // Trailer tandem
+
+    // ── Smoke particle system ──
+    const smokeCount = 60;
+    const smokeGeo = new THREE.BufferGeometry();
+    const smokePositions = new Float32Array(smokeCount * 3);
+    const smokeSizes = new Float32Array(smokeCount);
+
+    for (let i = 0; i < smokeCount; i++) {
+      smokePositions[i * 3] = (Math.random() - 0.5) * 0.3;
+      smokePositions[i * 3 + 1] = Math.random() * 2.5;
+      smokePositions[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+      smokeSizes[i] = 0.15 + Math.random() * 0.25;
+    }
+    smokeGeo.setAttribute("position", new THREE.BufferAttribute(smokePositions, 3));
+    smokeGeo.setAttribute("size", new THREE.BufferAttribute(smokeSizes, 1));
+
+    const smokeMat = new THREE.PointsMaterial({
+      color: 0x666666,
+      size: 0.3,
+      transparent: true,
+      opacity: 0.35,
+      sizeAttenuation: true,
+      depthWrite: false,
+    });
+
+    const smokeL = new THREE.Points(smokeGeo, smokeMat);
+    smokeL.position.set(-0.65, 1.9, -0.2);
+    g.add(smokeL);
+
+    const smokeR = new THREE.Points(smokeGeo.clone(), smokeMat.clone());
+    smokeR.position.set(0.65, 1.9, -0.2);
+    g.add(smokeR);
+
+    this._smokeParticles = [smokeL, smokeR];
+
+    // Headlight glow
+    const glow = new THREE.PointLight(0xffaa44, 0.5, 8);
+    glow.position.set(0, 0.6, -1.5);
+    g.add(glow);
+    this.pointLight = glow;
+
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+
+    paint.dispose(); chrome.dispose(); dark.dispose();
+    rubber.dispose(); glass.dispose();
+
+    return g;
+  }
+
   _buildTruckMesh() {
     const g = new THREE.Group();
 
@@ -1002,6 +1210,23 @@ export class Player {
       0.2
     );
     this.mesh.rotation.y = Math.sin(performance.now() * 0.002) * 0.02;
+
+    if (this._smokeParticles) {
+      for (const smoke of this._smokeParticles) {
+        const pos = smoke.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          pos.array[i * 3] += (Math.random() - 0.5) * 0.02;
+          pos.array[i * 3 + 1] += dt * (1.5 + Math.random());
+          pos.array[i * 3 + 2] += (Math.random() - 0.5) * 0.02;
+          if (pos.array[i * 3 + 1] > 2.5) {
+            pos.array[i * 3] = (Math.random() - 0.5) * 0.15;
+            pos.array[i * 3 + 1] = 0;
+            pos.array[i * 3 + 2] = (Math.random() - 0.5) * 0.15;
+          }
+        }
+        pos.needsUpdate = true;
+      }
+    }
 
     if (this.flowGlow && this.flowGlow.material.opacity > 0.01) {
       this.flowGlow.rotation.z += dt * 2.2;
