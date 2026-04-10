@@ -764,6 +764,7 @@ export class UI {
   _showDriverSelect() {
     if (!this.el.driverSelect) return;
     this.el.mainMenu.classList.add("hidden");
+    this.el.attractScores.classList.add("hidden");
     this.el.driverSelect.classList.remove("hidden");
     this.el.driverDetail.classList.add("hidden");
     this._renderDriverCards();
@@ -890,6 +891,10 @@ export class UI {
     if (this.el.driverSelect) {
       this.el.driverSelect.classList.toggle("hidden", !visible);
     }
+  }
+
+  isDriverSelectVisible() {
+    return this.el.driverSelect && !this.el.driverSelect.classList.contains("hidden");
   }
 
   setActiveDriver(id) {

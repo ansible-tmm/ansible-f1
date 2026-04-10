@@ -1368,6 +1368,7 @@ export class Game {
     clearInterval(this._attractScoreFlashTimer);
     this._attractScoreFlashTimer = setInterval(() => {
       if (!this._attractActive || this.state !== "main_menu") return;
+      if (this.ui.isDriverSelectVisible()) return;
       this._attractScoreShowing = true;
       this.ui.showAttractScores(true);
       setTimeout(() => {

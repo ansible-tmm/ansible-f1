@@ -136,6 +136,15 @@ export const DRIVERS = {
     origin: "Durham, North Carolina",
     bio: "The only driver on the grid who debugs race strategy in her head while doing bedtime stories. Aubrey is a DevOps sorceress from Durham who once deployed a zero-downtime migration across four continents while making dinosaur chicken nuggets for her son. Graduated top of her class, married her college rival (he still can't beat her lap times), and runs the tightest CI pipeline east of the Mississippi. Her pink F1 car isn't a fashion statement — it's a warning. She color-codes everything, including her enemies. Volunteers at the Durham Food Bank on Saturdays, dominates leaderboards on Sundays. Her son thinks she works at NASA. She has not corrected him. They call her 'The Architect.' Nothing gets past The Architect.",
   },
+  leo: {
+    id: "leo",
+    name: "Leo Gallego",
+    car: "f1_purple",
+    country: "AR",
+    photo: "./assets/leo_tron.png",
+    origin: "Buenos Aires, Argentina",
+    bio: "Leo wrote his first program at age five on a Commodore 64 he found in a dumpster behind a Buenos Aires electronics shop. By twelve he had accidentally penetrated the CIA's internal network, triggered a five-nation diplomatic incident, and been offered a job by three intelligence agencies before his voice had even broken. Refused all of them because the dress code forbade soccer cleats. Better at soccer than Messi — and Messi knows it. Once nutmegged an entire back line during a charity match while live-debugging a Kubernetes cluster on his phone. Despises broccoli with a fury that borders on religious conviction. Married his university sweetheart (she's a quantum physicist — he says she's the smart one). Father to a daughter who already types 90 WPM at age four. His purple car is painted the exact frequency of a black light because he believes racing should feel like a rave. Won't brake. Won't yield. Won't eat his vegetables. They call him 'El Rayo.' Lightning doesn't slow down for anyone.",
+  },
 };
 
 export const PICKUP_TYPES = [
