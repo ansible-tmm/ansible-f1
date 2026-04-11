@@ -1406,7 +1406,7 @@ export class Track {
     skylineGroup.add(sign);
 
     // --- Durham City Flag on flagpole ---
-    const flagX = 28, flagZ = -70;
+    const flagX = 25, flagZ = 0;
     const poleH = 22;
 
     // Pole
