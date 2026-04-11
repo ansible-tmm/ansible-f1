@@ -1404,6 +1404,72 @@ export class Track {
     );
     sign.position.set(stadX, stadH + 0.5, stadD / 2 + 0.2);
     skylineGroup.add(sign);
+
+    // --- Durham City Flag on flagpole ---
+    const flagX = 28, flagZ = -70;
+    const poleH = 22;
+
+    // Pole
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.7, roughness: 0.3 });
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, poleH, 8), poleMat);
+    pole.position.set(flagX, poleH / 2, flagZ);
+    skylineGroup.add(pole);
+
+    // Pole cap
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.3, 6, 6), poleMat);
+    cap.position.set(flagX, poleH + 0.15, flagZ);
+    skylineGroup.add(cap);
+
+    // Flag — 3 vertical stripes: red, gold, blue
+    const flagW = 6, flagH = 4;
+    const stripeW = flagW / 3;
+
+    const flagRedMat = new THREE.MeshStandardMaterial({
+      color: 0xdd2222, emissive: 0x331111, emissiveIntensity: 0.4,
+      side: THREE.DoubleSide,
+    });
+    const flagGoldMat = new THREE.MeshStandardMaterial({
+      color: 0xeecc00, emissive: 0x332800, emissiveIntensity: 0.4,
+      side: THREE.DoubleSide,
+    });
+    const flagBlueMat = new THREE.MeshStandardMaterial({
+      color: 0x2255aa, emissive: 0x0a1133, emissiveIntensity: 0.4,
+      side: THREE.DoubleSide,
+    });
+
+    const flagTop = poleH - 0.5;
+    const flagBaseZ = flagZ + 0.2;
+
+    const redStripe = new THREE.Mesh(new THREE.PlaneGeometry(stripeW, flagH), flagRedMat);
+    redStripe.position.set(flagX + stripeW * 0.5 + 0.1, flagTop - flagH / 2, flagBaseZ);
+    skylineGroup.add(redStripe);
+
+    const goldStripe = new THREE.Mesh(new THREE.PlaneGeometry(stripeW, flagH), flagGoldMat);
+    goldStripe.position.set(flagX + stripeW * 1.5 + 0.1, flagTop - flagH / 2, flagBaseZ);
+    skylineGroup.add(goldStripe);
+
+    const blueStripe = new THREE.Mesh(new THREE.PlaneGeometry(stripeW, flagH), flagBlueMat);
+    blueStripe.position.set(flagX + stripeW * 2.5 + 0.1, flagTop - flagH / 2, flagBaseZ);
+    skylineGroup.add(blueStripe);
+
+    // Stars on blue stripe (7 white stars in the Durham flag pattern)
+    const starMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6,
+    });
+    const starPositions = [
+      [0, 0.8], [-0.5, 0.2], [0.5, 0.2],
+      [-0.7, -0.5], [0, -0.4], [0.7, -0.5],
+      [0, -1.2],
+    ];
+    const blueCenter = flagX + stripeW * 2.5 + 0.1;
+    const blueMidY = flagTop - flagH / 2;
+    for (const [sx, sy] of starPositions) {
+      const star = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.35, 0.05), starMat
+      );
+      star.position.set(blueCenter + sx * 0.7, blueMidY + sy * 0.9, flagBaseZ + 0.05);
+      skylineGroup.add(star);
+    }
   }
 
   _horizon() {
