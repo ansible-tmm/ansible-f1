@@ -1872,7 +1872,7 @@ body {
 }
 
 .hippo-announce.crush {
-  animation: hippo-crush 2.6s ease-out forwards;
+  animation: hippo-crush 3.8s ease-out forwards;
   font-size: 4.5rem;
   color: #ff4400;
   text-shadow:
@@ -1887,17 +1887,17 @@ body {
     opacity: 1;
     transform: translate(-50%, -50%) scale(0) rotate(-15deg);
   }
-  8% {
+  6% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(2.8) rotate(5deg);
   }
-  15% {
+  12% {
     transform: translate(-50%, -50%) scale(1.0) rotate(-3deg);
   }
-  22% {
+  17% {
     transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
   }
-  70% {
+  80% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.0) rotate(0deg);
   }

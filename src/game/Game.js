@@ -43,6 +43,8 @@ const SFX = {
   HIPPO_MODE: "./assets/audio/hippo-mode.m4a",
   HIPPO_BLAH_1: "./assets/audio/hippo-blah-1.m4a",
   HIPPO_BLAH_2: "./assets/audio/hippo-blah-2.m4a",
+  HIPPO_BLAH_3: "./assets/audio/hippo-blah-3.m4a",
+  HIPPO_BLAH_4: "./assets/audio/hippo-blah-4.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -316,7 +318,9 @@ export class Game {
   _bindHorn() {
     this.renderer.domElement.addEventListener("click", () => {
       if (this.state !== "running") return;
-      if (this.currentDriver === "andrius") {
+      if (this.player.carType === "hippo") {
+        play(SFX.HIPPO_MODE, 0.9);
+      } else if (this.currentDriver === "andrius") {
         play(SFX.HORN_ANDRIUS, 0.8);
       } else {
         play(SFX.HORN, 0.8);
@@ -1252,7 +1256,8 @@ export class Game {
       this.shakeUntil = performance.now() + 100;
       this.shakeAmp = 0.15;
       if (this.player.carType === "hippo") {
-        play(Math.random() < 0.5 ? SFX.HIPPO_BLAH_1 : SFX.HIPPO_BLAH_2, 0.85);
+        const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
+        play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
@@ -1315,7 +1320,8 @@ export class Game {
       this.shakeUntil = performance.now() + 100;
       this.shakeAmp = 0.15;
       if (this.player.carType === "hippo") {
-        play(Math.random() < 0.5 ? SFX.HIPPO_BLAH_1 : SFX.HIPPO_BLAH_2, 0.85);
+        const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
+        play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
@@ -1812,6 +1818,8 @@ export class Game {
   _updateCelebration(dt, now) {
     const elapsed = (now - this._orbitStartTime) / 1000;
     const fadeIn = Math.min(1, elapsed / 1.5);
+
+    this.player.updateCelebration(dt, elapsed);
 
     for (const person of this._celebCrowd) {
       person.traverse((c) => {

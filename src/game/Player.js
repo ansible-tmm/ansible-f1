@@ -1561,6 +1561,41 @@ export class Player {
     }
   }
 
+  updateCelebration(dt, elapsed) {
+    if (this.carType !== "hippo") return;
+
+    const t = elapsed * 1000;
+    const bigBounce = Math.abs(Math.sin(elapsed * 4)) * 0.35;
+    this.mesh.position.y = CONFIG.PLAYER_Y + bigBounce;
+    this.mesh.rotation.y = Math.sin(elapsed * 2.5) * 0.25;
+
+    if (this._hippoLegs) {
+      for (const leg of this._hippoLegs) {
+        const stomp = Math.abs(Math.sin(t * 0.012 + leg.phase)) * 0.4;
+        leg.mesh.position.y = leg.baseY + stomp * 0.35;
+        leg.mesh.rotation.x = Math.sin(t * 0.012 + leg.phase) * 0.35;
+      }
+    }
+
+    const riderGrp = this.mesh.children.find(
+      (c) => c.isGroup && c !== this.mesh && c.children.length > 5
+    );
+    if (riderGrp) {
+      riderGrp.position.y = 1.1 + Math.abs(Math.sin(elapsed * 5)) * 0.15;
+      riderGrp.rotation.z = Math.sin(elapsed * 3) * 0.15;
+
+      for (const child of riderGrp.children) {
+        if (child.geometry?.type === "BoxGeometry") {
+          const params = child.geometry.parameters;
+          if (params.width < 0.16 && params.height > 0.35) {
+            const side = child.position.x > 0 ? 1 : -1;
+            child.rotation.z = side * -(0.3 + Math.sin(elapsed * 7 + side) * 0.6);
+          }
+        }
+      }
+    }
+  }
+
   getWorldBox(target) {
     const hw = CONFIG.PLAYER_HALF_WIDTH;
     const hd = CONFIG.PLAYER_HALF_DEPTH;
