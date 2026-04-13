@@ -67,6 +67,11 @@ export class Player {
       accent: 0x88eeff, accentEmit: 0x113344,
       rim: 0x66ddee, glow: 0x00e5d0,
     });
+    if (type === "f1_black_gold") return this._buildF1({
+      livery: 0x111111, liveryEmit: 0x000000,
+      accent: 0xdaa520, accentEmit: 0x332200,
+      rim: 0xdaa520, glow: 0xffd700,
+    });
     return this._buildF1();
   }
 
