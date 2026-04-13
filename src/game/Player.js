@@ -329,16 +329,15 @@ export class Player {
       const tireGrp = new THREE.Group();
       tireGrp.position.set(x, r, z);
 
-      // Half-cylinder tire (top half only)
+      // Half-cylinder tire (top half only, dome faces up)
       const tire = new THREE.Mesh(
         new THREE.CylinderGeometry(r, r, w, 20, 1, false, 0, Math.PI), rubber.clone()
       );
       tire.rotation.z = Math.PI / 2;
-      tire.rotation.y = Math.PI / 2;
       tireGrp.add(tire);
 
       // Flat cap to close the cut face
-      const capGeo = new THREE.PlaneGeometry(w, r * 2);
+      const capGeo = new THREE.PlaneGeometry(r * 2, w);
       const cap = new THREE.Mesh(capGeo, rubber.clone());
       cap.rotation.x = -Math.PI / 2;
       cap.position.y = 0;
@@ -350,7 +349,6 @@ export class Player {
         rimMat.clone()
       );
       cover.rotation.z = Math.PI / 2;
-      cover.rotation.y = Math.PI / 2;
       cover.position.x = Math.sign(x) * (w / 2 + 0.01);
       tireGrp.add(cover);
 
