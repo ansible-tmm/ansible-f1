@@ -814,41 +814,32 @@ export class Player {
       g.add(fluxArm);
     }
 
-    // ── Hover system — wheels folded flat under body ──
-    const podY = 0.14 + H;
+    // ── Hover pods — flat discs pointing down (BTTF2 style) ──
+    const podY = 0.12 + H;
     const addHoverUnit = (x, z) => {
-      // Pod housing (tucked against body)
+      // Flat disc pod
       const pod = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.14, 0.16, 0.06, 12), darkSteel.clone()
+        new THREE.CylinderGeometry(0.16, 0.18, 0.04, 14), darkSteel.clone()
       );
       pod.position.set(x, podY, z);
       g.add(pod);
 
-      // Fan disc inside pod
-      const tire = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.13, 0.13, 0.03, 14), rubber.clone()
+      // Inner disc (darker)
+      const inner = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.12, 0.02, 14), rubber.clone()
       );
-      tire.rotation.x = Math.PI / 2;
-      tire.position.set(x, podY - 0.04, z);
-      g.add(tire);
+      inner.position.set(x, podY - 0.025, z);
+      g.add(inner);
 
-      // Thruster ring
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.15, 0.012, 6, 20), fluxBlue.clone()
-      );
-      ring.rotation.x = Math.PI / 2;
-      ring.position.set(x, podY - 0.04, z);
-      g.add(ring);
-
-      // Hover jet glow beneath
+      // Glowing thruster face on bottom
       const jet = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, 0.14, 0.03, 12),
+        new THREE.CylinderGeometry(0.13, 0.13, 0.01, 14),
         new THREE.MeshStandardMaterial({
-          color: 0x44ccff, emissive: 0x44ccff, emissiveIntensity: 1.2,
-          transparent: true, opacity: 0.5,
+          color: 0x44ccff, emissive: 0x44ccff, emissiveIntensity: 1.4,
+          transparent: true, opacity: 0.6,
         })
       );
-      jet.position.set(x, 0.01, z);
+      jet.position.set(x, podY - 0.04, z);
       g.add(jet);
     };
 
