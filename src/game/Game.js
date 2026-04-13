@@ -142,6 +142,8 @@ export class Game {
 
     // Level completion
     this._finishLineSpawned = false;
+    this._finishing = false;
+    this._finishCoastSpeed = 0;
     this._orbitStartTime = 0;
     this._orbitCenter = new THREE.Vector3();
     this._lcOverlayShown = false;
@@ -466,6 +468,8 @@ export class Game {
     this._runBoostCount = 0;
     this._runMaxCombo = 0;
     this._finishLineSpawned = false;
+    this._finishing = false;
+    this._finishCoastSpeed = 0;
     this.track.removeFinishLine();
     this.player.targetLaneIndex = 1;
     this.player.laneIndex = 1;
@@ -899,8 +903,8 @@ export class Game {
   devSkipToFinish() {
     if (this.state !== "running") return;
     const dur = CONFIG.LEVEL_DURATION;
-    this.runTime = Math.max(this.runTime, dur - 30);
-    this.ui.setStatus("Dev: skipped to last 30 seconds", 2000);
+    this.runTime = Math.max(this.runTime, dur - 18);
+    this.ui.setStatus("Dev: skipped to last 18 seconds", 2000);
   }
 
   skipQuiz() {
@@ -1035,13 +1039,27 @@ export class Game {
       this.ui.setStatus("Checkered flag ahead — finish is near!", 3000);
     }
 
-    this.track.update(effDt, this.worldSpeed);
-
     const finishZ = this.track.getFinishZ();
-    if (this._finishLineSpawned && finishZ !== null && finishZ >= this.player.mesh.position.z) {
-      this._levelComplete();
+    if (!this._finishing && this._finishLineSpawned && finishZ !== null && finishZ >= this.player.mesh.position.z) {
+      this._finishing = true;
+      this._finishCoastSpeed = this.worldSpeed;
+    }
+
+    if (this._finishing) {
+      this._finishCoastSpeed *= Math.pow(0.15, effDt);
+      this.worldSpeed = this._finishCoastSpeed;
+      this.track.update(effDt, this._finishCoastSpeed);
+      this.spawner.update(rawDt, this._finishCoastSpeed, this.runTime, 0);
+      this.player.update(effDt);
+      this._updateCamera(effDt, now);
+      if (this._finishCoastSpeed < 1.5) {
+        this._levelComplete();
+      }
       return;
     }
+
+    this.track.update(effDt, this.worldSpeed);
+
     if (this.runTime >= dur + 15) {
       this._levelComplete();
       return;
