@@ -322,30 +322,22 @@ export class Player {
       g.add(mirr);
     }
 
-    // ── Wheels — top-half only for clean arcade look ──
+    // ── Wheels ──
     const addWheel = (x, z, isFront) => {
       const r = isFront ? 0.24 : 0.26;
       const w = isFront ? 0.14 : 0.18;
       const tireGrp = new THREE.Group();
       tireGrp.position.set(x, r, z);
 
-      // Half-cylinder tire (top half only, dome faces up)
       const tire = new THREE.Mesh(
-        new THREE.CylinderGeometry(r, r, w, 20, 1, false, 0, Math.PI), rubber.clone()
+        new THREE.CylinderGeometry(r, r, w, 20), rubber.clone()
       );
       tire.rotation.z = Math.PI / 2;
       tireGrp.add(tire);
 
-      // Flat cap to close the cut face
-      const capGeo = new THREE.PlaneGeometry(r * 2, w);
-      const cap = new THREE.Mesh(capGeo, rubber.clone());
-      cap.rotation.x = -Math.PI / 2;
-      cap.position.y = 0;
-      tireGrp.add(cap);
-
-      // Wheel cover
+      // Wheel cover (outer face)
       const cover = new THREE.Mesh(
-        new THREE.CylinderGeometry(r - 0.03, r - 0.03, 0.03, 16, 1, false, 0, Math.PI),
+        new THREE.CylinderGeometry(r - 0.03, r - 0.03, 0.03, 16),
         rimMat.clone()
       );
       cover.rotation.z = Math.PI / 2;
