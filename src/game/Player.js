@@ -802,68 +802,67 @@ export class Player {
     }
 
     // ── BTTF2 rear louver vents (right-triangle wedge with grid slats) ──
+    // Profile: flat vertical face at the rear, slopes down toward the front
     for (const side of [-1, 1]) {
       const ventGrp = new THREE.Group();
-      ventGrp.position.set(side * 0.52, 0.35 + H, 1.0);
+      ventGrp.position.set(side * 0.52, 0.35 + H, 0.84);
 
       const ventW = 0.34;
       const ventD = 0.42;
       const ventH = 0.28;
 
-      // Wedge shell via triangular prism (right-triangle profile: tall at rear, slopes to front)
+      // Triangle in X-Y: vertical edge at X=ventD (rear), slope to origin (front)
       const triShape = new THREE.Shape();
       triShape.moveTo(0, 0);
-      triShape.lineTo(0, ventH);
-      triShape.lineTo(-ventD, 0);
+      triShape.lineTo(ventD, 0);
+      triShape.lineTo(ventD, ventH);
       triShape.closePath();
 
       const ventShellGeo = new THREE.ExtrudeGeometry(triShape, {
         depth: ventW, bevelEnabled: false,
       });
-      ventShellGeo.translate(-ventW / 2, 0, 0);
+      ventShellGeo.translate(0, 0, -ventW / 2);
       const ventShell = new THREE.Mesh(ventShellGeo, darkSteel.clone());
-      ventShell.rotation.y = Math.PI / 2;
+      ventShell.rotation.y = -Math.PI / 2;
       ventGrp.add(ventShell);
 
-      // Interior dark void (slightly inset to show depth)
-      const innerShape = new THREE.Shape();
+      // Interior dark void (slightly inset)
       const inset = 0.025;
-      const innerH = ventH - inset * 2;
-      const innerD = ventD - inset * 2;
+      const innerShape = new THREE.Shape();
       innerShape.moveTo(0, 0);
-      innerShape.lineTo(0, innerH);
-      innerShape.lineTo(-innerD, 0);
+      innerShape.lineTo(ventD - inset * 2, 0);
+      innerShape.lineTo(ventD - inset * 2, ventH - inset * 2);
       innerShape.closePath();
       const innerGeo = new THREE.ExtrudeGeometry(innerShape, {
         depth: ventW - inset * 2, bevelEnabled: false,
       });
-      innerGeo.translate(-(ventW - inset * 2) / 2, 0, 0);
+      innerGeo.translate(0, 0, -(ventW - inset * 2) / 2);
       const inner = new THREE.Mesh(innerGeo, black.clone());
-      inner.rotation.y = Math.PI / 2;
-      inner.position.set(0, inset, -inset);
+      inner.rotation.y = -Math.PI / 2;
+      inner.position.set(0, inset, inset);
       ventGrp.add(inner);
 
-      // Horizontal grid slats following the wedge angle
+      // Horizontal grid slats (each shorter toward the top, following the slope)
       const slatCount = 6;
       for (let i = 1; i < slatCount; i++) {
         const frac = i / slatCount;
         const slatY = frac * ventH;
-        const slatDepth = ventD * (1 - frac);
-        if (slatDepth < 0.03) continue;
+        const slatLen = ventD * (1 - frac);
+        if (slatLen < 0.03) continue;
         const slat = new THREE.Mesh(
-          new THREE.BoxGeometry(ventW + 0.01, 0.012, slatDepth),
+          new THREE.BoxGeometry(ventW + 0.01, 0.012, slatLen),
           steel.clone()
         );
-        slat.position.set(0, slatY, -(ventD - slatDepth) / 2);
+        slat.position.set(0, slatY, ventD - slatLen / 2);
         ventGrp.add(slat);
       }
 
-      // Rear face frame (vertical edge of the triangle)
+      // Rear face frame (the flat vertical edge)
       const rearFrame = new THREE.Mesh(
         new THREE.BoxGeometry(ventW + 0.02, ventH + 0.01, 0.02),
         darkSteel.clone()
       );
-      rearFrame.position.set(0, ventH / 2, 0.01);
+      rearFrame.position.set(0, ventH / 2, ventD + 0.01);
       ventGrp.add(rearFrame);
 
       g.add(ventGrp);
