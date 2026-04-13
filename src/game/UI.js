@@ -374,7 +374,7 @@ export class UI {
     el.innerHTML = text;
     void el.offsetWidth;
     el.classList.add("crush");
-    setTimeout(() => el.classList.remove("crush"), 1800);
+    setTimeout(() => el.classList.remove("crush"), 2800);
   }
 
   showCombo(count) {
