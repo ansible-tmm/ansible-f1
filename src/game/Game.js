@@ -796,6 +796,9 @@ export class Game {
     this.player.setAutomationFlowActive(false);
     stopLoop();
     play(SFX.CORRECT, 0.9);
+
+    const finishBonus = 5000;
+    this.score += finishBonus;
     setBestScoreIfHigher(this.score);
 
     this._orbitStartTime = performance.now();
@@ -807,6 +810,7 @@ export class Game {
       hits: this.obstaclesHit,
       pickups: this.pickupsCollected,
       correct: this.sessionCorrect,
+      finishBonus,
     }, isCheater);
     if (!isCheater) {
       this.ui.resetLevelComplete(getLastName(), getLastCountry());
@@ -1007,6 +1011,8 @@ export class Game {
       braking: this.braking,
       remediationsUsed: this.remediationsUsed,
       maxRemediations: CONFIG.MAX_REMEDIATIONS,
+      finishProgress: this.runTime / CONFIG.LEVEL_DURATION,
+      finishTimeLeft: CONFIG.LEVEL_DURATION - this.runTime,
     });
   }
 
@@ -1137,6 +1143,8 @@ export class Game {
       comboTimer: this.comboTimer,
       remediationsUsed: this.remediationsUsed,
       maxRemediations: CONFIG.MAX_REMEDIATIONS,
+      finishProgress: this.runTime / CONFIG.LEVEL_DURATION,
+      finishTimeLeft: CONFIG.LEVEL_DURATION - this.runTime,
     });
   }
 

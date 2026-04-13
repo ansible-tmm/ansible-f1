@@ -73,6 +73,8 @@ export class UI {
       manualBoost: document.getElementById("hud-manual-boost"),
       mbFill: document.getElementById("mb-fill"),
       brakeVignette: document.getElementById("brake-vignette"),
+      finishFill: document.getElementById("finish-fill"),
+      finishTime: document.getElementById("finish-time"),
 
       attractScores: document.getElementById("attract-scores"),
       attractScoresList: document.getElementById("attract-scores-list"),
@@ -610,6 +612,16 @@ export class UI {
     if (this.el.brakeVignette) {
       this.el.brakeVignette.classList.toggle("active", !!data.braking);
     }
+    if (data.finishProgress != null && this.el.finishFill) {
+      const p = Math.max(0, Math.min(1, data.finishProgress));
+      this.el.finishFill.style.transform = `scaleX(${p})`;
+    }
+    if (data.finishTimeLeft != null && this.el.finishTime) {
+      const secs = Math.max(0, Math.ceil(data.finishTimeLeft));
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      this.el.finishTime.textContent = `${m}:${String(s).padStart(2, "0")}`;
+    }
   }
 
   setStatus(text, ms = 2200) {
@@ -711,7 +723,9 @@ export class UI {
       if (this.el.lcEntry) this.el.lcEntry.classList.add("hidden");
     } else {
       if (this.el.lcTitle) this.el.lcTitle.textContent = "Level Complete!";
-      if (this.el.lcMessage) this.el.lcMessage.textContent = "";
+      const bonus = stats.finishBonus || 0;
+      if (this.el.lcMessage) this.el.lcMessage.textContent =
+        bonus > 0 ? `Finish bonus: +${bonus.toLocaleString()} points!` : "";
       if (this.el.lcEntry) this.el.lcEntry.classList.remove("hidden");
     }
   }
