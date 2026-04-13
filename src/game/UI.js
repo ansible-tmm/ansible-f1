@@ -46,6 +46,7 @@ export class UI {
       goNameInput: document.getElementById("go-name-input"),
       goCountry: document.getElementById("go-country"),
       goLeaderboard: document.getElementById("go-leaderboard"),
+      goRankBanner: document.getElementById("go-rank-banner"),
       lbBody: document.getElementById("lb-body"),
       lbScroll: document.getElementById("lb-scroll"),
 
@@ -104,6 +105,7 @@ export class UI {
       lcNameInput: document.getElementById("lc-name-input"),
       lcCountry: document.getElementById("lc-country"),
       lcLeaderboard: document.getElementById("lc-leaderboard"),
+      lcRankBanner: document.getElementById("lc-rank-banner"),
       lcLbBody: document.getElementById("lc-lb-body"),
       lcLbScroll: document.getElementById("lc-lb-scroll"),
     };
@@ -667,6 +669,7 @@ export class UI {
   resetGameOver(lastName, lastCountry) {
     if (this.el.goEntry) this.el.goEntry.classList.remove("hidden");
     if (this.el.goLeaderboard) this.el.goLeaderboard.classList.add("hidden");
+    if (this.el.goRankBanner) this.el.goRankBanner.classList.add("hidden");
     if (this.el.goNameInput) {
       this.el.goNameInput.value = lastName || "";
       setTimeout(() => this.el.goNameInput.focus(), 80);
@@ -685,7 +688,7 @@ export class UI {
   }
 
   /** Switch from entry to leaderboard view and render the table. */
-  async showLeaderboard(board, highlightRank) {
+  async showLeaderboard(board, highlightRank, playerName, playerScore) {
     if (this.el.goEntry) this.el.goEntry.classList.add("hidden");
     const lb = this.el.goLeaderboard;
     if (lb) lb.classList.remove("hidden");
@@ -694,16 +697,21 @@ export class UI {
     if (!body) return;
 
     this._renderBoardInto(body, board);
-    if (this.el.lbScroll && highlightRank >= 0) {
-      const rows = body.querySelectorAll("tr");
-      if (rows[highlightRank]) {
-        setTimeout(() => rows[highlightRank].scrollIntoView({ block: "center" }), 100);
-      }
-    }
 
     const global = await fetchGlobalLeaderboard(50);
     if (global.length > 0) {
-      this._renderBoardInto(body, global);
+      const globalRank = this._findPlayerRank(global, playerName, playerScore);
+      this._renderBoardInto(body, global, globalRank);
+      this._showRankBanner(this.el.goRankBanner, globalRank, global.length);
+      if (this.el.lbScroll && globalRank >= 0) {
+        const rows = body.querySelectorAll("tr");
+        if (rows[globalRank]) {
+          setTimeout(() => rows[globalRank].scrollIntoView({ block: "center" }), 100);
+        }
+      }
+    } else {
+      this._renderBoardInto(body, board, highlightRank);
+      this._showRankBanner(this.el.goRankBanner, highlightRank, board.length);
     }
   }
 
@@ -733,6 +741,7 @@ export class UI {
   resetLevelComplete(lastName, lastCountry) {
     if (this.el.lcEntry) this.el.lcEntry.classList.remove("hidden");
     if (this.el.lcLeaderboard) this.el.lcLeaderboard.classList.add("hidden");
+    if (this.el.lcRankBanner) this.el.lcRankBanner.classList.add("hidden");
     if (this.el.lcNameInput) {
       this.el.lcNameInput.value = lastName || "";
       setTimeout(() => this.el.lcNameInput.focus(), 80);
@@ -750,7 +759,7 @@ export class UI {
     return this.el.lcCountry ? this.el.lcCountry.value : "US";
   }
 
-  async showLcLeaderboard(board, highlightRank) {
+  async showLcLeaderboard(board, highlightRank, playerName, playerScore) {
     if (this.el.lcEntry) this.el.lcEntry.classList.add("hidden");
     const lb = this.el.lcLeaderboard;
     if (lb) lb.classList.remove("hidden");
@@ -759,16 +768,21 @@ export class UI {
     if (!body) return;
 
     this._renderBoardInto(body, board);
-    if (this.el.lcLbScroll && highlightRank >= 0) {
-      const rows = body.querySelectorAll("tr");
-      if (rows[highlightRank]) {
-        setTimeout(() => rows[highlightRank].scrollIntoView({ block: "center" }), 100);
-      }
-    }
 
     const global = await fetchGlobalLeaderboard(50);
     if (global.length > 0) {
-      this._renderBoardInto(body, global);
+      const globalRank = this._findPlayerRank(global, playerName, playerScore);
+      this._renderBoardInto(body, global, globalRank);
+      this._showRankBanner(this.el.lcRankBanner, globalRank, global.length);
+      if (this.el.lcLbScroll && globalRank >= 0) {
+        const rows = body.querySelectorAll("tr");
+        if (rows[globalRank]) {
+          setTimeout(() => rows[globalRank].scrollIntoView({ block: "center" }), 100);
+        }
+      }
+    } else {
+      this._renderBoardInto(body, board, highlightRank);
+      this._showRankBanner(this.el.lcRankBanner, highlightRank, board.length);
     }
   }
 
@@ -800,7 +814,7 @@ export class UI {
     return lvl ? lvl.subtitle : "";
   }
 
-  _renderBoardInto(body, board) {
+  _renderBoardInto(body, board, highlightIdx = -1) {
     body.innerHTML = "";
     if (board.length === 0) {
       const tr = document.createElement("tr");
@@ -815,6 +829,7 @@ export class UI {
     } else {
       board.forEach((entry, i) => {
         const tr = document.createElement("tr");
+        if (i === highlightIdx) tr.classList.add("lb-current");
         const tdRank = document.createElement("td");
         tdRank.textContent = String(i + 1);
         const tdFlag = document.createElement("td");
@@ -831,6 +846,38 @@ export class UI {
         body.appendChild(tr);
       });
     }
+  }
+
+  _findPlayerRank(board, name, score) {
+    if (!name) return -1;
+    const normName = name.trim().toLowerCase();
+    const normScore = Math.floor(score);
+    return board.findIndex(
+      (e) => e.name.trim().toLowerCase() === normName && Math.floor(e.score) === normScore
+    );
+  }
+
+  _ordinal(n) {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  _showRankBanner(banner, rank, boardSize) {
+    if (!banner) return;
+    if (rank < 0) {
+      banner.className = "rank-banner outside";
+      banner.textContent = `Your score didn't make the top ${boardSize} — keep racing!`;
+      banner.classList.remove("hidden");
+      return;
+    }
+    const place = this._ordinal(rank + 1);
+    const inTop50 = rank < 50;
+    banner.className = `rank-banner ${inTop50 ? "top50" : "outside"}`;
+    banner.textContent = inTop50
+      ? `${place} Place!`
+      : `${place} Place`;
+    banner.classList.remove("hidden");
   }
 
   async _fetchBoard() {

@@ -831,8 +831,8 @@ export class Game {
     setLastName(name);
     setLastCountry(country);
     const { rank, board } = addLeaderboardEntry(name, this.score, country, this.currentLevel);
-    this.ui.showLcLeaderboard(board, rank);
     await submitGlobalScore(name, this.score, this.currentLevel, country);
+    this.ui.showLcLeaderboard(board, rank, name, this.score);
   }
 
   async saveScore() {
@@ -845,8 +845,8 @@ export class Game {
     setLastName(name);
     setLastCountry(country);
     const { rank, board } = addLeaderboardEntry(name, this.score, country, this.currentLevel);
-    this.ui.showLeaderboard(board, rank);
     await submitGlobalScore(name, this.score, this.currentLevel, country);
+    this.ui.showLeaderboard(board, rank, name, this.score);
   }
 
   /** Recovery prompt */
