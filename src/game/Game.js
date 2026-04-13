@@ -151,6 +151,7 @@ export class Game {
     this._lcOverlayShown = false;
     this._celebCrowd = [];
     this._celebConfetti = [];
+    this._secretBuffer = "";
 
     // Attract mode (demo play behind main menu)
     this._attractActive = false;
@@ -246,6 +247,16 @@ export class Game {
       if (e.code === "KeyS" || e.code === "ArrowDown") {
         this.braking = true;
         e.preventDefault();
+      }
+
+      if (this.currentDriver === "nuno" && this.player.carType !== "hippo" && e.key.length === 1) {
+        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-5);
+        if (this._secretBuffer === "hippo") {
+          this.player.swapCar("hippo");
+          this.ui.setStatus("HIPPO MODE ACTIVATED!", 3000);
+          play(SFX.CORRECT, 0.9);
+          this._secretBuffer = "";
+        }
       }
     });
 

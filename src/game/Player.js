@@ -72,6 +72,7 @@ export class Player {
       accent: 0xdaa520, accentEmit: 0x332200,
       rim: 0xdaa520, glow: 0xffd700,
     });
+    if (type === "hippo") return this._buildHippoMesh();
     return this._buildF1();
   }
 
@@ -1340,6 +1341,96 @@ export class Player {
     this.shieldRing = ring;
   }
 
+  _buildHippoMesh() {
+    const g = new THREE.Group();
+    const grey = new THREE.MeshStandardMaterial({ color: 0x7a6e65, roughness: 0.8 });
+    const darkGrey = new THREE.MeshStandardMaterial({ color: 0x5a504a, roughness: 0.8 });
+    const pink = new THREE.MeshStandardMaterial({ color: 0xd4888a, roughness: 0.6 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const black = new THREE.MeshStandardMaterial({ color: 0x111111 });
+
+    // Body (barrel-shaped)
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 2.2), grey.clone());
+    body.position.set(0, 0.6, 0);
+    g.add(body);
+
+    // Belly (rounder underside)
+    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.65, 10, 8), grey.clone());
+    belly.scale.set(1.1, 0.7, 1.6);
+    belly.position.set(0, 0.35, 0);
+    g.add(belly);
+
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.8), grey.clone());
+    head.position.set(0, 0.8, -1.3);
+    g.add(head);
+
+    // Snout (big wide muzzle)
+    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.5, 0.5), darkGrey.clone());
+    snout.position.set(0, 0.65, -1.7);
+    g.add(snout);
+
+    // Nostrils
+    for (const side of [-1, 1]) {
+      const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), black.clone());
+      nostril.position.set(side * 0.18, 0.75, -1.96);
+      g.add(nostril);
+    }
+
+    // Mouth line
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.02, 0.02), pink.clone());
+    mouth.position.set(0, 0.45, -1.96);
+    g.add(mouth);
+
+    // Eyes
+    for (const side of [-1, 1]) {
+      const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), white.clone());
+      eyeWhite.position.set(side * 0.32, 1.0, -1.45);
+      g.add(eyeWhite);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 4), black.clone());
+      pupil.position.set(side * 0.32, 1.0, -1.54);
+      g.add(pupil);
+    }
+
+    // Ears (small bumps on top)
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), darkGrey.clone());
+      ear.position.set(side * 0.35, 1.2, -1.15);
+      ear.rotation.z = side * 0.3;
+      g.add(ear);
+    }
+
+    // Tail (small stubby)
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.25), darkGrey.clone());
+    tail.position.set(0, 0.9, 1.2);
+    tail.rotation.x = -0.4;
+    g.add(tail);
+
+    // Legs (4 stumpy legs, stored for animation)
+    this._hippoLegs = [];
+    const legPositions = [
+      { x: -0.45, z: -0.6 },  // front-left
+      { x: 0.45, z: -0.6 },   // front-right
+      { x: -0.45, z: 0.6 },   // rear-left
+      { x: 0.45, z: 0.6 },    // rear-right
+    ];
+    for (let i = 0; i < 4; i++) {
+      const lp = legPositions[i];
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.55, 0.3), darkGrey.clone());
+      leg.position.set(lp.x, 0.15, lp.z);
+      g.add(leg);
+      this._hippoLegs.push({ mesh: leg, baseY: 0.15, phase: i < 2 ? 0 : Math.PI });
+    }
+
+    // Underglow
+    const glow = new THREE.PointLight(0x66ffcc, 0.5, 8);
+    glow.position.set(0, 0.1, 0);
+    g.add(glow);
+    this.pointLight = glow;
+
+    return g;
+  }
+
   setShieldActive(on) {
     if (!this.shieldRing) return;
     this.shieldRing.material.opacity = on ? 0.75 : 0;
@@ -1375,15 +1466,26 @@ export class Player {
 
     const t = performance.now();
     const isHover = this.carType === "delorean";
-    const bob = Math.sin(t * 0.004) * (isHover ? 0.08 : 0.04);
+    const isHippo = this.carType === "hippo";
+    const bob = Math.sin(t * 0.004) * (isHover ? 0.08 : isHippo ? 0.06 : 0.04);
     const hoverLift = isHover ? 0.25 : 0;
     this.mesh.position.y = CONFIG.PLAYER_Y + hoverLift + bob;
     this.mesh.rotation.z = THREE.MathUtils.lerp(
       this.mesh.rotation.z,
-      -(this.mesh.position.x - tx) * 0.22,
+      -(this.mesh.position.x - tx) * (isHippo ? 0.1 : 0.22),
       0.2
     );
     this.mesh.rotation.y = Math.sin(t * 0.002) * 0.02;
+
+    if (isHippo && this._hippoLegs) {
+      const legSpeed = 18;
+      for (const leg of this._hippoLegs) {
+        const swing = Math.sin(t * 0.001 * legSpeed + leg.phase) * 0.25;
+        leg.mesh.position.y = leg.baseY + Math.abs(swing) * 0.3;
+        leg.mesh.rotation.x = swing;
+      }
+    }
+
     this.mesh.rotation.x = isHover
       ? Math.sin(t * 0.0025) * 0.035 + Math.cos(t * 0.0017) * 0.02
       : 0;
