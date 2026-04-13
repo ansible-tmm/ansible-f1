@@ -521,6 +521,7 @@ export class Game {
     this._activeBillboard = null;
     clearTimeout(this._gameOverTimer);
     this._cleanupCelebration();
+    this.player.resetCelebrationPose();
     stopLoop();
     this.ui.showBillboard(false);
     this.ui.showGameOver(false);

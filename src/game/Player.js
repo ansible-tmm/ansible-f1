@@ -1448,15 +1448,18 @@ export class Player {
     rHair.position.set(0, 1.03, 0);
     riderGrp.add(rHair);
 
+    this._riderArms = [];
     for (const side of [-1, 1]) {
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.45, 0.14), shirt);
       arm.position.set(side * 0.32, 0.4, -0.05);
       arm.rotation.x = -0.4;
       riderGrp.add(arm);
+      this._riderArms.push({ mesh: arm, side, baseX: -0.4 });
 
       const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), skin);
       hand.position.set(side * 0.32, 0.15, -0.2);
       riderGrp.add(hand);
+      this._riderArms.push({ mesh: hand, side, isHand: true });
     }
 
     for (const side of [-1, 1]) {
@@ -1466,6 +1469,7 @@ export class Player {
       riderGrp.add(leg);
     }
 
+    this._riderGrp = riderGrp;
     g.add(riderGrp);
 
     // Underglow
@@ -1565,6 +1569,7 @@ export class Player {
     if (this.carType !== "hippo") return;
 
     const t = elapsed * 1000;
+
     const bigBounce = Math.abs(Math.sin(elapsed * 4)) * 0.35;
     this.mesh.position.y = CONFIG.PLAYER_Y + bigBounce;
     this.mesh.rotation.y = Math.sin(elapsed * 2.5) * 0.25;
@@ -1577,20 +1582,50 @@ export class Player {
       }
     }
 
-    const riderGrp = this.mesh.children.find(
-      (c) => c.isGroup && c !== this.mesh && c.children.length > 5
-    );
-    if (riderGrp) {
-      riderGrp.position.y = 1.1 + Math.abs(Math.sin(elapsed * 5)) * 0.15;
-      riderGrp.rotation.z = Math.sin(elapsed * 3) * 0.15;
+    if (this._riderGrp) {
+      this._riderGrp.position.y = 1.1 + Math.abs(Math.sin(elapsed * 5)) * 0.15;
+      this._riderGrp.rotation.z = Math.sin(elapsed * 3) * 0.12;
+    }
 
-      for (const child of riderGrp.children) {
-        if (child.geometry?.type === "BoxGeometry") {
-          const params = child.geometry.parameters;
-          if (params.width < 0.16 && params.height > 0.35) {
-            const side = child.position.x > 0 ? 1 : -1;
-            child.rotation.z = side * -(0.3 + Math.sin(elapsed * 7 + side) * 0.6);
-          }
+    if (this._riderArms) {
+      for (const a of this._riderArms) {
+        if (a.isHand) {
+          a.mesh.position.y = 0.15 + Math.abs(Math.sin(elapsed * 7 + a.side * 2)) * 0.25;
+          a.mesh.position.z = -0.2;
+        } else {
+          a.mesh.rotation.x = -1.8 + Math.sin(elapsed * 7 + a.side * 2) * 0.5;
+          a.mesh.rotation.z = a.side * 0.2;
+        }
+      }
+    }
+  }
+
+  resetCelebrationPose() {
+    if (this.carType !== "hippo") return;
+
+    this.mesh.position.y = CONFIG.PLAYER_Y;
+    this.mesh.rotation.y = 0;
+
+    if (this._hippoLegs) {
+      for (const leg of this._hippoLegs) {
+        leg.mesh.position.y = leg.baseY;
+        leg.mesh.rotation.x = 0;
+      }
+    }
+
+    if (this._riderGrp) {
+      this._riderGrp.position.y = 1.1;
+      this._riderGrp.rotation.z = 0;
+    }
+
+    if (this._riderArms) {
+      for (const a of this._riderArms) {
+        if (a.isHand) {
+          a.mesh.position.y = 0.15;
+          a.mesh.position.z = -0.2;
+        } else {
+          a.mesh.rotation.x = a.baseX;
+          a.mesh.rotation.z = 0;
         }
       }
     }
