@@ -809,7 +809,49 @@ export class Player {
       g.add(tl);
     }
 
-    // ── Mr. Fusion (on rear deck) ──
+    // ── BTTF2 rear thruster vents (boxy units flanking the trunk) ──
+    for (const side of [-1, 1]) {
+      const ventGrp = new THREE.Group();
+      ventGrp.position.set(side * 0.52, 0.42 + H, 1.0);
+
+      // Main housing
+      const housing = new THREE.Mesh(
+        new THREE.BoxGeometry(0.32, 0.22, 0.4), darkSteel.clone()
+      );
+      ventGrp.add(housing);
+
+      // Horizontal louver slats
+      for (let i = 0; i < 4; i++) {
+        const slat = new THREE.Mesh(
+          new THREE.BoxGeometry(0.34, 0.012, 0.42), steel.clone()
+        );
+        slat.position.y = -0.08 + i * 0.05;
+        ventGrp.add(slat);
+      }
+
+      // Outer face plate (darker)
+      const face = new THREE.Mesh(
+        new THREE.BoxGeometry(0.34, 0.24, 0.02), black.clone()
+      );
+      face.position.z = 0.21;
+      ventGrp.add(face);
+
+      // Glowing exhaust port on the rear face
+      const exhaust = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.02, 8),
+        new THREE.MeshStandardMaterial({
+          color: 0xff6622, emissive: 0xff4400, emissiveIntensity: 0.8,
+          transparent: true, opacity: 0.7,
+        })
+      );
+      exhaust.rotation.x = Math.PI / 2;
+      exhaust.position.z = 0.22;
+      ventGrp.add(exhaust);
+
+      g.add(ventGrp);
+    }
+
+    // ── Mr. Fusion (on rear deck, between vents) ──
     const fusionBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 0.2), darkSteel.clone());
     fusionBase.position.set(0, 0.46 + H, 0.9);
     g.add(fusionBase);
