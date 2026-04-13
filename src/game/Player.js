@@ -1284,14 +1284,20 @@ export class Player {
       1 - Math.exp(-CONFIG.LANE_LERP * dt)
     );
 
-    const bob = Math.sin(performance.now() * 0.004) * 0.04;
-    this.mesh.position.y = CONFIG.PLAYER_Y + bob;
+    const t = performance.now();
+    const isHover = this.carType === "delorean";
+    const bob = Math.sin(t * 0.004) * (isHover ? 0.08 : 0.04);
+    const hoverLift = isHover ? 0.25 : 0;
+    this.mesh.position.y = CONFIG.PLAYER_Y + hoverLift + bob;
     this.mesh.rotation.z = THREE.MathUtils.lerp(
       this.mesh.rotation.z,
       -(this.mesh.position.x - tx) * 0.22,
       0.2
     );
-    this.mesh.rotation.y = Math.sin(performance.now() * 0.002) * 0.02;
+    this.mesh.rotation.y = Math.sin(t * 0.002) * 0.02;
+    this.mesh.rotation.x = isHover
+      ? Math.sin(t * 0.0025) * 0.035 + Math.cos(t * 0.0017) * 0.02
+      : 0;
 
     if (this._smokeParticles) {
       for (const smoke of this._smokeParticles) {
