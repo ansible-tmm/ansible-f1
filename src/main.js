@@ -56,6 +56,7 @@ ui.setHandlers({
   onQuizSkip: () => game.skipQuiz(),
   onLevelSelect: (levelId, returnTo) => game.switchLevel(levelId, returnTo),
   onDriverSelect: (driverId) => game.selectDriver(driverId),
+  onSaveScoreLc: () => game.saveLcScore(),
 });
 
 ui.setActiveDriver(getLastDriver());

@@ -260,6 +260,45 @@
         </div>
       </div>
 
+      <div id="level-complete" class="overlay panel hidden">
+        <div id="lc-flags" class="lc-flags">🏁</div>
+        <h2 id="lc-title">Level Complete!</h2>
+        <p id="lc-message" class="lc-message"></p>
+        <p class="go-final-score">Score: <span id="lc-score">0</span></p>
+        <div class="go-stats-row">
+          <span>Obstacles <span id="lc-hits">0</span></span>
+          <span>Pickups <span id="lc-pickups">0</span></span>
+          <span>Correct <span id="lc-correct">0</span></span>
+        </div>
+
+        <div id="lc-entry" class="go-entry">
+          <label class="go-name-label" for="lc-name-input">Enter your name</label>
+          <div class="go-name-row">
+            <input type="text" id="lc-name-input" class="go-name-input" maxlength="16" placeholder="AAA" autocomplete="off" />
+            <select id="lc-country" class="go-country" title="Country"></select>
+            <button type="button" id="btn-save-score-lc" class="btn primary">Save</button>
+          </div>
+        </div>
+
+        <div id="lc-leaderboard" class="go-leaderboard hidden">
+          <h3 class="lb-title">Global Leaderboard</h3>
+          <div class="lb-scroll" id="lc-lb-scroll">
+            <table class="lb-table">
+              <thead>
+                <tr><th>#</th><th></th><th>Name</th><th>Level</th><th>Score</th></tr>
+              </thead>
+              <tbody id="lc-lb-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="go-buttons">
+          <button type="button" id="btn-next-lc" class="btn primary">Play Again</button>
+          <button type="button" id="btn-choose-level-lc" class="btn">Choose Level</button>
+          <button type="button" id="btn-menu-lc" class="btn">Back to Menu</button>
+        </div>
+      </div>
+
       <div id="recovery-overlay" class="overlay panel compact hidden">
         <h3>Attempt remediation?</h3>
         <p class="hint">Answer a skill check to recover health.</p>

@@ -90,6 +90,20 @@ export class UI {
       driverDetailName: document.getElementById("driver-detail-name"),
       driverDetailOrigin: document.getElementById("driver-detail-origin"),
       driverDetailBio: document.getElementById("driver-detail-bio"),
+
+      levelComplete: document.getElementById("level-complete"),
+      lcTitle: document.getElementById("lc-title"),
+      lcMessage: document.getElementById("lc-message"),
+      lcScore: document.getElementById("lc-score"),
+      lcHits: document.getElementById("lc-hits"),
+      lcPickups: document.getElementById("lc-pickups"),
+      lcCorrect: document.getElementById("lc-correct"),
+      lcEntry: document.getElementById("lc-entry"),
+      lcNameInput: document.getElementById("lc-name-input"),
+      lcCountry: document.getElementById("lc-country"),
+      lcLeaderboard: document.getElementById("lc-leaderboard"),
+      lcLbBody: document.getElementById("lc-lb-body"),
+      lcLbScroll: document.getElementById("lc-lb-scroll"),
     };
 
     this._selectedDriver = "anshul";
@@ -105,8 +119,6 @@ export class UI {
   }
 
   _populateCountrySelect() {
-    const sel = this.el.goCountry;
-    if (!sel) return;
     const countries = [
       "US","GB","CA","AU","DE","FR","ES","IT","PT","NL","BE","AT","CH",
       "SE","NO","DK","FI","IE","PL","CZ","RO","HU","BG","HR","SK","SI",
@@ -114,14 +126,17 @@ export class UI {
       "SG","MY","TH","PH","ID","VN","BR","MX","AR","CL","CO","PE","ZA",
       "NG","EG","KE","NZ","SA","AE","QA","PK",
     ];
-    sel.innerHTML = "";
-    for (const code of countries) {
-      const opt = document.createElement("option");
-      opt.value = code;
-      opt.textContent = this._countryFlag(code);
-      sel.appendChild(opt);
+    for (const sel of [this.el.goCountry, this.el.lcCountry]) {
+      if (!sel) continue;
+      sel.innerHTML = "";
+      for (const code of countries) {
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = this._countryFlag(code);
+        sel.appendChild(opt);
+      }
+      sel.value = "US";
     }
-    sel.value = "US";
   }
 
   _bindButtons() {
@@ -160,6 +175,20 @@ export class UI {
     on("btn-driver-back", () => this._hideDriverSelect());
     on("btn-select-driver", () => this._confirmDriver());
 
+    on("btn-next-lc", () => this.onRestart && this.onRestart());
+    on("btn-menu-lc", () => this.onMenu && this.onMenu());
+    on("btn-save-score-lc", () => this.onSaveScoreLc && this.onSaveScoreLc());
+    on("btn-choose-level-lc", () => this._openLevelSelect("level_complete"));
+    const lcNameInput = document.getElementById("lc-name-input");
+    if (lcNameInput) {
+      lcNameInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (this.onSaveScoreLc) this.onSaveScoreLc();
+        }
+      });
+    }
+
     on("btn-choose-level-pause", () => this._openLevelSelect("running"));
     on("btn-choose-level-menu", () => this._openLevelSelect("main_menu"));
     on("btn-choose-level-go", () => this._openLevelSelect("game_over"));
@@ -190,6 +219,7 @@ export class UI {
     this.onLevelSelect = h.onLevelSelect;
     this.onQuizSkip = h.onQuizSkip;
     this.onDriverSelect = h.onDriverSelect;
+    this.onSaveScoreLc = h.onSaveScoreLc;
   }
 
   showMainMenu(visible) {
@@ -665,6 +695,69 @@ export class UI {
     }
   }
 
+  showLevelComplete(visible) {
+    if (this.el.levelComplete) this.el.levelComplete.classList.toggle("hidden", !visible);
+  }
+
+  setLevelCompleteStats(stats, isCheater = false) {
+    if (this.el.lcScore) this.el.lcScore.textContent = String(Math.floor(stats.score));
+    if (this.el.lcHits) this.el.lcHits.textContent = String(stats.hits);
+    if (this.el.lcPickups) this.el.lcPickups.textContent = String(stats.pickups);
+    if (this.el.lcCorrect) this.el.lcCorrect.textContent = String(stats.correct);
+    if (isCheater) {
+      if (this.el.lcTitle) this.el.lcTitle.textContent = "Nice Finish... Cheater";
+      if (this.el.lcMessage) this.el.lcMessage.textContent =
+        "Playing as Andrius is basically cheating. Pick a real driver and try again — if you dare.";
+      if (this.el.lcEntry) this.el.lcEntry.classList.add("hidden");
+    } else {
+      if (this.el.lcTitle) this.el.lcTitle.textContent = "Level Complete!";
+      if (this.el.lcMessage) this.el.lcMessage.textContent = "";
+      if (this.el.lcEntry) this.el.lcEntry.classList.remove("hidden");
+    }
+  }
+
+  resetLevelComplete(lastName, lastCountry) {
+    if (this.el.lcEntry) this.el.lcEntry.classList.remove("hidden");
+    if (this.el.lcLeaderboard) this.el.lcLeaderboard.classList.add("hidden");
+    if (this.el.lcNameInput) {
+      this.el.lcNameInput.value = lastName || "";
+      setTimeout(() => this.el.lcNameInput.focus(), 80);
+    }
+    if (this.el.lcCountry) {
+      this.el.lcCountry.value = lastCountry || "US";
+    }
+  }
+
+  getLcEnteredName() {
+    return this.el.lcNameInput ? this.el.lcNameInput.value.trim() : "";
+  }
+
+  getLcSelectedCountry() {
+    return this.el.lcCountry ? this.el.lcCountry.value : "US";
+  }
+
+  async showLcLeaderboard(board, highlightRank) {
+    if (this.el.lcEntry) this.el.lcEntry.classList.add("hidden");
+    const lb = this.el.lcLeaderboard;
+    if (lb) lb.classList.remove("hidden");
+
+    const body = this.el.lcLbBody;
+    if (!body) return;
+
+    this._renderBoardInto(body, board);
+    if (this.el.lcLbScroll && highlightRank >= 0) {
+      const rows = body.querySelectorAll("tr");
+      if (rows[highlightRank]) {
+        setTimeout(() => rows[highlightRank].scrollIntoView({ block: "center" }), 100);
+      }
+    }
+
+    const global = await fetchGlobalLeaderboard(50);
+    if (global.length > 0) {
+      this._renderBoardInto(body, global);
+    }
+  }
+
   showBillboard(visible, label = "") {
     if (this.el.billboardOverlay) {
       this.el.billboardOverlay.classList.toggle("hidden", !visible);
@@ -934,6 +1027,7 @@ export class UI {
     this.el.mainMenu.classList.add("hidden");
     if (this.el.gameOver) this.el.gameOver.classList.add("hidden");
     if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
+    if (this.el.levelComplete) this.el.levelComplete.classList.add("hidden");
     this.showLevelSelect(true);
   }
 
@@ -943,6 +1037,8 @@ export class UI {
       this.el.mainMenu.classList.remove("hidden");
     } else if (this._levelSelectReturnTo === "game_over") {
       if (this.el.gameOver) this.el.gameOver.classList.remove("hidden");
+    } else if (this._levelSelectReturnTo === "level_complete") {
+      if (this.el.levelComplete) this.el.levelComplete.classList.remove("hidden");
     } else if (this._levelSelectReturnTo === "running") {
       if (this.el.pauseMenu) this.el.pauseMenu.classList.remove("hidden");
     }

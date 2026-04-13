@@ -1995,6 +1995,23 @@ body {
   margin: 0 0 0.8rem;
 }
 
+/* --- Level complete --- */
+.lc-flags {
+  font-size: 3rem;
+  animation: lc-bounce 0.6s ease-in-out infinite alternate;
+}
+@keyframes lc-bounce {
+  from { transform: scale(1); }
+  to   { transform: scale(1.15) rotate(5deg); }
+}
+.lc-message {
+  font-size: 0.72rem;
+  color: rgba(200, 220, 255, 0.75);
+  margin: 0.4rem 0 0.8rem;
+  line-height: 1.5;
+  max-width: 400px;
+}
+
 .hidden {
   display: none !important;
 }

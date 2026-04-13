@@ -92,6 +92,9 @@ export const CONFIG = {
   BUS_SPEED_MULT: 1.2,
   BUS_DAMAGE: 35,
 
+  // Level completion
+  LEVEL_DURATION: 120,
+
   // UI
   STATUS_MESSAGE_MS: 2200,
   STATUS_HIT_MS: 3800,

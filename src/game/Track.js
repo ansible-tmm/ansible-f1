@@ -1621,7 +1621,87 @@ export class Track {
     }
   }
 
+  spawnFinishLine(playerZ) {
+    if (this._finishLine) return;
+    const g = new THREE.Group();
+    const z = playerZ - 80;
+
+    const white = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x333333, emissiveIntensity: 0.3 });
+    const black = new THREE.MeshStandardMaterial({ color: 0x111111 });
+
+    // Checkered banner across the road
+    const tileSize = 0.8;
+    const cols = 16;
+    const rows = 3;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const mat = (r + c) % 2 === 0 ? white.clone() : black.clone();
+        const tile = new THREE.Mesh(new THREE.BoxGeometry(tileSize, tileSize, 0.08), mat);
+        tile.position.set(
+          (c - cols / 2 + 0.5) * tileSize,
+          3.5 + r * tileSize,
+          z
+        );
+        g.add(tile);
+      }
+    }
+
+    // Support poles
+    for (const side of [-1, 1]) {
+      const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.08, 6, 8),
+        white.clone()
+      );
+      pole.position.set(side * (cols / 2) * tileSize, 3, z);
+      g.add(pole);
+    }
+
+    // Waving checkered flags on top of poles
+    for (const side of [-1, 1]) {
+      const flagGroup = new THREE.Group();
+      const flagRows = 4;
+      const flagCols = 5;
+      const fs = 0.25;
+      for (let fr = 0; fr < flagRows; fr++) {
+        for (let fc = 0; fc < flagCols; fc++) {
+          const mat = (fr + fc) % 2 === 0 ? white.clone() : black.clone();
+          const ft = new THREE.Mesh(new THREE.BoxGeometry(fs, fs, 0.03), mat);
+          ft.position.set(fc * fs + fs / 2, -fr * fs, 0);
+          flagGroup.add(ft);
+        }
+      }
+      flagGroup.position.set(
+        side * (cols / 2) * tileSize + side * 0.3,
+        6.2,
+        z
+      );
+      flagGroup.rotation.z = side * 0.15;
+      g.add(flagGroup);
+    }
+
+    this.group.add(g);
+    this._finishLine = g;
+    this._finishZ = z;
+  }
+
+  getFinishZ() {
+    return this._finishZ || null;
+  }
+
+  removeFinishLine() {
+    if (this._finishLine) {
+      this.group.remove(this._finishLine);
+      this._finishLine.traverse((c) => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+      });
+      this._finishLine = null;
+      this._finishZ = null;
+    }
+  }
+
   dispose() {
+    this.removeFinishLine();
     this.scene.remove(this.group);
     this.group.traverse((c) => {
       if (c.geometry) c.geometry.dispose();

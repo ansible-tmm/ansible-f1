@@ -140,6 +140,12 @@ export class Game {
     this._bbReturning = false;
     this._bbLabel = "";
 
+    // Level completion
+    this._finishLineSpawned = false;
+    this._orbitStartTime = 0;
+    this._orbitCenter = new THREE.Vector3();
+    this._lcOverlayShown = false;
+
     // Attract mode (demo play behind main menu)
     this._attractActive = false;
     this._attractDodgeTimer = 0;
@@ -414,6 +420,7 @@ export class Game {
     this.state = "running";
     this.ui.showMainMenu(false);
     this.ui.showGameOver(false);
+    this.ui.showLevelComplete(false);
     this.ui.showPause(false);
     this.ui.showHud(true);
     this.ui.setStatus("Go!", 1500);
@@ -458,6 +465,8 @@ export class Game {
     this._nearMissChecked.clear();
     this._runBoostCount = 0;
     this._runMaxCombo = 0;
+    this._finishLineSpawned = false;
+    this.track.removeFinishLine();
     this.player.targetLaneIndex = 1;
     this.player.laneIndex = 1;
     this.player.mesh.position.x = CONFIG.LANES[1];
@@ -484,6 +493,7 @@ export class Game {
     stopLoop();
     this.ui.showBillboard(false);
     this.ui.showGameOver(false);
+    this.ui.showLevelComplete(false);
     this.ui.showPause(false);
     this.ui.showQuiz(false);
     this.ui.showRecovery(false, false);
@@ -777,6 +787,50 @@ export class Game {
     }, 30000);
   }
 
+  _levelComplete() {
+    this.state = "level_complete";
+    this.timeScale = 1;
+    this.recoveryPrompt = false;
+    this.braking = false;
+    this.ui.showRecovery(false, false);
+    this.player.setAutomationFlowActive(false);
+    stopLoop();
+    play(SFX.CORRECT, 0.9);
+    setBestScoreIfHigher(this.score);
+
+    this._orbitStartTime = performance.now();
+    this._orbitCenter = this.player.mesh.position.clone();
+
+    const isCheater = this._isSemiTruck();
+    this.ui.setLevelCompleteStats({
+      score: this.score,
+      hits: this.obstaclesHit,
+      pickups: this.pickupsCollected,
+      correct: this.sessionCorrect,
+    }, isCheater);
+    if (!isCheater) {
+      this.ui.resetLevelComplete(getLastName(), getLastCountry());
+    }
+    this.ui.showHud(false);
+
+    // Brief camera orbit before showing the overlay
+    this._lcOverlayShown = false;
+  }
+
+  async saveLcScore() {
+    if (this._isSemiTruck()) {
+      this.ui.setStatus("Nice try, but you can't set a high score as Andrius. Too easy!", 4000);
+      return;
+    }
+    const name = this.ui.getLcEnteredName() || "AAA";
+    const country = this.ui.getLcSelectedCountry() || "US";
+    setLastName(name);
+    setLastCountry(country);
+    const { rank, board } = addLeaderboardEntry(name, this.score, country, this.currentLevel);
+    this.ui.showLcLeaderboard(board, rank);
+    await submitGlobalScore(name, this.score, this.currentLevel, country);
+  }
+
   async saveScore() {
     if (this._isSemiTruck()) {
       this.ui.setStatus("Nice try, but you can't set a high score as Andrius. Too easy!", 4000);
@@ -891,6 +945,15 @@ export class Game {
       return;
     }
 
+    if (this.state === "level_complete") {
+      this._updateOrbitCamera(dt, now);
+      if (!this._lcOverlayShown && now - this._orbitStartTime > 3000) {
+        this._lcOverlayShown = true;
+        this.ui.showLevelComplete(true);
+      }
+      return;
+    }
+
     if (this.state === "billboard") {
       this._updateBillboardCamera(dt);
       return;
@@ -950,9 +1013,16 @@ export class Game {
   _updateRun(effDt, now, rawDt, spawnScale) {
     this.runTime += effDt;
 
-    if (this.runTime >= 300) {
-      this.ui.setStatus("Time's up! 5 minutes on the clock.", 3000);
-      this._gameOver();
+    const dur = CONFIG.LEVEL_DURATION;
+    const warnTime = dur - 10;
+    if (this.runTime >= warnTime && !this._finishLineSpawned) {
+      this._finishLineSpawned = true;
+      this.track.spawnFinishLine(this.player.mesh.position.z);
+      this.ui.setStatus("Checkered flag ahead — finish is near!", 3000);
+    }
+
+    if (this.runTime >= dur) {
+      this._levelComplete();
       return;
     }
 
@@ -1486,6 +1556,20 @@ export class Game {
         this.spawner.removeEntity(e);
       }
     }
+  }
+
+  _updateOrbitCamera(dt, now) {
+    const elapsed = (now - this._orbitStartTime) / 1000;
+    const angle = elapsed * 0.5;
+    const radius = 8;
+    const height = 4;
+    const center = this._orbitCenter;
+    this.camera.position.set(
+      center.x + Math.sin(angle) * radius,
+      center.y + height + Math.sin(elapsed * 0.3) * 0.5,
+      center.z + Math.cos(angle) * radius
+    );
+    this.camera.lookAt(center.x, center.y + 1.2, center.z);
   }
 
   _updateCamera(dt, now) {
