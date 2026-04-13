@@ -38,6 +38,7 @@ const SFX = {
   GAME_OVER: "./assets/audio/game-over.wav",
   START_RUN: "./assets/audio/start-run.wav",
   HORN_ANDRIUS: "./assets/audio/horn-andrius.m4a",
+  CROWD_CHEERS: "./assets/audio/crowd-cheers.mp4",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -803,6 +804,7 @@ export class Game {
     this.player.setAutomationFlowActive(false);
     stopLoop();
     play(SFX.CORRECT, 0.9);
+    play(SFX.CROWD_CHEERS, 0.7);
 
     const finishBonus = 5000;
     this.score += finishBonus;
