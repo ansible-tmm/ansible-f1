@@ -895,6 +895,14 @@ export class UI {
   }
 
   showBillboard(visible, { label = "", embed = null, embedTitle = "", logo = null, showBonus = false } = {}) {
+    if (visible) {
+      if (this.el.status) this.el.status.textContent = "";
+      if (this.el.damagePopup) this.el.damagePopup.classList.remove("show");
+      if (this.el.pickupPopup) this.el.pickupPopup.classList.remove("show");
+      if (this.el.hippoAnnounce) this.el.hippoAnnounce.classList.remove("show", "crush");
+      if (this.el.comboDisplay) this.el.comboDisplay.classList.remove("show");
+      clearTimeout(this._statusTimer);
+    }
     if (this.el.billboardOverlay) {
       this.el.billboardOverlay.classList.toggle("hidden", !visible);
     }
