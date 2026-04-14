@@ -1537,31 +1537,34 @@ export class Player {
     rider.position.set(0, 0.28, 0);
     rider.rotation.y = Math.PI / 2;
 
-    // Feet go across the board (rider local Z = board X axis).
-    // In rider local space: +Z is toward the nose, -Z is toward the tail.
-    // Shoes are wider across (X) to span the board width, shorter in Z.
-    const ftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.10, 0.20), shoe);
-    ftShoe.position.set(0, 0.0, 0.38);
+    // Rider local +X = board tail (world +Z), local -X = board nose (world -Z).
+    // Rider local Z = across board width (world X).
+    // Shoes long axis in Z = across the board. Feet placed along X = along the board.
+
+    // Front foot (toward nose, direction of travel)
+    const ftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.10, 0.28), shoe);
+    ftShoe.position.set(-0.38, 0.0, 0);
     rider.add(ftShoe);
-    const ftSole = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.03, 0.21), sole);
-    ftSole.position.set(0, -0.04, 0.38);
+    const ftSole = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.03, 0.29), sole);
+    ftSole.position.set(-0.38, -0.04, 0);
     rider.add(ftSole);
 
     const ftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.58, 0.14), jeans);
-    ftLeg.position.set(0, 0.36, 0.24);
-    ftLeg.rotation.z = 0.22;
+    ftLeg.position.set(-0.24, 0.36, 0);
+    ftLeg.rotation.x = 0.22;
     rider.add(ftLeg);
 
-    const bkShoe = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.10, 0.20), shoe);
-    bkShoe.position.set(0, 0.0, -0.36);
+    // Back foot (toward tail)
+    const bkShoe = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.10, 0.28), shoe);
+    bkShoe.position.set(0.36, 0.0, 0);
     rider.add(bkShoe);
-    const bkSole = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.03, 0.21), sole);
-    bkSole.position.set(0, -0.04, -0.36);
+    const bkSole = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.03, 0.29), sole);
+    bkSole.position.set(0.36, -0.04, 0);
     rider.add(bkSole);
 
     const bkLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.58, 0.14), jeans);
-    bkLeg.position.set(0, 0.36, -0.20);
-    bkLeg.rotation.z = -0.22;
+    bkLeg.position.set(0.20, 0.36, 0);
+    bkLeg.rotation.x = -0.22;
     rider.add(bkLeg);
 
     this._skateLegs = [ftLeg, bkLeg];
