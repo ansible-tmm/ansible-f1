@@ -973,7 +973,7 @@ export class UI {
 
   _levelLabel(id) {
     const lvl = LEVELS[id];
-    return lvl ? lvl.subtitle : "";
+    return lvl ? lvl.name : "";
   }
 
   _renderBoardInto(body, board, highlightIdx = -1) {
