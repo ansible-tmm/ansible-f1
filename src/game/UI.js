@@ -197,6 +197,32 @@ export class UI {
       }
     });
 
+    this._menuBtns = [
+      document.getElementById("btn-start"),
+      document.getElementById("btn-choose-driver"),
+      document.getElementById("btn-choose-level-menu"),
+      document.getElementById("btn-highscores"),
+      document.getElementById("btn-achievements"),
+    ].filter(Boolean);
+    this._menuIdx = 0;
+    this._updateMenuFocus();
+
+    window.addEventListener("keydown", (e) => {
+      if (!this._isMainMenuActive()) return;
+      if (e.code === "ArrowUp" || e.code === "ArrowLeft") {
+        e.preventDefault();
+        this._menuIdx = (this._menuIdx - 1 + this._menuBtns.length) % this._menuBtns.length;
+        this._updateMenuFocus();
+      } else if (e.code === "ArrowDown" || e.code === "ArrowRight") {
+        e.preventDefault();
+        this._menuIdx = (this._menuIdx + 1) % this._menuBtns.length;
+        this._updateMenuFocus();
+      } else if (e.code === "Enter") {
+        e.preventDefault();
+        this._menuBtns[this._menuIdx]?.click();
+      }
+    });
+
     on("btn-next-lc", () => this.onRestart && this.onRestart());
     on("btn-menu-lc", () => this.onMenu && this.onMenu());
     on("btn-save-score-lc", () => this.onSaveScoreLc && this.onSaveScoreLc());
@@ -246,6 +272,26 @@ export class UI {
 
   showMainMenu(visible) {
     this.el.mainMenu.classList.toggle("hidden", !visible);
+    if (visible) {
+      this._menuIdx = 0;
+      this._updateMenuFocus();
+    }
+  }
+
+  _isMainMenuActive() {
+    const lb = document.getElementById("menu-leaderboard");
+    return !this.el.mainMenu.classList.contains("hidden")
+      && this.el.driverSelect.classList.contains("hidden")
+      && this.el.levelSelect.classList.contains("hidden")
+      && (!lb || lb.classList.contains("hidden"))
+      && (!this.el.menuAchievements || this.el.menuAchievements.classList.contains("hidden"));
+  }
+
+  _updateMenuFocus() {
+    for (const btn of this._menuBtns) btn.classList.remove("menu-focus");
+    if (this._menuBtns[this._menuIdx]) {
+      this._menuBtns[this._menuIdx].classList.add("menu-focus");
+    }
   }
 
   async showAttractScores(visible) {

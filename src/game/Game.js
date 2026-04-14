@@ -254,12 +254,18 @@ export class Game {
         e.preventDefault();
       }
 
-      if (this.currentDriver === "nuno" && this.player.carType !== "hippo" && e.key.length === 1) {
+      if (this.state === "running" && e.key.length === 1) {
         this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-5);
-        if (this._secretBuffer === "hippo") {
+        if (this.currentDriver === "nuno" && this.player.carType !== "hippo" && this._secretBuffer.endsWith("hippo")) {
           this.player.swapCar("hippo");
           this.ui.showHippoAnnounce();
           play(SFX.HIPPO_MODE, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "matt" && this.player.carType !== "skateboard" && this._secretBuffer.endsWith("matt")) {
+          this.player.swapCar("skateboard");
+          this.ui.showHippoCrush("🛹 SKATE MODE 🛹");
+          play(SFX.CORRECT, 0.9);
           this._secretBuffer = "";
         }
       }
@@ -318,6 +324,11 @@ export class Game {
   _bindHorn() {
     this.renderer.domElement.addEventListener("click", () => {
       if (this.state !== "running") return;
+      if (this.player.carType === "skateboard") {
+        this.player.skateJump();
+        play(SFX.BOOST_WHOOSH, 0.6);
+        return;
+      }
       if (this.player.carType === "hippo") {
         play(SFX.HIPPO_MODE, 0.9);
       } else if (this.currentDriver === "andrius") {
@@ -1250,6 +1261,12 @@ export class Game {
   ];
 
   _onHitObstacle(e) {
+    if (this.player.isAirborne) {
+      this.spawner.explodeObstacle(e);
+      this.ui.setStatus("🛹 Jumped right over it!", 1200);
+      play(SFX.OBSTACLE_HIT, 0.4);
+      return;
+    }
     if (this._isCheater()) {
       this.spawner.explodeObstacle(e);
       play(SFX.OBSTACLE_HIT, 0.6);
@@ -1314,6 +1331,12 @@ export class Game {
   }
 
   _onHitRival(e) {
+    if (this.player.isAirborne) {
+      this.spawner.explodeRival(e);
+      this.ui.setStatus("🛹 Skated over them!", 1200);
+      play(SFX.OBSTACLE_HIT, 0.4);
+      return;
+    }
     if (this._isCheater()) {
       this.spawner.explodeRival(e);
       play(SFX.OBSTACLE_HIT, 0.6);

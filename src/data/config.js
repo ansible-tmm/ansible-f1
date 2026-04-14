@@ -185,6 +185,15 @@ export const DRIVERS = {
     origin: "Ottawa, Canada",
     bio: "Born in Beirut, forged in Ottawa, fueled by pure maple syrup. Hicham drinks a pint of the dark stuff every morning — Grade A, straight from the can, no pancakes required. Played three hours of hockey daily for twenty years straight and has the missing teeth to prove it. Basically invented the private cloud before anyone knew what a cloud was — spent a decade at VMware virtualizing things that weren't supposed to be virtualizable. His two sons think their dad is a superhero. His French Canadian wife knows he is one. Races motorcycles on weekends because four wheels are for people who need stability. His lightcycle leaves a trail of pure neon. If you see the glow in your mirror, it's already too late. They call him 'The Architect of Clouds.'",
   },
+  matt: {
+    id: "matt",
+    name: "Matthew Packer",
+    car: "f1_blue_white",
+    country: "US",
+    photo: "./assets/matt_tron.png",
+    origin: "Greensboro, North Carolina",
+    bio: "Toronto-born, Greensboro-transplanted, and still bleeding Maple Leafs blue despite decades of heartbreak — Matt will defend the Leafs' 'rebuilding year' until the heat death of the universe. Former competitive skateboarder who still kickflips in the driveway to embarrass his two kids. Married to the only person patient enough to tolerate his cloud infrastructure monologues at dinner. Speaks fluent AWS, GCP, and Azure — once deployed the same app across all three in a single afternoon just to prove vendor lock-in is a myth, then wrote a blog post about it that went mildly viral. Keeps his house so clean you could perform surgery on the kitchen counter. Hand sanitizer in every pocket, Lysol wipes in the glove box, and a personal rule that shoes never touch carpet. His new dog has its own bath schedule. Knows every Jewish deli within fifty miles and has strong opinions about pastrami thickness. They call him 'The Sanitizer.' His cloud is spotless, and so is everything else.",
+  },
   aubrey: {
     id: "aubrey",
     name: "Aubrey Trotter",

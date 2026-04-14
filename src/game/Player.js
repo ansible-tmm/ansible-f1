@@ -77,7 +77,13 @@ export class Player {
       accent: 0xdaa520, accentEmit: 0x332200,
       rim: 0xdaa520, glow: 0xff69b4,
     });
+    if (type === "f1_blue_white") return this._buildF1({
+      livery: 0x00205b, liveryEmit: 0x000d26,
+      accent: 0xffffff, accentEmit: 0x444444,
+      rim: 0xffffff, glow: 0x0044aa,
+    });
     if (type === "hippo") return this._buildHippoMesh();
+    if (type === "skateboard") return this._buildSkateboardMesh();
     return this._buildF1();
   }
 
@@ -1481,6 +1487,141 @@ export class Player {
     return g;
   }
 
+  _buildSkateboardMesh() {
+    const g = new THREE.Group();
+    const skin = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.7 });
+    const shirt = new THREE.MeshStandardMaterial({ color: 0x00205b, roughness: 0.6 });
+    const pants = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.7 });
+    const shoe = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+    const hair = new THREE.MeshStandardMaterial({ color: 0x3b2214, roughness: 0.8 });
+    const capMat = new THREE.MeshStandardMaterial({ color: 0x00205b, roughness: 0.5 });
+    const boardMat = new THREE.MeshStandardMaterial({ color: 0xc8a25c, roughness: 0.5 });
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4 });
+    const truckMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.6 });
+
+    // Skateboard deck
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 2.0), boardMat);
+    deck.position.set(0, 0.22, 0);
+    g.add(deck);
+
+    // Nose/tail kicks
+    for (const z of [-1.0, 1.0]) {
+      const kick = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 0.15), boardMat);
+      kick.position.set(0, 0.26, z);
+      kick.rotation.x = z > 0 ? 0.3 : -0.3;
+      g.add(kick);
+    }
+
+    // Trucks and wheels
+    for (const z of [-0.6, 0.6]) {
+      const truck = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.12), truckMat);
+      truck.position.set(0, 0.15, z);
+      g.add(truck);
+      for (const x of [-0.25, 0.25]) {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 12), wheelMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(x, 0.1, z);
+        g.add(wheel);
+      }
+    }
+
+    // Rider group
+    const rider = new THREE.Group();
+    rider.position.set(0, 0.25, 0.05);
+
+    // Legs
+    this._skateLegs = [];
+    for (const side of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.5, 0.18), pants);
+      leg.position.set(side * 0.12, 0.25, side * 0.15);
+      rider.add(leg);
+      this._skateLegs.push({ mesh: leg, side });
+
+      const shoeM = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.28), shoe);
+      shoeM.position.set(side * 0.12, 0.02, side * 0.15 + 0.04);
+      rider.add(shoeM);
+    }
+
+    // Torso
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.35), shirt);
+    torso.position.set(0, 0.75, 0);
+    rider.add(torso);
+
+    // Arms
+    this._skateArms = [];
+    for (const side of [-1, 1]) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.14), shirt);
+      arm.position.set(side * 0.34, 0.7, 0);
+      arm.rotation.z = side * 0.2;
+      arm.rotation.x = -0.15;
+      rider.add(arm);
+      this._skateArms.push({ mesh: arm, side });
+
+      const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), skin);
+      hand.position.set(side * 0.38, 0.44, -0.04);
+      rider.add(hand);
+    }
+
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.32), skin);
+    head.position.set(0, 1.2, 0);
+    rider.add(head);
+
+    // Hair (under cap)
+    const hairM = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.34), hair);
+    hairM.position.set(0, 1.06, 0);
+    rider.add(hairM);
+
+    // Baseball cap
+    const capTop = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.36), capMat);
+    capTop.position.set(0, 1.4, 0);
+    rider.add(capTop);
+
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.03, 0.2), capMat);
+    brim.position.set(0, 1.35, -0.22);
+    brim.rotation.x = -0.1;
+    rider.add(brim);
+
+    // Eyes
+    const white = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const black = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    for (const side of [-1, 1]) {
+      const eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 4), white);
+      eyeW.position.set(side * 0.1, 1.22, -0.16);
+      rider.add(eyeW);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 4), black);
+      pupil.position.set(side * 0.1, 1.22, -0.19);
+      rider.add(pupil);
+    }
+
+    this._skateRider = rider;
+    g.add(rider);
+
+    // Jump state
+    this._skateJumping = false;
+    this._skateJumpVel = 0;
+    this._skateJumpY = 0;
+
+    // Underglow
+    const glow = new THREE.PointLight(0x0055aa, 0.5, 8);
+    glow.position.set(0, 0.05, 0);
+    g.add(glow);
+    this.pointLight = glow;
+
+    return g;
+  }
+
+  skateJump() {
+    if (this.carType !== "skateboard" || this._skateJumping) return;
+    this._skateJumping = true;
+    this._skateJumpVel = 8;
+    this._skateJumpY = 0;
+  }
+
+  get isAirborne() {
+    return this.carType === "skateboard" && this._skateJumping;
+  }
+
   setShieldActive(on) {
     if (!this.shieldRing) return;
     this.shieldRing.material.opacity = on ? 0.75 : 0;
@@ -1517,12 +1658,27 @@ export class Player {
     const t = performance.now();
     const isHover = this.carType === "delorean";
     const isHippo = this.carType === "hippo";
-    const bob = Math.sin(t * 0.004) * (isHover ? 0.08 : isHippo ? 0.06 : 0.04);
+    const isSkate = this.carType === "skateboard";
+    const bob = Math.sin(t * 0.004) * (isHover ? 0.08 : isHippo ? 0.06 : isSkate ? 0.02 : 0.04);
     const hoverLift = isHover ? 0.25 : 0;
-    this.mesh.position.y = CONFIG.PLAYER_Y + hoverLift + bob;
+
+    if (isSkate && this._skateJumping) {
+      this._skateJumpVel -= 18 * dt;
+      this._skateJumpY += this._skateJumpVel * dt;
+      if (this._skateJumpY <= 0) {
+        this._skateJumpY = 0;
+        this._skateJumping = false;
+        this._skateJumpVel = 0;
+      }
+      this.mesh.position.y = CONFIG.PLAYER_Y + bob + this._skateJumpY;
+      this.mesh.rotation.x = this._skateJumpY > 0.3 ? Math.sin(t * 0.015) * 0.15 : 0;
+    } else {
+      this.mesh.position.y = CONFIG.PLAYER_Y + hoverLift + bob;
+    }
+
     this.mesh.rotation.z = THREE.MathUtils.lerp(
       this.mesh.rotation.z,
-      -(this.mesh.position.x - tx) * (isHippo ? 0.1 : 0.22),
+      -(this.mesh.position.x - tx) * (isHippo ? 0.1 : isSkate ? 0.15 : 0.22),
       0.2
     );
     this.mesh.rotation.y = Math.sin(t * 0.002) * 0.02;
@@ -1533,6 +1689,19 @@ export class Player {
         const swing = Math.sin(t * 0.001 * legSpeed + leg.phase) * 0.25;
         leg.mesh.position.y = leg.baseY + Math.abs(swing) * 0.3;
         leg.mesh.rotation.x = swing;
+      }
+    }
+
+    if (isSkate && this._skateRider) {
+      const crouch = this._skateJumping ? -0.08 : Math.sin(t * 0.005) * 0.03;
+      this._skateRider.position.y = 0.25 + crouch;
+      if (this._skateArms) {
+        for (const a of this._skateArms) {
+          const wave = this._skateJumping
+            ? Math.sin(t * 0.01 + a.side) * 0.5
+            : Math.sin(t * 0.003 + a.side) * 0.1;
+          a.mesh.rotation.z = a.side * 0.2 + wave;
+        }
       }
     }
 

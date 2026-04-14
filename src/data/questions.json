@@ -296,14 +296,6 @@
     "explanation": "The forks setting controls how many hosts Ansible manages in parallel (default is 5)."
   },
   {
-    "id": 38,
-    "category": "community",
-    "prompt": "What is the upstream mascot for AWX?",
-    "options": ["Angry Spud", "Red Panda", "Rocket Raccoon", "Turbo Turtle"],
-    "answer": 0,
-    "explanation": "The AWX project mascot is Angry Spud."
-  },
-  {
     "id": 39,
     "category": "blocks",
     "prompt": "What Ansible feature allows you to group tasks and apply conditionals to the same set of tasks?",
@@ -656,46 +648,6 @@
     "options": ["ansible-playbook rulebook.yml", "ansible-rulebook --rulebook rules.yml", "eda run rules.yml", "ansible-events --rules rules.yml"],
     "answer": 1,
     "explanation": "ansible-rulebook is the CLI tool for running Event-Driven Ansible rulebooks."
-  },
-  {
-    "id": 83,
-    "category": "platform",
-    "prompt": "What is the web-based UI component of Ansible Automation Platform called?",
-    "options": ["Ansible Dashboard", "Automation controller", "Ansible Console", "AWX Portal"],
-    "answer": 1,
-    "explanation": "Automation controller (formerly Ansible Tower) is the web UI and API for managing automation."
-  },
-  {
-    "id": 84,
-    "category": "platform",
-    "prompt": "What is the open-source upstream project for Automation controller?",
-    "options": ["Ansible Core", "AWX", "Ansible Galaxy", "Ansible Engine"],
-    "answer": 1,
-    "explanation": "AWX is the open-source upstream project that Automation controller is built from."
-  },
-  {
-    "id": 85,
-    "category": "platform",
-    "prompt": "What does a Job Template define in Automation controller?",
-    "options": ["A container image spec", "The parameters to run an Ansible playbook", "A list of managed hosts", "A notification channel"],
-    "answer": 1,
-    "explanation": "A Job Template combines a project, inventory, credentials, and playbook to define a runnable job."
-  },
-  {
-    "id": 86,
-    "category": "platform",
-    "prompt": "What feature in Automation controller chains multiple job templates together?",
-    "options": ["Pipeline", "Workflow", "Sequence", "Job chain"],
-    "answer": 1,
-    "explanation": "Workflows link multiple job templates with conditional paths (success, failure, always)."
-  },
-  {
-    "id": 87,
-    "category": "platform",
-    "prompt": "What credential type is used to connect Automation controller to a Git repository?",
-    "options": ["Machine credential", "Source Control credential", "Vault credential", "Network credential"],
-    "answer": 1,
-    "explanation": "Source Control credentials provide authentication for Git repositories in Automation controller."
   },
   {
     "id": 88,
@@ -1128,30 +1080,6 @@
     "options": ["--only deploy", "--tags deploy", "--filter deploy", "--select deploy"],
     "answer": 1,
     "explanation": "--tags deploy tells ansible-playbook to only run tasks that have the 'deploy' tag."
-  },
-  {
-    "id": 142,
-    "category": "platform",
-    "prompt": "What Automation controller feature stores sensitive data like SSH keys and API tokens?",
-    "options": ["Secrets", "Credentials", "Vaults", "Keyrings"],
-    "answer": 1,
-    "explanation": "Credentials in Automation controller securely store authentication data for jobs."
-  },
-  {
-    "id": 143,
-    "category": "platform",
-    "prompt": "What Automation controller feature restricts which users can run which job templates?",
-    "options": ["Policies", "Role-Based Access Control (RBAC)", "Firewalls", "User quotas"],
-    "answer": 1,
-    "explanation": "RBAC controls who can view, use, and administer resources in Automation controller."
-  },
-  {
-    "id": 144,
-    "category": "platform",
-    "prompt": "What type of Automation controller project syncs content from a Git repository?",
-    "options": ["Manual project", "SCM project", "Upload project", "Archive project"],
-    "answer": 1,
-    "explanation": "SCM (Source Control Management) projects pull playbooks directly from Git repositories."
   },
   {
     "id": 146,

@@ -877,6 +877,12 @@ body {
   color: #031016;
 }
 
+.btn.menu-focus {
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.5), inset 0 0 8px rgba(0, 255, 204, 0.15);
+  transform: translateY(-1px) scale(1.03);
+  border-color: #66ffdd;
+}
+
 .hint {
   margin-top: 1rem;
   font-size: 0.7rem;
