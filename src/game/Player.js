@@ -1538,15 +1538,19 @@ export class Player {
     rider.position.set(0, 0.28, 0);
     rider.rotation.y = -1.4;
 
-    // ── FRONT FOOT (left) — flat on board near front trucks ──
+    // ── FRONT FOOT (left) — flat on board, angled toward travel direction ──
+    const footYaw = 1.0;
     const ftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.10, 0.30), shoe);
     ftShoe.position.set(0, 0.0, 0.40);
+    ftShoe.rotation.y = footYaw;
     rider.add(ftShoe);
     const ftSole = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.035, 0.31), sole);
     ftSole.position.set(0, -0.04, 0.40);
+    ftSole.rotation.y = footYaw;
     rider.add(ftSole);
     const ftLaceM = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.02, 0.10), lace);
     ftLaceM.position.set(0, 0.06, 0.38);
+    ftLaceM.rotation.y = footYaw;
     rider.add(ftLaceM);
 
     // Front shin — angled up and slightly back from foot
@@ -1561,15 +1565,18 @@ export class Player {
     ftThigh.rotation.x = 0.35;
     rider.add(ftThigh);
 
-    // ── BACK FOOT (right) — flat on board near tail ──
+    // ── BACK FOOT (right) — flat on board near tail, angled toward travel ──
     const bkShoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.10, 0.30), shoe);
     bkShoe.position.set(0, 0.0, -0.38);
+    bkShoe.rotation.y = footYaw;
     rider.add(bkShoe);
     const bkSole = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.035, 0.31), sole);
     bkSole.position.set(0, -0.04, -0.38);
+    bkSole.rotation.y = footYaw;
     rider.add(bkSole);
     const bkLaceM = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.02, 0.10), lace);
     bkLaceM.position.set(0, 0.06, -0.40);
+    bkLaceM.rotation.y = footYaw;
     rider.add(bkLaceM);
 
     // Back shin — angled up from foot
