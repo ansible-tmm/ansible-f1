@@ -113,6 +113,7 @@ This repo includes [Cursor AI agent skills](https://docs.cursor.com/context/skil
 | **Adding Game Features** | Step-by-step patterns for adding new pickups, obstacles, visual effects, HUD elements, quiz questions, and UI overlays. |
 | **Audio & Assets** | Managing sounds, textures, and visual assets. Adding new sound effects, icon textures, or troubleshooting audio timing and mute controls. |
 | **Drivers & Vehicles** | Adding new drivers, custom F1 color schemes, entirely new car meshes, secret unlockable modes, special click abilities, and invincibility states. |
+| **Billboards & Demos** | Configuring billboard side quests with interactive arcade demos, partner logos, and per-level theming. Adding demos to new levels is config-only — no code changes needed. |
 
 ### Using the Skills
 
