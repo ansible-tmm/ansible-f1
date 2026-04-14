@@ -1491,206 +1491,218 @@ export class Player {
     const g = new THREE.Group();
     const skin = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.7 });
     const flannel = new THREE.MeshStandardMaterial({ color: 0x8b2020, roughness: 0.75 });
-    const flannelStripe = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.75 });
-    const tshirt = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
-    const jeans = new THREE.MeshStandardMaterial({ color: 0x3b5998, roughness: 0.8 });
-    const shoe = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.85 });
-    const sole = new THREE.MeshStandardMaterial({ color: 0xf5f5dc, roughness: 0.6 });
+    const flannelDark = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.75 });
+    const tshirt = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.7 });
+    const jeans = new THREE.MeshStandardMaterial({ color: 0x3a5d8f, roughness: 0.8 });
+    const shoe = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.85 });
+    const sole = new THREE.MeshStandardMaterial({ color: 0xf0ead6, roughness: 0.6 });
+    const lace = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
     const hair = new THREE.MeshStandardMaterial({ color: 0x3b2214, roughness: 0.8 });
     const capMat = new THREE.MeshStandardMaterial({ color: 0x2a5a2a, roughness: 0.6 });
-    const boardTop = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
+    const boardTop = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
     const boardBottom = new THREE.MeshStandardMaterial({ color: 0xc8a25c, roughness: 0.5 });
     const wheelMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3 });
-    const truckMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.6 });
+    const truckMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.3, metalness: 0.6 });
 
-    // Skateboard deck — grip tape on top, wood underneath
+    // ── SKATEBOARD ──
     const deck = new THREE.Mesh(
-      new THREE.BoxGeometry(0.65, 0.07, 2.1),
+      new THREE.BoxGeometry(0.62, 0.06, 2.0),
       [boardBottom, boardBottom, boardTop, boardBottom, boardBottom, boardBottom]
     );
     deck.position.set(0, 0.22, 0);
     g.add(deck);
 
-    // Nose/tail kicks with proper curvature
-    for (const z of [-1.05, 1.05]) {
-      const kick = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.18), boardBottom);
+    for (const z of [-1.0, 1.0]) {
+      const kick = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.05, 0.16), boardBottom);
       kick.position.set(0, 0.27, z);
-      kick.rotation.x = z > 0 ? 0.35 : -0.35;
+      kick.rotation.x = z > 0 ? 0.4 : -0.4;
       g.add(kick);
     }
 
-    // Trucks and wheels
-    for (const z of [-0.6, 0.6]) {
-      const truck = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.05, 0.1), truckMat);
-      truck.position.set(0, 0.15, z);
+    for (const z of [-0.58, 0.58]) {
+      const truck = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.04, 0.08), truckMat);
+      truck.position.set(0, 0.16, z);
       g.add(truck);
-      for (const x of [-0.27, 0.27]) {
-        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.055, 12), wheelMat);
+      for (const x of [-0.26, 0.26]) {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 12), wheelMat);
         wheel.rotation.z = Math.PI / 2;
         wheel.position.set(x, 0.1, z);
         g.add(wheel);
       }
     }
 
-    // Rider group — body faces sideways (rotated ~80° on board)
+    // ── RIDER — sideways stance on board ──
     const rider = new THREE.Group();
-    rider.position.set(0, 0.26, 0);
+    rider.position.set(0, 0.30, 0);
     rider.rotation.y = -1.4;
 
-    // ── FRONT LEG (left) — bent knee, foot forward on board ──
-    const frontLegGrp = new THREE.Group();
-    frontLegGrp.position.set(0.08, 0, 0.32);
+    // ── FRONT LEG (left) — over front trucks, bent knee ──
+    const frontLeg = new THREE.Group();
+    frontLeg.position.set(0.06, 0, 0.45);
 
-    const frontThigh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 0.2), jeans);
-    frontThigh.position.set(0, 0.32, 0);
-    frontThigh.rotation.x = 0.5;
-    frontLegGrp.add(frontThigh);
+    const ftThigh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.32, 0.18), jeans);
+    ftThigh.position.set(0, 0.42, 0.06);
+    ftThigh.rotation.x = 0.35;
+    frontLeg.add(ftThigh);
 
-    const frontShin = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.28, 0.18), jeans);
-    frontShin.position.set(0, 0.1, 0.12);
-    frontShin.rotation.x = -0.4;
-    frontLegGrp.add(frontShin);
+    const ftShin = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.30, 0.17), jeans);
+    ftShin.position.set(0, 0.14, 0.06);
+    ftShin.rotation.x = -0.25;
+    frontLeg.add(ftShin);
 
-    const frontShoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.34), shoe);
-    frontShoe.position.set(0, -0.02, 0.18);
-    frontLegGrp.add(frontShoe);
-    const frontSole = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.04, 0.34), sole);
-    frontSole.position.set(0, -0.06, 0.18);
-    frontLegGrp.add(frontSole);
+    const ftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.10, 0.32), shoe);
+    ftShoe.position.set(0, 0.0, 0.08);
+    frontLeg.add(ftShoe);
+    const ftSole = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.035, 0.33), sole);
+    ftSole.position.set(0, -0.05, 0.08);
+    frontLeg.add(ftSole);
+    const ftLace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.12), lace);
+    ftLace.position.set(0, 0.06, 0.0);
+    frontLeg.add(ftLace);
 
-    rider.add(frontLegGrp);
+    rider.add(frontLeg);
 
-    // ── BACK LEG (right) — bent knee, foot on tail ──
-    const backLegGrp = new THREE.Group();
-    backLegGrp.position.set(-0.08, 0, -0.28);
+    // ── BACK LEG (right) — over tail, deeper knee bend ──
+    const backLeg = new THREE.Group();
+    backLeg.position.set(-0.06, 0, -0.42);
 
-    const backThigh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 0.2), jeans);
-    backThigh.position.set(0, 0.32, 0);
-    backThigh.rotation.x = 0.6;
-    backLegGrp.add(backThigh);
+    const bkThigh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.32, 0.18), jeans);
+    bkThigh.position.set(0, 0.42, -0.04);
+    bkThigh.rotation.x = 0.45;
+    backLeg.add(bkThigh);
 
-    const backShin = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.28, 0.18), jeans);
-    backShin.position.set(0, 0.08, -0.08);
-    backShin.rotation.x = -0.5;
-    backLegGrp.add(backShin);
+    const bkShin = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.30, 0.17), jeans);
+    bkShin.position.set(0, 0.14, -0.10);
+    bkShin.rotation.x = -0.35;
+    backLeg.add(bkShin);
 
-    const backShoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.34), shoe);
-    backShoe.position.set(0, -0.02, -0.08);
-    backLegGrp.add(backShoe);
-    const backSoleMesh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.04, 0.34), sole);
-    backSoleMesh.position.set(0, -0.06, -0.08);
-    backLegGrp.add(backSoleMesh);
+    const bkShoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.10, 0.32), shoe);
+    bkShoe.position.set(0, 0.0, -0.08);
+    backLeg.add(bkShoe);
+    const bkSole = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.035, 0.33), sole);
+    bkSole.position.set(0, -0.05, -0.08);
+    backLeg.add(bkSole);
+    const bkLace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.12), lace);
+    bkLace.position.set(0, 0.06, -0.14);
+    backLeg.add(bkLace);
 
-    rider.add(backLegGrp);
+    rider.add(backLeg);
     this._skateLegs = [
-      { mesh: frontLegGrp, side: 1 },
-      { mesh: backLegGrp, side: -1 },
+      { mesh: frontLeg, side: 1 },
+      { mesh: backLeg, side: -1 },
     ];
 
-    // ── TORSO — hunched forward ──
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.5, 0.3), tshirt);
-    torso.position.set(0, 0.72, 0.04);
-    torso.rotation.x = 0.18;
+    // ── HIPS — connect legs to torso ──
+    const hips = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.26), jeans);
+    hips.position.set(0, 0.56, 0.02);
+    rider.add(hips);
+
+    // Belt
+    const belt = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.04, 0.27), flannelDark);
+    belt.position.set(0, 0.63, 0.02);
+    rider.add(belt);
+
+    // ── TORSO — slight forward lean ──
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.42, 0.24), tshirt);
+    torso.position.set(0, 0.88, 0.02);
+    torso.rotation.x = 0.12;
     rider.add(torso);
 
-    // Flannel shirt (open over t-shirt) — front panels
-    for (const side of [-1, 1]) {
-      const panel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.52, 0.32), flannel);
-      panel.position.set(side * 0.24, 0.72, 0.04);
-      panel.rotation.x = 0.18;
-      rider.add(panel);
-    }
-    // Flannel back
-    const flBack = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.52, 0.06), flannel);
-    flBack.position.set(0, 0.72, 0.2);
-    flBack.rotation.x = 0.18;
-    rider.add(flBack);
-    // Flannel horizontal stripes
-    for (const yOff of [-0.14, 0.0, 0.14]) {
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.33), flannelStripe);
-      stripe.position.set(0, 0.72 + yOff, 0.04);
-      stripe.rotation.x = 0.18;
+    // Flannel — wraps over the t-shirt as an open overshirt
+    const flannelShell = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.28), flannel);
+    flannelShell.position.set(0, 0.88, 0.02);
+    flannelShell.rotation.x = 0.12;
+    rider.add(flannelShell);
+
+    // Black stripes on flannel
+    for (const yOff of [-0.12, 0.02, 0.16]) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.03, 0.29), flannelDark);
+      stripe.position.set(0, 0.88 + yOff, 0.02);
+      stripe.rotation.x = 0.12;
       rider.add(stripe);
     }
 
-    // Flannel sleeves
+    // Open collar showing black tee underneath
+    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.08), tshirt);
+    collar.position.set(0, 1.10, -0.08);
+    rider.add(collar);
+
+    // ── ARMS — out for balance ──
     this._skateArms = [];
     for (const side of [-1, 1]) {
-      const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.15), flannel);
-      upperArm.position.set(side * 0.34, 0.75, 0.04);
-      upperArm.rotation.z = side * 0.6;
-      upperArm.rotation.x = side === 1 ? -0.3 : 0.15;
-      rider.add(upperArm);
+      const upper = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.13), flannel);
+      upper.position.set(side * 0.30, 0.90, 0);
+      upper.rotation.z = side * 0.55;
+      upper.rotation.x = side === 1 ? -0.25 : 0.2;
+      rider.add(upper);
 
-      const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.25, 0.13), flannel);
-      forearm.position.set(side * 0.5, 0.58, side === 1 ? -0.1 : 0.08);
-      forearm.rotation.z = side * 0.3;
-      forearm.rotation.x = side === 1 ? -0.6 : 0.3;
-      rider.add(forearm);
+      const fore = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.12), skin);
+      fore.position.set(side * 0.48, 0.72, side === 1 ? -0.10 : 0.08);
+      fore.rotation.z = side * 0.25;
+      fore.rotation.x = side === 1 ? -0.4 : 0.25;
+      rider.add(fore);
 
-      const hand = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), skin);
-      hand.position.set(side * 0.55, 0.44, side === 1 ? -0.18 : 0.14);
+      const hand = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.09), skin);
+      hand.position.set(side * 0.54, 0.58, side === 1 ? -0.16 : 0.14);
       rider.add(hand);
 
-      this._skateArms.push({ upper: upperArm, forearm, hand, side });
+      this._skateArms.push({ upper, forearm: fore, hand, side });
     }
 
-    // ── HEAD ──
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), skin);
-    head.position.set(0, 1.14, 0);
+    // ── HEAD — slightly tilted watching the road ──
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.28), skin);
+    head.position.set(0, 1.26, -0.02);
+    head.rotation.x = 0.08;
     rider.add(head);
 
-    // Hair poking out front under backwards cap
-    const hairFront = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 0.08), hair);
-    hairFront.position.set(0, 1.04, -0.16);
+    // Hair poking out front of backwards cap
+    const hairFront = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.07), hair);
+    hairFront.position.set(0, 1.15, -0.14);
     rider.add(hairFront);
-    // Hair sides
     for (const s of [-1, 1]) {
-      const hairSide = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.2), hair);
-      hairSide.position.set(s * 0.16, 1.06, 0);
-      rider.add(hairSide);
+      const sideHair = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.16), hair);
+      sideHair.position.set(s * 0.15, 1.16, -0.02);
+      rider.add(sideHair);
     }
 
-    // Backwards baseball cap — brim faces BACK
-    const capTop = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.34), capMat);
-    capTop.position.set(0, 1.33, 0);
-    rider.add(capTop);
-    const capBand = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 0.35), capMat);
-    capBand.position.set(0, 1.28, 0);
-    rider.add(capBand);
+    // Backwards cap
+    const capCrown = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.10, 0.32), capMat);
+    capCrown.position.set(0, 1.44, -0.02);
+    rider.add(capCrown);
+    const capRim = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.05, 0.32), capMat);
+    capRim.position.set(0, 1.39, -0.02);
+    rider.add(capRim);
 
     // Brim faces backwards
-    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.18), capMat);
-    brim.position.set(0, 1.27, 0.22);
-    brim.rotation.x = 0.12;
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.025, 0.16), capMat);
+    brim.position.set(0, 1.38, 0.18);
+    brim.rotation.x = 0.15;
     rider.add(brim);
 
-    // Eyes — facing forward (which is sideways on the board)
+    // Eyes
     const white = new THREE.MeshStandardMaterial({ color: 0xffffff });
-    const black = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
     for (const side of [-1, 1]) {
-      const eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 4), white);
-      eyeW.position.set(side * 0.09, 1.16, -0.15);
+      const eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.032, 6, 4), white);
+      eyeW.position.set(side * 0.08, 1.28, -0.14);
       rider.add(eyeW);
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 4), black);
-      pupil.position.set(side * 0.09, 1.16, -0.17);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 4), pupilMat);
+      pupil.position.set(side * 0.08, 1.28, -0.16);
       rider.add(pupil);
     }
 
-    // Slight smirk
-    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), black);
-    mouth.position.set(0.02, 1.07, -0.15);
+    // Smirk
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.02), pupilMat);
+    mouth.position.set(0.02, 1.19, -0.14);
     rider.add(mouth);
 
     this._skateRider = rider;
     g.add(rider);
 
-    // Jump state
     this._skateJumping = false;
     this._skateJumpVel = 0;
     this._skateJumpY = 0;
 
-    // Underglow
     const glow = new THREE.PointLight(0x0055aa, 0.5, 8);
     glow.position.set(0, 0.05, 0);
     g.add(glow);
