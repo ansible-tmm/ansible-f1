@@ -1740,8 +1740,8 @@ export class Player {
 
   startTimeTravel() {
     if (this.carType !== "delorean") return false;
-    if (this._ttState !== "idle") return false;
     this.initTimeTravel();
+    if (this._ttState !== "idle") return false;
     this._ttState = "accelerating";
     this._ttTimer = 0;
     this._ttSpeedMult = 1;
