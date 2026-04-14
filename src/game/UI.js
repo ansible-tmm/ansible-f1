@@ -176,6 +176,24 @@ export class UI {
     on("recovery-no", () => this.onRecoveryNo && this.onRecoveryNo());
     on("btn-unstick", () => this.onUnstick && this.onUnstick());
     on("btn-billboard-close", () => this.onBillboardClose && this.onBillboardClose());
+
+    if (this.el.billboardOverlay) {
+      this.el.billboardOverlay.addEventListener("click", (e) => {
+        if (e.target === this.el.billboardOverlay) {
+          if (this.onBillboardClose) this.onBillboardClose();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Escape" && this.el.billboardOverlay &&
+          !this.el.billboardOverlay.classList.contains("hidden")) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onBillboardClose) this.onBillboardClose();
+      }
+    }, true);
+
     on("btn-touch-pause", () => this.onTouchPause && this.onTouchPause());
 
     on("btn-quiz-skip", () => this.onQuizSkip && this.onQuizSkip());

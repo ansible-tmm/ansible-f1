@@ -126,9 +126,9 @@ To swap an embed URL (e.g. ServiceNow arcade is now ready):
 ### 3D Billboard Face (`Track.js`)
 
 `Track._billboards()` creates a 512×320 canvas per billboard:
-- If `def.logo` exists, loads the image and draws it centered at the top of the canvas
-- Draws `def.label` as large text below the logo
-- Adds "[ Click to explore ]" and "★ +500 pts ★" prompts
+- If `def.logo` exists, loads the image and draws it centered, scaled to fill the entire board (max size with 24px padding)
+- If no logo, draws `def.label` in large 56px text
+- No small text on the billboard face — logos need to be visible from the game camera distance
 - Canvas becomes a `THREE.CanvasTexture` on a plane mesh in front of the billboard frame
 
 Three billboards are positioned at fixed world coordinates:
@@ -153,6 +153,7 @@ Three billboards are positioned at fixed world coordinates:
 - If `embed` is truthy: injects an `<iframe>` into `#billboard-content`
 - If `embed` is null: injects a placeholder div with the logo image (or gear icon fallback) and "coming soon" text
 - `showBonus` controls the "+500 Interactive Experience" badge visibility
+- On open, clears all floating HUD text (combo display, status, damage/pickup popups, hippo announce) so nothing obscures the arcade demo
 
 ### Bonus Points (`Game.js`)
 
@@ -161,7 +162,12 @@ Three billboards are positioned at fixed world coordinates:
 - `_demoCompleted` is cleared in `resetRun()` so each run is fresh
 - Maximum possible bonus per run: 1,500 pts (3 billboards × 500)
 
-### Escape/Space closes the billboard and returns the camera to the player.
+### Closing the Billboard
+
+Three ways to close and return to gameplay:
+- **Escape key** — handled by a `document`-level `keydown` listener with `capture: true` in `UI.js`. This is necessary because cross-origin iframes (arcade.software) steal keyboard focus, so the normal `window` keydown in `Game.js` won't fire while the iframe is focused. The capture listener on `document` fires first regardless of iframe focus.
+- **Close button** (×) — top-right of the overlay, wired in `UI._bindButtons()` → `onBillboardClose` → `Game.closeBillboard()`
+- **Click backdrop** — clicking the dark area outside the billboard panel closes it (event target check on the overlay element in `UI.js`)
 
 ## Arcade Embed URL Format
 
