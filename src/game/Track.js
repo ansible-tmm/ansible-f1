@@ -670,36 +670,20 @@ export class Track {
       const drawFace = (logoImg) => {
         ctx.fillStyle = "#0d1420";
         ctx.fillRect(0, 0, 512, 320);
-        ctx.strokeStyle = accentHex;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(16, 16, 480, 288);
-        ctx.textAlign = "center";
 
         if (logoImg) {
-          const maxW = 240, maxH = 100;
+          const pad = 24;
+          const maxW = 512 - pad * 2, maxH = 320 - pad * 2;
           let w = logoImg.width, h = logoImg.height;
-          const scale = Math.min(maxW / w, maxH / h, 1);
+          const scale = Math.min(maxW / w, maxH / h);
           w *= scale; h *= scale;
-          ctx.drawImage(logoImg, 256 - w / 2, 50, w, h);
-          ctx.font = "bold 28px 'Courier New', monospace";
-          ctx.fillStyle = "#ffffff";
-          ctx.fillText(def.label.toUpperCase(), 256, 190);
+          ctx.drawImage(logoImg, 256 - w / 2, 160 - h / 2, w, h);
         } else {
-          ctx.font = "bold 24px 'Courier New', monospace";
-          ctx.fillStyle = accentHex;
-          ctx.fillText("SIDE QUEST", 256, 60);
-          ctx.font = "bold 48px 'Courier New', monospace";
+          ctx.textAlign = "center";
+          ctx.font = "bold 56px 'Courier New', monospace";
           ctx.fillStyle = "#ffffff";
-          ctx.fillText(def.label.toUpperCase(), 256, 140);
+          ctx.fillText(def.label.toUpperCase(), 256, 175);
         }
-
-        ctx.font = "20px 'Courier New', monospace";
-        ctx.fillStyle = "rgba(200,220,255,0.5)";
-        ctx.fillText("[ Click to explore ]", 256, 240);
-
-        ctx.font = "bold 16px 'Courier New', monospace";
-        ctx.fillStyle = accentHex;
-        ctx.fillText("★ +500 pts ★", 256, 280);
 
         tex.needsUpdate = true;
       };
