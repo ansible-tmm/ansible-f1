@@ -225,7 +225,7 @@ export const LEVELS = {
   A: {
     id: "A",
     name: "AIOps",
-    subtitle: "AIOps",
+    subtitle: "Tame the Alert Storm",
     road:     0x2a2c38,
     roadEmissive: 0x06080c,
     edge:     0x1a1a2e,
