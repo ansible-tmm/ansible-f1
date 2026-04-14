@@ -31,6 +31,7 @@ export class Player {
     const vis = this.mesh.visible;
     this.dispose();
     this._smokeParticles = null;
+    this._truckExhaust = null;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.copy(pos);
@@ -81,6 +82,11 @@ export class Player {
       livery: 0x00205b, liveryEmit: 0x000d26,
       accent: 0xffffff, accentEmit: 0x444444,
       rim: 0xffffff, glow: 0x0044aa,
+    });
+    if (type === "f1_maroon") return this._buildF1({
+      livery: 0x660000, liveryEmit: 0x1a0000,
+      accent: 0xff6600, accentEmit: 0x331100,
+      rim: 0xcc5500, glow: 0x882200,
     });
     if (type === "hippo") return this._buildHippoMesh();
     if (type === "skateboard") return this._buildSkateboardMesh();
@@ -1308,6 +1314,36 @@ export class Player {
     addWheel(-0.82, 1.2);
     addWheel(0.82, 1.2);
 
+    // Exhaust pipe
+    const pipeMat = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.7, roughness: 0.3 });
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 8), pipeMat);
+    pipe.rotation.x = Math.PI / 2;
+    pipe.position.set(0.55, 0.25, 1.85);
+    g.add(pipe);
+
+    // Thick black exhaust smoke
+    const smokeCount = 100;
+    const smokeGeo = new THREE.BufferGeometry();
+    const smokePos = new Float32Array(smokeCount * 3);
+    for (let i = 0; i < smokeCount; i++) {
+      smokePos[i * 3] = (Math.random() - 0.5) * 0.25;
+      smokePos[i * 3 + 1] = Math.random() * 1.8;
+      smokePos[i * 3 + 2] = Math.random() * 1.5;
+    }
+    smokeGeo.setAttribute("position", new THREE.BufferAttribute(smokePos, 3));
+    const smokeMat = new THREE.PointsMaterial({
+      color: 0x111111,
+      size: 0.35,
+      transparent: true,
+      opacity: 0.55,
+      sizeAttenuation: true,
+      depthWrite: false,
+    });
+    const exhaust = new THREE.Points(smokeGeo, smokeMat);
+    exhaust.position.set(0.55, 0.25, 1.9);
+    g.add(exhaust);
+    this._truckExhaust = exhaust;
+
     // Underglow (green)
     const glow = new THREE.PointLight(0x44ff66, 0.55, 9);
     glow.position.set(0, 0.15, 0.4);
@@ -1991,6 +2027,21 @@ export class Player {
         }
         pos.needsUpdate = true;
       }
+    }
+
+    if (this._truckExhaust) {
+      const pos = this._truckExhaust.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        pos.array[i * 3] += (Math.random() - 0.5) * 0.03;
+        pos.array[i * 3 + 1] += dt * (0.8 + Math.random() * 0.6);
+        pos.array[i * 3 + 2] += dt * (0.5 + Math.random() * 0.4);
+        if (pos.array[i * 3 + 1] > 1.8 || pos.array[i * 3 + 2] > 1.5) {
+          pos.array[i * 3] = (Math.random() - 0.5) * 0.15;
+          pos.array[i * 3 + 1] = Math.random() * 0.1;
+          pos.array[i * 3 + 2] = Math.random() * 0.1;
+        }
+      }
+      pos.needsUpdate = true;
     }
 
     if (this.flowGlow && this.flowGlow.material.opacity > 0.01) {

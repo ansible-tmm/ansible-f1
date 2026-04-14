@@ -115,7 +115,7 @@ export const DRIVERS = {
   andrius: {
     id: "andrius",
     name: "Andrius Benokraitis",
-    car: "semi_truck",
+    car: "f1_maroon",
     country: "US",
     photo: "./assets/andrius_tron.png",
     origin: "Durham, North Carolina",

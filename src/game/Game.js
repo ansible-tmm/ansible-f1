@@ -256,7 +256,7 @@ export class Game {
       }
 
       if (this.state === "running" && e.key.length === 1) {
-        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-5);
+        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-6);
         if (this.currentDriver === "nuno" && this.player.carType !== "hippo" && this._secretBuffer.endsWith("hippo")) {
           this.player.swapCar("hippo");
           this.ui.showHippoAnnounce();
@@ -267,6 +267,12 @@ export class Game {
           this.player.swapCar("skateboard");
           this.ui.showHippoCrush("🛹 SKATE MODE 🛹");
           play(SFX.CORRECT, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "andrius" && this.player.carType !== "semi_truck" && this._secretBuffer.endsWith("chunky")) {
+          this.player.swapCar("semi_truck");
+          this.ui.showHippoCrush("🚛 CHUNKY MODE 🚛");
+          play(SFX.HORN_ANDRIUS, 0.9);
           this._secretBuffer = "";
         }
       }
@@ -1262,8 +1268,7 @@ export class Game {
   }
 
   _isSemiTruck() {
-    const d = DRIVERS[this.currentDriver];
-    return d && d.car === "semi_truck";
+    return this.player.carType === "semi_truck";
   }
 
   _isCheater() {
