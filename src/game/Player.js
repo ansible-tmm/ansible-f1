@@ -1539,7 +1539,7 @@ export class Player {
     rider.rotation.y = -1.4;
 
     // ── FRONT LEG (left) — single tall piece, slight angle toward front of board ──
-    const footYaw = 1.0;
+    const footYaw = -1.0;
     const ftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.10, 0.28), shoe);
     ftShoe.position.set(0, 0.0, 0.38);
     ftShoe.rotation.y = footYaw;
