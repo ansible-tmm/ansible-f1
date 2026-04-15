@@ -1,7 +1,7 @@
 import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS } from "../utils/storage.js";
 import { fetchGlobalLeaderboard } from "../utils/firebase.js";
 import * as THREE from "three";
-import { LEVELS, DRIVERS } from "../data/config.js";
+import { LEVELS, DRIVERS, getSummitBoothThemeUrl } from "../data/config.js";
 import { Player } from "./Player.js";
 
 /**
@@ -121,6 +121,8 @@ export class UI {
     this._quizCountdownId = null;
     this._quizAutoTimer = null;
     this._levelSelectReturnTo = "main_menu";
+    this._summitLinkLevelId = "A";
+    this._scaloniHud = false;
     this._populateCountrySelect();
     this._bindButtons();
     this._syncLevelCardLabels();
@@ -1253,7 +1255,14 @@ export class UI {
   }
 
   _toggleMenuButtons(visible) {
-    const ids = ["btn-start", "btn-choose-driver", "btn-choose-level-menu", "btn-highscores", "btn-achievements"];
+    const ids = [
+      "btn-start",
+      "btn-choose-driver",
+      "btn-choose-level-menu",
+      "btn-highscores",
+      "btn-achievements",
+      "summit-booth-back-wrap",
+    ];
     for (const id of ids) {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", !visible);
@@ -1269,6 +1278,7 @@ export class UI {
   }
 
   setScalonetaHud(on) {
+    this._scaloniHud = on;
     const _swap = (sel, en, es) => {
       const el = document.querySelector(sel);
       if (el) el.textContent = on ? es : en;
@@ -1445,6 +1455,7 @@ export class UI {
     _swap("#btn-choose-level-lc", "Choose Level", "Elegir nivel");
     _swap("#btn-menu-go", "Back to Menu", "Volver al men\u00fa");
     _swap("#btn-menu-lc", "Back to Menu", "Volver al men\u00fa");
+    this._refreshSummitBoothLink();
   }
 
   setActiveLevel(levelId) {
@@ -1455,6 +1466,22 @@ export class UI {
       const lvl = LEVELS[levelId];
       this.el.hudLevelName.textContent = lvl && lvl.name ? lvl.name : `Level ${levelId}`;
     }
+    this._summitLinkLevelId = levelId;
+    this._refreshSummitBoothLink();
+  }
+
+  _refreshSummitBoothLink() {
+    const link = document.getElementById("summit-booth-back");
+    const wrap = document.getElementById("summit-booth-back-wrap");
+    if (!link || !wrap) return;
+    const id = this._summitLinkLevelId;
+    const lvl = LEVELS[id];
+    const url = getSummitBoothThemeUrl(id);
+    if (!url || !lvl) return;
+    link.href = url;
+    link.textContent = this._scaloniHud
+      ? `Volver al stand Summit — ${lvl.name}`
+      : `Back to Summit booth — ${lvl.name}`;
   }
 
   _openLevelSelect(returnTo) {

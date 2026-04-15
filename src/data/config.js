@@ -429,3 +429,11 @@ export const LEVELS = {
     ],
   },
 };
+
+/** Summit Booth Themes site (paired booth pages — keep in sync with summit-booth-themes repo) */
+export const SUMMIT_BOOTH_BASE = "https://abwalczyk.github.io/summit-booth-themes";
+
+export function getSummitBoothThemeUrl(levelId) {
+  const seg = LEVELS[levelId]?.pathSegment;
+  return seg ? `${SUMMIT_BOOTH_BASE}/${seg}/` : null;
+}

@@ -2,7 +2,7 @@
 
 A retro-arcade racing game built with Three.js, themed around Ansible and IT automation. Dodge outages, collect playbooks and collections, answer skill-check quizzes, and race your way up the leaderboard.
 
-**[Play it live on GitHub Pages](https://ansible-tmm.github.io/ansible-f1/)**
+**[Play it live on GitHub Pages](https://abwalczyk.github.io/ansible-f1/)**
 
 ![Built to Automate — gameplay screenshot](assets/screenshots/gameplay.png)
 
