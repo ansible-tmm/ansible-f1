@@ -123,7 +123,20 @@ export class UI {
     this._levelSelectReturnTo = "main_menu";
     this._populateCountrySelect();
     this._bindButtons();
+    this._syncLevelCardLabels();
     this._drawLevelPreviews();
+  }
+
+  _syncLevelCardLabels() {
+    document.querySelectorAll(".level-card").forEach((card) => {
+      const id = card.dataset.level;
+      const lvl = LEVELS[id];
+      if (!lvl) return;
+      const label = card.querySelector(".level-card-label");
+      const sub = card.querySelector(".level-card-sub");
+      if (label) label.textContent = lvl.name;
+      if (sub) sub.textContent = lvl.subtitle;
+    });
   }
 
   _populateCountrySelect() {

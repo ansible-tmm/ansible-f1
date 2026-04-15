@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Game } from "./game/Game.js";
 import { UI } from "./game/UI.js";
 import { getLastLevel, getLastDriver } from "./utils/storage.js";
+import { getLevelIdFromPathname, syncThemeUrl } from "./utils/themePath.js";
 import { toggleMusicMute, toggleSfxMute } from "./utils/audio.js";
 import { loadQuestions } from "./data/questions.js";
 
@@ -54,13 +55,26 @@ ui.setHandlers({
     }
   },
   onQuizSkip: () => game.skipQuiz(),
-  onLevelSelect: (levelId, returnTo) => game.switchLevel(levelId, returnTo),
+  onLevelSelect: (levelId, returnTo) => {
+    game.switchLevel(levelId, returnTo);
+    syncThemeUrl(levelId, "push");
+  },
   onDriverSelect: (driverId) => game.selectDriver(driverId),
   onSaveScoreLc: () => game.saveLcScore(),
 });
 
 ui.setActiveDriver(getLastDriver());
-game.switchLevel(getLastLevel());
+
+const levelFromUrl = getLevelIdFromPathname();
+const initialLevel = levelFromUrl ?? getLastLevel();
+game.switchLevel(initialLevel);
+syncThemeUrl(initialLevel, levelFromUrl ? "skip" : "replace");
+
+window.addEventListener("popstate", () => {
+  const id = getLevelIdFromPathname() ?? getLastLevel();
+  game.switchLevel(id);
+  syncThemeUrl(id, "skip");
+});
 
 const btnMusic = document.getElementById("btn-music");
 const btnSfx = document.getElementById("btn-sfx");
