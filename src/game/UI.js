@@ -317,25 +317,21 @@ export class UI {
   }
 
   /**
-   * Bottom-center Summit booth button: only when main menu is up and primary buttons are visible.
+   * Bottom-center Summit booth button: same “menu” state as keyboard nav (_isMainMenuActive).
    */
   _syncSummitDockVisibility() {
     const dock = document.getElementById("summit-booth-back-wrap");
     if (!dock) return;
-    const start = document.getElementById("btn-start");
-    const show =
-      this.el.mainMenu &&
-      !this.el.mainMenu.classList.contains("hidden") &&
-      start &&
-      !start.classList.contains("hidden");
+    const show = this._isMainMenuActive();
     dock.classList.toggle("hidden", !show);
   }
 
   _isMainMenuActive() {
+    if (!this.el.mainMenu) return false;
     const lb = document.getElementById("menu-leaderboard");
     return !this.el.mainMenu.classList.contains("hidden")
-      && this.el.driverSelect.classList.contains("hidden")
-      && this.el.levelSelect.classList.contains("hidden")
+      && (!this.el.driverSelect || this.el.driverSelect.classList.contains("hidden"))
+      && (!this.el.levelSelect || this.el.levelSelect.classList.contains("hidden"))
       && (!lb || lb.classList.contains("hidden"))
       && (!this.el.menuAchievements || this.el.menuAchievements.classList.contains("hidden"));
   }

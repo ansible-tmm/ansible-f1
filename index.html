@@ -238,24 +238,6 @@
         </ul>
       </div>
 
-      <!-- Bottom-center dock: only on main menu (see UI._syncSummitDockVisibility) -->
-      <div
-        id="summit-booth-back-wrap"
-        class="summit-booth-dock"
-        aria-label="Summit booth theme page"
-      >
-        <p class="summit-booth-dock-lead" id="summit-booth-lead">
-          View this theme on the Summit booth site.
-        </p>
-        <a
-          id="summit-booth-back"
-          class="summit-booth-dock-btn"
-          href="https://abwalczyk.github.io/summit-booth-themes/AIOps/"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Summit booth — AIOps</a>
-      </div>
-
       <div id="driver-select" class="overlay panel hidden">
         <h2 class="driver-select-title">Choose Your Driver</h2>
         <p class="driver-select-hint">← → to browse · Enter to select</p>
@@ -479,6 +461,24 @@
           <button type="button" id="btn-unstick" class="debug-btn" title="Stuck? Click to force-resume the run">Skip / Unstick</button>
         </div>
       </div>
+    </div>
+
+    <!-- Fixed dock: must stay outside #game-root so z-index stacks above overlays -->
+    <div
+      id="summit-booth-back-wrap"
+      class="summit-booth-dock hidden"
+      aria-label="Summit booth theme page"
+    >
+      <p class="summit-booth-dock-lead" id="summit-booth-lead">
+        View this theme on the Summit booth site.
+      </p>
+      <a
+        id="summit-booth-back"
+        class="summit-booth-dock-btn"
+        href="https://abwalczyk.github.io/summit-booth-themes/AIOps/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Summit booth — AIOps</a>
     </div>
 
     <script type="module" src="./src/main.js"></script>

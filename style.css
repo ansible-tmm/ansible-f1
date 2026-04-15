@@ -883,13 +883,13 @@ body {
   color: #ffd54a;
 }
 
-/* Summit booth link — fixed bottom center (matches booth “Let’s race” red button) */
+/* Summit booth link — fixed bottom center; body-level so it paints above #game-root overlays */
 .summit-booth-dock {
   position: fixed;
   left: 50%;
   bottom: clamp(0.75rem, 3.5vh, 2rem);
   transform: translateX(-50%);
-  z-index: 6;
+  z-index: 200;
   display: flex;
   flex-direction: column;
   align-items: center;
