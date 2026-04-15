@@ -1420,28 +1420,31 @@ export class Game {
   ];
 
   _bombs = [];
+  _explosions = [];
+  _bombCooldown = 0;
 
   _dropBomb() {
+    if (this._bombCooldown > 0) return;
+    this._bombCooldown = 0.3;
     play(SFX.OBSTACLE_HIT, 0.7);
     const px = this.player.mesh.position.x;
     const pz = this.player.mesh.position.z;
     const py = this.player.mesh.position.y;
 
-    const bombGeo = new THREE.SphereGeometry(0.12, 6, 6);
-    const bombMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
-    const bomb = new THREE.Mesh(bombGeo, bombMat);
+    if (!this._bombGeoCache) {
+      this._bombGeoCache = new THREE.SphereGeometry(0.12, 4, 4);
+      this._bombMatCache = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+    }
+    const bomb = new THREE.Mesh(this._bombGeoCache, this._bombMatCache);
     bomb.position.set(px, py - 0.3, pz);
     this.scene.add(bomb);
 
-    this._bombs.push({
-      mesh: bomb,
-      vy: -8,
-      age: 0,
-      exploded: false,
-    });
+    this._bombs.push({ mesh: bomb, vy: -8, age: 0 });
   }
 
   _updateBombs(dt) {
+    this._bombCooldown = Math.max(0, this._bombCooldown - dt);
+
     for (let i = this._bombs.length - 1; i >= 0; i--) {
       const b = this._bombs[i];
       b.age += dt;
@@ -1449,29 +1452,47 @@ export class Game {
       b.mesh.position.y += b.vy * dt;
       b.mesh.position.z -= this.worldSpeed * dt * 0.5;
 
-      if (b.mesh.position.y <= 0.1 && !b.exploded) {
-        b.exploded = true;
+      if (b.mesh.position.y <= 0.1) {
         this._explodeBomb(b.mesh.position.clone());
         this.scene.remove(b.mesh);
-        b.mesh.geometry.dispose();
-        b.mesh.material.dispose();
         this._bombs.splice(i, 1);
       } else if (b.age > 5) {
         this.scene.remove(b.mesh);
-        b.mesh.geometry.dispose();
-        b.mesh.material.dispose();
         this._bombs.splice(i, 1);
+      }
+    }
+
+    for (let i = this._explosions.length - 1; i >= 0; i--) {
+      const ex = this._explosions[i];
+      ex.age += dt;
+      const p = ex.points.geometry.attributes.position;
+      const v = ex.velocities;
+      for (let j = 0; j < ex.count; j++) {
+        p.array[j * 3] += v[j * 3] * dt;
+        p.array[j * 3 + 1] += v[j * 3 + 1] * dt;
+        v[j * 3 + 1] -= 9.8 * dt;
+        p.array[j * 3 + 2] += v[j * 3 + 2] * dt;
+      }
+      p.needsUpdate = true;
+      ex.points.material.opacity = Math.max(0, 1 - ex.age * 2.5);
+      if (ex.age > 0.5) {
+        this.scene.remove(ex.points);
+        ex.points.geometry.dispose();
+        ex.points.material.dispose();
+        this._explosions.splice(i, 1);
       }
     }
   }
 
   _cleanupBombs() {
-    for (const b of this._bombs) {
-      this.scene.remove(b.mesh);
-      b.mesh.geometry.dispose();
-      b.mesh.material.dispose();
-    }
+    for (const b of this._bombs) this.scene.remove(b.mesh);
     this._bombs = [];
+    for (const ex of this._explosions) {
+      this.scene.remove(ex.points);
+      ex.points.geometry.dispose();
+      ex.points.material.dispose();
+    }
+    this._explosions = [];
   }
 
   _explodeBomb(pos) {
@@ -1480,65 +1501,31 @@ export class Game {
     this.shakeUntil = performance.now() + 200;
     this.shakeAmp = 0.3;
 
-    // Explosion particle burst
-    const count = 40;
+    const count = 20;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
-    const velocities = [];
+    const velocities = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = 0;
-      positions[i * 3 + 1] = 0;
-      positions[i * 3 + 2] = 0;
-      velocities.push(
-        (Math.random() - 0.5) * 6,
-        Math.random() * 5 + 2,
-        (Math.random() - 0.5) * 6
-      );
+      velocities[i * 3] = (Math.random() - 0.5) * 5;
+      velocities[i * 3 + 1] = Math.random() * 4 + 2;
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 5;
     }
     geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const mat = new THREE.PointsMaterial({
       color: 0xff6600,
-      size: 0.25,
+      size: 0.3,
       transparent: true,
       opacity: 1,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const explosion = new THREE.Points(geo, mat);
-    explosion.position.copy(pos);
-    this.scene.add(explosion);
+    const points = new THREE.Points(geo, mat);
+    points.position.copy(pos);
+    this.scene.add(points);
+    this._explosions.push({ points, velocities, count, age: 0 });
 
-    const flash = new THREE.PointLight(0xff6600, 3, 10);
-    flash.position.copy(pos);
-    flash.position.y = 0.5;
-    this.scene.add(flash);
-
-    let elapsed = 0;
-    const animate = () => {
-      elapsed += 0.016;
-      const p = geo.attributes.position;
-      for (let i = 0; i < count; i++) {
-        p.array[i * 3] += velocities[i * 3] * 0.016;
-        p.array[i * 3 + 1] += velocities[i * 3 + 1] * 0.016;
-        velocities[i * 3 + 1] -= 9.8 * 0.016;
-        p.array[i * 3 + 2] += velocities[i * 3 + 2] * 0.016;
-      }
-      p.needsUpdate = true;
-      mat.opacity = Math.max(0, 1 - elapsed * 2);
-      flash.intensity = Math.max(0, 3 - elapsed * 8);
-      if (elapsed < 0.8) {
-        requestAnimationFrame(animate);
-      } else {
-        this.scene.remove(explosion);
-        this.scene.remove(flash);
-        geo.dispose();
-        mat.dispose();
-      }
-    };
-    requestAnimationFrame(animate);
-
-    // Destroy any obstacles/rivals near the explosion
     const blastRadius = 2.5;
+    let hitSomething = false;
     for (let i = this.spawner.obstacles.length - 1; i >= 0; i--) {
       const o = this.spawner.obstacles[i];
       if (!o.active) continue;
@@ -1547,9 +1534,7 @@ export class Game {
       if (dx * dx + dz * dz < blastRadius * blastRadius) {
         this.spawner.explodeObstacle(o);
         this.score += 50000;
-        this.ui.showPickupPopup("+50,000");
-        const line = this._f16BombLines[Math.floor(Math.random() * this._f16BombLines.length)];
-        this.ui.showHippoCrush(line);
+        hitSomething = true;
       }
     }
     for (let i = this.spawner.rivals.length - 1; i >= 0; i--) {
@@ -1560,10 +1545,13 @@ export class Game {
       if (dx * dx + dz * dz < blastRadius * blastRadius) {
         this.spawner.explodeRival(r);
         this.score += 50000;
-        this.ui.showPickupPopup("+50,000");
-        const line = this._f16BombLines[Math.floor(Math.random() * this._f16BombLines.length)];
-        this.ui.showHippoCrush(line);
+        hitSomething = true;
       }
+    }
+    if (hitSomething) {
+      this.ui.showPickupPopup("+50,000");
+      const line = this._f16BombLines[Math.floor(Math.random() * this._f16BombLines.length)];
+      this.ui.showHippoCrush(line);
     }
   }
 
