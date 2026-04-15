@@ -883,45 +883,61 @@ body {
   color: #ffd54a;
 }
 
-/* Matches summit-booth-themes race CTA (default layout) */
-#main-menu .race-cta {
-  margin-top: 1.25rem;
-  margin-bottom: 0;
-  padding: 14px 16px;
-  border: 1px solid #d2d2d2;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+/* Summit booth link — fixed bottom center (matches booth “Let’s race” red button) */
+.summit-booth-dock {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(0.75rem, 3.5vh, 2rem);
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(92vw, 36rem);
+  pointer-events: auto;
   text-align: center;
 }
 
-#main-menu .race-cta-lead {
-  margin: 0 0 10px;
-  font-size: 0.95rem;
-  color: #4f5255;
-  font-family: Arial, Helvetica, sans-serif;
+.summit-booth-dock.hidden {
+  display: none;
 }
 
-#main-menu .race-cta-link {
+.summit-booth-dock-lead {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(0.8rem, 2.2vw, 0.95rem);
+  color: rgba(232, 247, 255, 0.88);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+}
+
+.summit-booth-dock-btn {
   display: inline-block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+  line-height: 1.35;
   color: #fff;
   background: #ee0000;
   text-decoration: none;
-  padding: 10px 18px;
-  border-radius: 6px;
+  text-align: center;
+  padding: 14px 22px;
+  border-radius: 9px;
   border: 1px solid #c00;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
 }
 
-#main-menu .race-cta-link:hover {
+.summit-booth-dock-btn:hover {
   background: #cc0000;
   color: #fff;
 }
 
-#main-menu .race-cta-link:focus-visible {
+.summit-booth-dock-btn:focus-visible {
   outline: 2px solid #06c;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .help {

@@ -127,6 +127,7 @@ export class UI {
     this._bindButtons();
     this._syncLevelCardLabels();
     this._drawLevelPreviews();
+    this._syncSummitDockVisibility();
   }
 
   _syncLevelCardLabels() {
@@ -312,6 +313,22 @@ export class UI {
       this._menuIdx = 0;
       this._updateMenuFocus();
     }
+    this._syncSummitDockVisibility();
+  }
+
+  /**
+   * Bottom-center Summit booth button: only when main menu is up and primary buttons are visible.
+   */
+  _syncSummitDockVisibility() {
+    const dock = document.getElementById("summit-booth-back-wrap");
+    if (!dock) return;
+    const start = document.getElementById("btn-start");
+    const show =
+      this.el.mainMenu &&
+      !this.el.mainMenu.classList.contains("hidden") &&
+      start &&
+      !start.classList.contains("hidden");
+    dock.classList.toggle("hidden", !show);
   }
 
   _isMainMenuActive() {
@@ -365,6 +382,7 @@ export class UI {
       this.el.mainMenu.classList.remove("hidden");
       this.el.attractScores.classList.add("hidden");
     }
+    this._syncSummitDockVisibility();
   }
 
   showPause(visible) {
@@ -1117,12 +1135,14 @@ export class UI {
     this.el.driverDetail.classList.add("hidden");
     this.el.driverCards.classList.remove("compact");
     this._renderDriverCards();
+    this._syncSummitDockVisibility();
   }
 
   _hideDriverSelect() {
     this._stopCarPreview();
     if (this.el.driverSelect) this.el.driverSelect.classList.add("hidden");
     this.el.mainMenu.classList.remove("hidden");
+    this._syncSummitDockVisibility();
   }
 
   _carLabel(carType) {
@@ -1261,12 +1281,12 @@ export class UI {
       "btn-choose-level-menu",
       "btn-highscores",
       "btn-achievements",
-      "summit-booth-back-wrap",
     ];
     for (const id of ids) {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", !visible);
     }
+    this._syncSummitDockVisibility();
   }
 
   // --- Level select ---
@@ -1495,6 +1515,7 @@ export class UI {
     if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
     if (this.el.levelComplete) this.el.levelComplete.classList.add("hidden");
     this.showLevelSelect(true);
+    this._syncSummitDockVisibility();
   }
 
   _closeLevelSelect() {
@@ -1508,6 +1529,7 @@ export class UI {
     } else if (this._levelSelectReturnTo === "running") {
       if (this.el.pauseMenu) this.el.pauseMenu.classList.remove("hidden");
     }
+    this._syncSummitDockVisibility();
   }
 
   _drawLevelPreviews() {
