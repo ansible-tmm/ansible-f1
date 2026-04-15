@@ -1473,15 +1473,19 @@ export class UI {
   _refreshSummitBoothLink() {
     const link = document.getElementById("summit-booth-back");
     const wrap = document.getElementById("summit-booth-back-wrap");
-    if (!link || !wrap) return;
+    const lead = document.getElementById("summit-booth-lead");
+    if (!link || !wrap || !lead) return;
     const id = this._summitLinkLevelId;
     const lvl = LEVELS[id];
     const url = getSummitBoothThemeUrl(id);
     if (!url || !lvl) return;
     link.href = url;
+    lead.textContent = this._scaloniHud
+      ? "Ver este tema en el sitio de Summit booth."
+      : "View this theme on the Summit booth site.";
     link.textContent = this._scaloniHud
-      ? `Volver al stand Summit — ${lvl.name}`
-      : `Back to Summit booth — ${lvl.name}`;
+      ? `Stand Summit — ${lvl.name}`
+      : `Summit booth — ${lvl.name}`;
   }
 
   _openLevelSelect(returnTo) {

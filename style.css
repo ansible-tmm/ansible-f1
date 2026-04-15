@@ -883,24 +883,45 @@ body {
   color: #ffd54a;
 }
 
-.menu-summit-cta {
-  margin: 0 auto 1rem;
+/* Matches summit-booth-themes race CTA (default layout) */
+#main-menu .race-cta {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  padding: 14px 16px;
+  border: 1px solid #d2d2d2;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
   text-align: center;
-  max-width: 24rem;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  color: var(--muted);
 }
 
-.menu-summit-cta a {
-  color: var(--neon);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(0, 255, 204, 0.35);
+#main-menu .race-cta-lead {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #4f5255;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-.menu-summit-cta a:hover {
+#main-menu .race-cta-link {
+  display: inline-block;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
   color: #fff;
-  border-bottom-color: var(--neon);
+  background: #ee0000;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid #c00;
+}
+
+#main-menu .race-cta-link:hover {
+  background: #cc0000;
+  color: #fff;
+}
+
+#main-menu .race-cta-link:focus-visible {
+  outline: 2px solid #06c;
+  outline-offset: 2px;
 }
 
 .help {
