@@ -258,7 +258,7 @@ export class Game {
       }
 
       if (this.state === "running" && e.key.length === 1) {
-        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-6);
+        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-9);
         if (this.currentDriver === "nuno" && this.player.carType !== "hippo" && this._secretBuffer.endsWith("hippo")) {
           this.player.swapCar("hippo");
           this.ui.showHippoAnnounce();
@@ -274,6 +274,12 @@ export class Game {
         if (this.currentDriver === "andrius" && this.player.carType !== "semi_truck" && this._secretBuffer.endsWith("chunky")) {
           this.player.swapCar("semi_truck");
           this.ui.showHippoCrush("🚛 CHUNKY MODE 🚛");
+          play(SFX.HORN_ANDRIUS, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "leo" && this.player.carType !== "scaloneta" && this._secretBuffer.endsWith("scaloneta")) {
+          this.player.swapCar("scaloneta");
+          this.ui.showHippoCrush("🇦🇷 LA SCALONETA 🇦🇷");
           play(SFX.HORN_ANDRIUS, 0.9);
           this._secretBuffer = "";
         }
@@ -359,7 +365,7 @@ export class Game {
       }
       if (this.player.carType === "hippo") {
         play(SFX.HIPPO_MODE, 0.9);
-      } else if (this.currentDriver === "andrius") {
+      } else if (this.currentDriver === "andrius" || this.player.carType === "scaloneta") {
         play(SFX.HORN_ANDRIUS, 0.8);
       } else {
         play(SFX.HORN, 0.8);
@@ -891,7 +897,7 @@ export class Game {
     this._spawnCelebration(this._orbitCenter);
 
     const isCheater = this._isCheater();
-    const cheaterType = this.player.carType === "hippo" ? "hippo" : isCheater ? "semi" : null;
+    const cheaterType = this.player.carType === "hippo" ? "hippo" : this.player.carType === "scaloneta" ? "scaloneta" : isCheater ? "semi" : null;
     this.ui.setLevelCompleteStats({
       score: this.score,
       hits: this.obstaclesHit,
@@ -912,6 +918,8 @@ export class Game {
     if (this._isCheater()) {
       const msg = this.player.carType === "hippo"
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
+        : this.player.carType === "scaloneta"
+        ? "¡La Scaloneta no necesita leaderboard, campeón!"
         : "Nice try, but you can't set a high score as Andrius. Too easy!";
       this.ui.setStatus(msg, 4000);
       return;
@@ -929,6 +937,8 @@ export class Game {
     if (this._isCheater()) {
       const msg = this.player.carType === "hippo"
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
+        : this.player.carType === "scaloneta"
+        ? "¡La Scaloneta no necesita leaderboard, campeón!"
         : "Nice try, but you can't set a high score as Andrius. Too easy!";
       this.ui.setStatus(msg, 4000);
       return;
@@ -1287,7 +1297,7 @@ export class Game {
   }
 
   _isCheater() {
-    return this._isSemiTruck() || this.player.carType === "hippo";
+    return this._isSemiTruck() || this.player.carType === "hippo" || this.player.carType === "scaloneta";
   }
 
   _hippoSmashLines = [
@@ -1307,6 +1317,23 @@ export class Game {
     "🦛 HIPPO HUNGRY 🦛",
     "🦛 THAT WAS A WALL? 🦛",
     "🦛 NUNO SAYS NO 🦛",
+  ];
+
+  _scalonetaSmashLines = [
+    "🇦🇷 ¡VAMOS CARAJO! 🇦🇷",
+    "🇦🇷 ¡DALE CAMPEÓN! 🇦🇷",
+    "🇦🇷 ¡QUÉ MIRÁS,<br>BOBO! 🇦🇷",
+    "🇦🇷 ¡LA SCALONETA<br>NO FRENA! 🇦🇷",
+    "🇦🇷 ¡MESSIRVE! 🇦🇷",
+    "🇦🇷 ¡AGUANTE<br>ARGENTINA! 🇦🇷",
+    "🇦🇷 ¡VAMOS MESSI! 🇦🇷",
+    "🇦🇷 ¡SOMOS<br>CAMPEONES! 🇦🇷",
+    "🇦🇷 ¡MUCHACHOS! 🇦🇷",
+    "🇦🇷 ¡OLÉ OLÉ OLÉ! 🇦🇷",
+    "🇦🇷 ¡TRES ESTRELLAS! 🇦🇷",
+    "🇦🇷 ¡NO PASA NADA! 🇦🇷",
+    "🇦🇷 ¡EL DIBU<br>DICE NO! 🇦🇷",
+    "🇦🇷 ¡ARGENTINA<br>PAPÁ! 🇦🇷",
   ];
 
   _onHitObstacle(e) {
@@ -1332,6 +1359,12 @@ export class Game {
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
+        this.ui.showHippoCrush(line);
+      } else if (this.player.carType === "scaloneta") {
+        play(SFX.HORN_ANDRIUS, 0.6);
+        this.score += 50000;
+        this.ui.showPickupPopup("+50,000");
+        const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else {
         this.ui.setStatus("Smashed right through it!", 1200);
@@ -1406,6 +1439,12 @@ export class Game {
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
+        this.ui.showHippoCrush(line);
+      } else if (this.player.carType === "scaloneta") {
+        play(SFX.HORN_ANDRIUS, 0.6);
+        this.score += 50000;
+        this.ui.showPickupPopup("+50,000");
+        const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else {
         this.ui.setStatus("Plowed right through!", 1200);

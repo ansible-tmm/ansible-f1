@@ -849,6 +849,10 @@ export class UI {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "🦛 Hippo Mode Complete!";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
           "Sorry, hippo mode can't be on the leaderboard. Stop cheating!";
+      } else if (cheaterType === "scaloneta") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🇦🇷 ¡La Scaloneta llegó! 🇦🇷";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "¡Campeones del mundo no necesitan leaderboard! Pero qué lindo paseo, papá.";
       } else {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "Nice Finish... Cheater";
         if (this.el.lcMessage) this.el.lcMessage.textContent =

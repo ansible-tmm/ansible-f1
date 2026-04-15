@@ -48,6 +48,7 @@ export class Player {
     if (type === "lightcycle") return this._buildLightcycleMesh();
     if (type === "delorean") return this._buildDeloreanMesh();
     if (type === "semi_truck") return this._buildSemiTruckMesh();
+    if (type === "scaloneta") return this._buildScalonetaMesh();
     if (type === "f1_yellow") return this._buildF1({
       livery: 0xffd000, liveryEmit: 0x332800,
       accent: 0xff6600, accentEmit: 0x331100,
@@ -1176,6 +1177,200 @@ export class Player {
 
     paint.dispose(); chrome.dispose(); dark.dispose();
     rubber.dispose(); glass.dispose();
+
+    return g;
+  }
+
+  _buildScalonetaMesh() {
+    const g = new THREE.Group();
+
+    const skyBlue = new THREE.MeshStandardMaterial({
+      color: 0x75aadb, metalness: 0.3, roughness: 0.4,
+      emissive: 0x1a3055, emissiveIntensity: 0.2,
+    });
+    const white = new THREE.MeshStandardMaterial({
+      color: 0xf0f0f0, metalness: 0.2, roughness: 0.5,
+      emissive: 0x222222, emissiveIntensity: 0.1,
+    });
+    const cream = new THREE.MeshStandardMaterial({
+      color: 0xf5e6c8, metalness: 0.15, roughness: 0.6,
+    });
+    const chrome = new THREE.MeshStandardMaterial({
+      color: 0xccddee, metalness: 0.9, roughness: 0.12,
+    });
+    const dark = new THREE.MeshStandardMaterial({
+      color: 0x1a1a22, metalness: 0.5, roughness: 0.45,
+    });
+    const rubber = new THREE.MeshStandardMaterial({
+      color: 0x0d0d0d, metalness: 0.15, roughness: 0.92,
+    });
+    const glass = new THREE.MeshStandardMaterial({
+      color: 0x88ccff, metalness: 0.5, roughness: 0.15,
+      transparent: true, opacity: 0.45,
+    });
+    const red = new THREE.MeshStandardMaterial({
+      color: 0xcc2200, emissive: 0xcc2200, emissiveIntensity: 0.5,
+    });
+    const gold = new THREE.MeshStandardMaterial({
+      color: 0xddaa33, metalness: 0.7, roughness: 0.3,
+      emissive: 0x553300, emissiveIntensity: 0.3,
+    });
+
+    // Bus body — lower half (sky blue)
+    const bodyLower = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.8, 3.6), skyBlue.clone());
+    bodyLower.position.set(0, 0.65, 0.3);
+    g.add(bodyLower);
+
+    // Bus body — white stripe (middle band)
+    const stripeW = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.25, 3.62), white.clone());
+    stripeW.position.set(0, 1.15, 0.3);
+    g.add(stripeW);
+
+    // Bus body — upper half (sky blue)
+    const bodyUpper = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.5, 3.6), skyBlue.clone());
+    bodyUpper.position.set(0, 1.5, 0.3);
+    g.add(bodyUpper);
+
+    // Roof (cream/off-white, slightly rounded look)
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 3.5), cream.clone());
+    roof.position.set(0, 1.81, 0.3);
+    g.add(roof);
+
+    // Roof rack / luggage rail
+    for (const side of [-0.65, 0.65]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 2.8), chrome.clone());
+      rail.position.set(side, 1.93, 0.3);
+      g.add(rail);
+    }
+
+    // Gold ornamental trim along roofline
+    const trimFront = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.06), gold.clone());
+    trimFront.position.set(0, 1.84, -1.48);
+    g.add(trimFront);
+    const trimBack = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 0.06), gold.clone());
+    trimBack.position.set(0, 1.84, 2.08);
+    g.add(trimBack);
+
+    // Front face — curved nose effect (slightly protruding lower)
+    const noseLower = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.55, 0.2), skyBlue.clone());
+    noseLower.position.set(0, 0.55, -1.6);
+    g.add(noseLower);
+    const noseUpper = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 0.12), cream.clone());
+    noseUpper.position.set(0, 1.0, -1.6);
+    g.add(noseUpper);
+
+    // Windshield (large, two-piece)
+    const windshield = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.65), glass.clone());
+    windshield.position.set(0, 1.45, -1.52);
+    g.add(windshield);
+
+    // Destination sign above windshield
+    const signBg = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.06), dark.clone());
+    signBg.position.set(0, 1.78, -1.54);
+    g.add(signBg);
+    const signFace = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.14, 0.02), white.clone());
+    signFace.position.set(0, 1.78, -1.56);
+    g.add(signFace);
+
+    // Front bumper (chrome, classic style)
+    const fBump = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 0.2), chrome.clone());
+    fBump.position.set(0, 0.28, -1.62);
+    g.add(fBump);
+
+    // Headlights (round-ish, classic bus)
+    const hlMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+    for (const side of [-0.55, 0.55]) {
+      const hl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 10), hlMat);
+      hl.rotation.x = Math.PI / 2;
+      hl.position.set(side, 0.5, -1.68);
+      g.add(hl);
+      const hlRim = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.03, 10), chrome.clone());
+      hlRim.rotation.x = Math.PI / 2;
+      hlRim.position.set(side, 0.5, -1.66);
+      g.add(hlRim);
+    }
+
+    // Grille (red accent, classic Mercedes front)
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.3, 0.06), red.clone());
+    grille.position.set(0, 0.55, -1.65);
+    g.add(grille);
+
+    // Number "10" badge (gold on front)
+    const badge = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.04), gold.clone());
+    badge.position.set(-0.25, 0.55, -1.68);
+    g.add(badge);
+
+    // Side windows (row of windows along each side)
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 5; i++) {
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.35), glass.clone());
+        win.rotation.y = side * Math.PI / 2;
+        win.position.set(side * 0.86, 1.45, -0.9 + i * 0.6);
+        g.add(win);
+      }
+    }
+
+    // Side white vertical stripes (Argentina flag pattern)
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i++) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.75, 0.15), white.clone());
+        stripe.position.set(side * 0.87, 0.65, -0.5 + i * 0.8);
+        g.add(stripe);
+      }
+    }
+
+    // Rear
+    const rear = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.4, 0.1), skyBlue.clone());
+    rear.position.set(0, 1.0, 2.12);
+    g.add(rear);
+
+    // Rear bumper
+    const rBump = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.14, 0.12), chrome.clone());
+    rBump.position.set(0, 0.28, 2.16);
+    g.add(rBump);
+
+    // Taillights
+    for (const side of [-0.55, 0.55]) {
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.06), red.clone());
+      tl.position.set(side, 0.5, 2.16);
+      g.add(tl);
+    }
+
+    // Rear white stripe
+    const rearStripe = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.25, 0.02), white.clone());
+    rearStripe.position.set(0, 1.15, 2.14);
+    g.add(rearStripe);
+
+    // Wheels (2 axles)
+    const addAxle = (z) => {
+      for (const side of [-1, 1]) {
+        const tire = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.28, 0.28, 0.18, 14), rubber.clone()
+        );
+        tire.rotation.z = Math.PI / 2;
+        tire.position.set(side * 0.88, 0.28, z);
+        g.add(tire);
+        const hub = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.1, 0.1, 0.04, 8), chrome.clone()
+        );
+        hub.rotation.z = Math.PI / 2;
+        hub.position.set(side * 0.88, 0.28, z);
+        g.add(hub);
+      }
+    };
+    addAxle(-1.0);
+    addAxle(1.5);
+
+    // Headlight glow
+    const glow = new THREE.PointLight(0xffffcc, 0.4, 6);
+    glow.position.set(0, 0.5, -1.7);
+    g.add(glow);
+    this.pointLight = glow;
+
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+
+    skyBlue.dispose(); white.dispose(); cream.dispose(); chrome.dispose();
+    dark.dispose(); rubber.dispose(); glass.dispose(); gold.dispose();
 
     return g;
   }
