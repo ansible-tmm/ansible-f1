@@ -44,7 +44,13 @@ export function play(url, volume = 1) {
   const c = getContext();
   if (c.state === "suspended") c.resume();
   const buf = buffers[url];
-  if (!buf) return;
+  if (!buf) {
+    const el = new Audio(url);
+    el.volume = volume;
+    el.play().catch(() => {});
+    loadBuffer(url).catch(() => {});
+    return;
+  }
   const src = c.createBufferSource();
   src.buffer = buf;
   const gain = c.createGain();
