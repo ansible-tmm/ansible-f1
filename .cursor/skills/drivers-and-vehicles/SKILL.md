@@ -65,6 +65,7 @@ Existing custom meshes to reference:
 - `_buildLightcycleMesh()` — Hicham's Tron-style light cycle
 - `_buildHippoMesh()` — Nuno's secret hippo with rider
 - `_buildSkateboardMesh()` — Matt's secret skateboard with articulated rider
+- `_buildScalonetaMesh()` — Leo's secret Argentina flag bus (scaloneta unlock)
 
 ## Adding a Secret Unlockable Mode
 
@@ -82,29 +83,56 @@ Secret modes swap a driver's default car to an alternate vehicle when the player
 
 ### Key detection pattern
 
-The `_secretBuffer` is a rolling 6-character string built from keystrokes while `state === "running"`:
+The `_secretBuffer` is a rolling 9-character string built from keystrokes while `state === "running"`:
 
 ```js
-this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-6);
+this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-9);
 if (this.currentDriver === "mydriver" &&
     this.player.carType !== "my_secret" &&
     this._secretBuffer.endsWith("keyword")) {
   this.player.swapCar("my_secret");
   this.ui.showHippoCrush("🎉 SECRET MODE 🎉");
-  play(SFX.CORRECT, 0.9);
+  play(SFX.MY_SOUND, 0.9);
   this._secretBuffer = "";
 }
 ```
 
-If your keyword is longer than 6 characters, increase the `slice(-N)` value.
+The buffer is 9 characters to accommodate the longest keyword ("scaloneta"). If you add a longer keyword, increase the `slice(-N)` value.
+
+### Secret mode revert on back-to-menu
+
+All secret modes automatically revert when the player returns to the main menu. In `backToMenu()`:
+
+```js
+const d = DRIVERS[this.currentDriver];
+if (d && this.player.carType !== d.car) {
+  this.player.swapCar(d.car);
+}
+this.ui.setScalonetaHud(false);
+```
+
+This means each player has to type the secret code themselves — it doesn't persist across sessions or between players.
 
 ### Current secret modes
 
-| Driver | Keyword | Car Type | Cheater? |
-|--------|---------|----------|----------|
-| Nuno | `hippo` | `hippo` | Yes — no leaderboard |
-| Andrius | `chunky` | `semi_truck` | Yes — no leaderboard |
-| Matt | `matt` | `skateboard` | No — scores count |
+| Driver | Keyword | Car Type | Cheater? | Special |
+|--------|---------|----------|----------|---------|
+| Nuno | `hippo` | `hippo` | Yes — no leaderboard | Crush messages, victory dance |
+| Andrius | `chunky` | `semi_truck` | Yes — no leaderboard | Custom horn |
+| Matt | `matt` | `skateboard` | No — scores count | Click to jump (airborne invincibility) |
+| Leo | `scaloneta` | `scaloneta` | Yes — no leaderboard | Full Spanish UI, Argentine catchphrases, custom SFX |
+
+### Spanish UI mode (Scaloneta)
+
+When scaloneta mode activates, the entire in-game UI flips to Spanish. This is driven by:
+
+1. **`ES` translation map** (top of `Game.js`): Maps English strings to Spanish equivalents for simple lookups.
+2. **`Game._t(text)`**: Returns `ES[text]` when `_isScaloneta` is true, otherwise returns the original text. Use this for simple string translations.
+3. **`Game._isScaloneta`** (getter): Returns `true` when `player.carType === "scaloneta"`.
+4. **`UI.setScalonetaHud(on)`**: Swaps all static HTML labels (Health→Salud, Score→Puntos, etc.), field guide legend, pause menu, game over/level complete screens, quiz prompts, and recovery dialog. Called when activating scaloneta and when returning to menu (`on=false`).
+5. **Inline ternaries** in `Game.js`: For dynamic strings with interpolated values (e.g. damage messages), use `this._isScaloneta ? spanishVersion : englishVersion` directly.
+
+When adding new status messages or UI text, always wrap them with `this._t()` or add an inline scaloneta check so the Spanish experience stays complete.
 
 ## Adding a Special Click Ability
 
@@ -142,7 +170,7 @@ Multiple systems can make the player invincible. All are checked at the top of `
 |-------|--------|----------|--------|
 | Skateboard airborne | `player.isAirborne` | `skateboard` | Obstacle explodes, no damage, "jumped over it" status |
 | DeLorean time travel | `player.isTimeTravelInvisible` | `delorean` | Obstacle explodes, no damage, phases through silently |
-| Cheater mode | `_isCheater()` | `hippo`, `semi_truck` | Obstacle explodes, no damage; hippo gets +50k score and crush lines |
+| Cheater mode | `_isCheater()` | `hippo`, `semi_truck`, `scaloneta` | Obstacle explodes, no damage; hippo/scaloneta get +50k score and crush lines |
 | Shield active | `this.shield > 0` | any | Obstacle hit absorbed, shield decremented, no health loss |
 
 When adding a new invincibility state:
@@ -157,6 +185,8 @@ Horn sounds are dispatched in `_bindHorn()` after all special abilities return:
 ```js
 if (this.player.carType === "hippo") {
   play(SFX.HIPPO_MODE, 0.9);
+} else if (this.player.carType === "scaloneta") {
+  play(SFX.SCALONETA, 0.8);
 } else if (this.currentDriver === "andrius") {
   play(SFX.HORN_ANDRIUS, 0.8);
 } else {
@@ -165,6 +195,9 @@ if (this.player.carType === "hippo") {
 ```
 
 To add a driver-specific horn:
-1. Place audio in `assets/audio/`
-2. Add to the `SFX` object in `Game.js`
-3. Add an `else if (this.currentDriver === "mydriver")` branch before the default `play(SFX.HORN)`
+1. Place audio file in `assets/audio/`
+2. Add to the `SFX` object at the top of `Game.js`
+3. Add an `else if` branch — check `carType` for secret mode sounds or `currentDriver` for default driver sounds
+4. Place the branch **before** the default `play(SFX.HORN)` fallback
+
+Secret mode sounds (checked by `carType`) should also be used in the smash hit handlers (`_onHitObstacle`, `_onHitRival`) for consistency.
