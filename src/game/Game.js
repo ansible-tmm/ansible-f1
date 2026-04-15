@@ -57,6 +57,57 @@ preload(Object.values(SFX));
  * @typedef {'boot'|'main_menu'|'running'|'quiz'|'paused'|'game_over'|'billboard'} GameState
  */
 
+const ES = {
+  "Go!": "¡Vamos!",
+  "Resumed — keep driving!": "¡Seguimos manejando!",
+  "Manual boost!": "¡Turbo manual!",
+  "Correct: Speed Boost": "¡Correcto: Turbo!",
+  "Boost extended! Keep it going!": "¡Turbo extendido! ¡Dale!",
+  "Wrong answer": "Respuesta incorrecta",
+  "Automation Flow active": "¡Flujo de automatización activo!",
+  "Shield Active!": "¡Escudo activo!",
+  "Speed Boost!": "¡Turbo!",
+  "Boost Extended!": "¡Turbo extendido!",
+  "Smashed right through it!": "¡Lo destrozó!",
+  "Plowed right through!": "¡Lo pasó por encima!",
+  "Checkered flag ahead — finish is near!": "¡Bandera a cuadros — la meta está cerca!",
+  "COMBO": "COMBO",
+  "CLOSE CALL!": "¡POR POCO!",
+  "Playbook": "Playbook",
+  "Collection": "Colección",
+  "Score:": "Puntos:",
+  "Obstacles": "Obstáculos",
+  "Pickups": "Recolectados",
+  "Correct": "Correctas",
+  "Level Complete!": "¡Nivel completo!",
+  "Game Over": "Fin del juego",
+  "Paused": "Pausado",
+  "Resume": "Continuar",
+  "Restart Run": "Reiniciar",
+  "Main Menu": "Menú principal",
+  "Health": "Salud",
+  "Score": "Puntos",
+  "Speed": "Velocidad",
+  "Boost": "Turbo",
+  "Shield: ON": "Escudo: SÍ",
+  "Shield: —": "Escudo: —",
+  "Skill Check": "Prueba de habilidad",
+  "CORRECT!": "¡CORRECTO!",
+  "WRONG": "INCORRECTO",
+  "Play Again": "Jugar de nuevo",
+  "Back to Menu": "Volver al menú",
+  "⭐ +500 Interactive Experience": "⭐ +500 Experiencia interactiva",
+  "Flow": "Flujo",
+  "Playbooks": "Playbooks",
+  "Collections": "Colecciones",
+  "Fixes": "Reparaciones",
+  "Finish": "Meta",
+  "Shield: —": "Escudo: —",
+  "Shield: ON": "Escudo: SÍ",
+  "⚡ Flow active — 1.2× score": "⚡ Flujo activo — 1.2× puntos",
+  "Flow: —": "Flujo: —",
+};
+
 export class Game {
   /**
    * @param {THREE.WebGLRenderer} renderer
@@ -359,7 +410,9 @@ export class Game {
           ];
           this.ui.showHippoCrush(lines[Math.floor(Math.random() * lines.length)]);
         } else if (this.player.ttCooldownRemaining > 0) {
-          this.ui.setStatus(`Flux capacitor recharging... ${Math.ceil(this.player.ttCooldownRemaining)}s`, 1000);
+          this.ui.setStatus(this._isScaloneta
+            ? `¡Capacitor recargando... ${Math.ceil(this.player.ttCooldownRemaining)}s!`
+            : `Flux capacitor recharging... ${Math.ceil(this.player.ttCooldownRemaining)}s`, 1000);
         }
         return;
       }
@@ -483,7 +536,7 @@ export class Game {
       this._demoCompleted.add(demoId);
       this.score += 500;
       this.ui.showPickupPopup("+500");
-      this.ui.setStatus("⭐ +500 Interactive Experience", 2500);
+      this.ui.setStatus(this._t("⭐ +500 Interactive Experience"), 2500);
       play(SFX.CORRECT, 0.7);
     }
 
@@ -507,7 +560,8 @@ export class Game {
     this.ui.showLevelComplete(false);
     this.ui.showPause(false);
     this.ui.showHud(true);
-    this.ui.setStatus("Go!", 1500);
+    this.ui.setScalonetaHud(this._isScaloneta);
+    this.ui.setStatus(this._t("Go!"), 1500);
     play(SFX.START_RUN, 0.75);
     startLoop(ENGINE_LOOP, 0.2);
   }
@@ -640,7 +694,7 @@ export class Game {
     this.ui.showRecovery(false, false);
     this.ui.showPause(false);
     this.state = "running";
-    this.ui.setStatus("Resumed — keep driving!", CONFIG.STATUS_MESSAGE_MS);
+    this.ui.setStatus(this._t("Resumed — keep driving!"), CONFIG.STATUS_MESSAGE_MS);
   }
 
   _answerQuiz(optionIndex) {
@@ -666,7 +720,7 @@ export class Game {
 
     if (!ok) {
       const correctText = q.options[q.answer];
-      lines.push(`Correct answer: ${correctText}`);
+      lines.push(this._isScaloneta ? `Respuesta correcta: ${correctText}` : `Correct answer: ${correctText}`);
     }
 
     this.ui.showQuizResult(ok, title, lines, q.explanation);
@@ -688,52 +742,60 @@ export class Game {
     const mode = this.quizMode;
     const fm = this._flowMult();
     const lines = [];
+    const s = this._isScaloneta;
 
     if (mode === "boost") {
       if (ok) {
         const pts = Math.floor(CONFIG.BOOST_QUIZ_CORRECT * fm);
         const nextStreak = this.streak + 1;
         lines.push(
-          `${CONFIG.BOOST_DURATION}s speed boost — you move forward faster (watch the Speed readout)`
+          s ? `${CONFIG.BOOST_DURATION}s de turbo — vas más rápido (mirá la Velocidad)`
+            : `${CONFIG.BOOST_DURATION}s speed boost — you move forward faster (watch the Speed readout)`
         );
-        lines.push(`+${pts} score${fm > 1 ? " (Automation Flow ×1.2 applied)" : ""}`);
-        lines.push(`Streak → ${nextStreak} (3 correct triggers Automation Flow)`);
+        lines.push(s
+          ? `+${pts} puntos${fm > 1 ? " (Flujo de automatización ×1.2 aplicado)" : ""}`
+          : `+${pts} score${fm > 1 ? " (Automation Flow ×1.2 applied)" : ""}`);
+        lines.push(s
+          ? `Racha → ${nextStreak} (3 correctas activa Flujo de automatización)`
+          : `Streak → ${nextStreak} (3 correct triggers Automation Flow)`);
         if (nextStreak >= CONFIG.STREAK_FOR_FLOW) {
           lines.push(
-            "Next: Automation Flow — 8s score ×1.2 + pickup magnet + glow"
+            s ? "Siguiente: Flujo de automatización — 8s puntos ×1.2 + imán de recolectables"
+              : "Next: Automation Flow — 8s score ×1.2 + pickup magnet + glow"
           );
         }
-        return { title: "CORRECT!", lines };
+        return { title: s ? "¡CORRECTO!" : "CORRECT!", lines };
       }
       const cons = Math.floor(CONFIG.BOOST_QUIZ_WRONG * fm);
-      lines.push(`+${cons} consolation score only`);
-      lines.push("No speed boost this time");
-      lines.push("Streak reset to 0");
-      return { title: "WRONG", lines };
+      lines.push(s ? `+${cons} puntos de consolación` : `+${cons} consolation score only`);
+      lines.push(s ? "Sin turbo esta vez" : "No speed boost this time");
+      lines.push(s ? "Racha reiniciada a 0" : "Streak reset to 0");
+      return { title: s ? "INCORRECTO" : "WRONG", lines };
     }
 
     if (mode === "recovery") {
       if (ok) {
         const nextStreak = this.streak + CONFIG.REMEDIATION_CORRECT_STREAK;
-        lines.push(`+${CONFIG.REMEDIATION_RESTORE} health (toward max 100)`);
-        lines.push(`Streak → ${nextStreak}`);
+        lines.push(s ? `+${CONFIG.REMEDIATION_RESTORE} salud (máximo 100)` : `+${CONFIG.REMEDIATION_RESTORE} health (toward max 100)`);
+        lines.push(s ? `Racha → ${nextStreak}` : `Streak → ${nextStreak}`);
         if (nextStreak >= CONFIG.STREAK_FOR_FLOW) {
           lines.push(
-            "Automation Flow will trigger — 8s score ×1.2 + pickup magnet"
+            s ? "Flujo de automatización se activa — 8s puntos ×1.2 + imán"
+              : "Automation Flow will trigger — 8s score ×1.2 + pickup magnet"
           );
         }
-        return { title: "CORRECT!", lines };
+        return { title: s ? "¡CORRECTO!" : "CORRECT!", lines };
       }
       const after = this.health - CONFIG.REMEDIATION_WRONG_PENALTY;
-      lines.push(`−${CONFIG.REMEDIATION_WRONG_PENALTY} health`);
-      lines.push("Streak reset to 0");
+      lines.push(s ? `−${CONFIG.REMEDIATION_WRONG_PENALTY} salud` : `−${CONFIG.REMEDIATION_WRONG_PENALTY} health`);
+      lines.push(s ? "Racha reiniciada a 0" : "Streak reset to 0");
       if (after <= 0) {
-        lines.push("Health at 0 — run ends after this screen");
+        lines.push(s ? "Salud en 0 — la carrera termina después de esta pantalla" : "Health at 0 — run ends after this screen");
       }
-      return { title: "WRONG", lines };
+      return { title: s ? "INCORRECTO" : "WRONG", lines };
     }
 
-    return { title: ok ? "CORRECT!" : "WRONG", lines };
+    return { title: ok ? (s ? "¡CORRECTO!" : "CORRECT!") : (s ? "INCORRECTO" : "WRONG"), lines };
   }
 
   _dismissResult(ok) {
@@ -767,14 +829,14 @@ export class Game {
         this._runBoostCount += 1;
         play(SFX.BOOST_WHOOSH, 0.85);
         this.ui.setStatus(
-          stacking ? "Boost extended! Keep it going!" : "Correct: Speed Boost",
+          stacking ? this._t("Boost extended! Keep it going!") : this._t("Correct: Speed Boost"),
           CONFIG.STATUS_MESSAGE_MS
         );
         this._checkStreakAutomation();
       } else {
         this.streak = 0;
         this.score += CONFIG.BOOST_QUIZ_WRONG * this._flowMult();
-        this.ui.setStatus("Wrong answer", CONFIG.STATUS_MESSAGE_MS);
+        this.ui.setStatus(this._t("Wrong answer"), CONFIG.STATUS_MESSAGE_MS);
       }
     } else if (mode === "recovery") {
       this.remediationsUsed += 1;
@@ -788,7 +850,9 @@ export class Game {
         this.sessionCorrect += 1;
         addTotalCorrectAnswers(1);
         this.ui.setStatus(
-          `Health restored! (${left} remediation${left !== 1 ? "s" : ""} left)`,
+          this._isScaloneta
+            ? `¡Salud restaurada! (${left} remediación${left !== 1 ? "es" : ""} restante${left !== 1 ? "s" : ""})`
+            : `Health restored! (${left} remediation${left !== 1 ? "s" : ""} left)`,
           CONFIG.STATUS_MESSAGE_MS
         );
         this._checkStreakAutomation();
@@ -796,7 +860,9 @@ export class Game {
         this.streak = 0;
         this.health -= CONFIG.REMEDIATION_WRONG_PENALTY;
         this.ui.setStatus(
-          `Remediation failed (${left} left)`,
+          this._isScaloneta
+            ? `¡Remediación fallida! (${left} restante${left !== 1 ? "s" : ""})`
+            : `Remediation failed (${left} left)`,
           CONFIG.STATUS_MESSAGE_MS
         );
         if (this.health <= 0) {
@@ -812,7 +878,7 @@ export class Game {
       this.streak = 0;
       this.automationFlowUntil = performance.now() + CONFIG.FLOW_DURATION * 1000;
       this.player.setAutomationFlowActive(true);
-      this.ui.setStatus("Automation Flow active", CONFIG.STATUS_MESSAGE_MS);
+      this.ui.setStatus(this._t("Automation Flow active"), CONFIG.STATUS_MESSAGE_MS);
     }
   }
 
@@ -831,7 +897,7 @@ export class Game {
     this.manualBoostCooldownUntil =
       this.manualBoostUntil + CONFIG.MANUAL_BOOST_COOLDOWN * 1000;
     play(SFX.BOOST_WHOOSH, 0.6);
-    this.ui.setStatus("Manual boost!", CONFIG.STATUS_MESSAGE_MS);
+    this.ui.setStatus(this._t("Manual boost!"), CONFIG.STATUS_MESSAGE_MS);
   }
 
   _manualBoostHud(now) {
@@ -978,7 +1044,9 @@ export class Game {
     this.timeScale = 1;
     const left = CONFIG.MAX_REMEDIATIONS - this.remediationsUsed;
     this.ui.setStatus(
-      `Skipped remediation (${left} remaining). Keep driving!`,
+      this._isScaloneta
+        ? `¡Remediación saltada! (${left} restante${left !== 1 ? "s" : ""}). ¡Seguí manejando!`
+        : `Skipped remediation (${left} remaining). Keep driving!`,
       CONFIG.STATUS_HIT_MS
     );
   }
@@ -992,7 +1060,9 @@ export class Game {
     this.ui.renderQuizQuestion(this.currentQuestion);
     this.ui.showQuiz(true);
     this.ui.setStatus(
-      "Pickup: Boost token — highway paused for skill quiz",
+      this._isScaloneta
+        ? "Recolectado: Token de turbo — ruta pausada para prueba"
+        : "Pickup: Boost token — highway paused for skill quiz",
       CONFIG.STATUS_HIT_MS
     );
     this.ui.startQuizCountdown(() => this.skipQuiz());
@@ -1016,7 +1086,12 @@ export class Game {
     this.currentQuestion = null;
     this.timeScale = 1;
     this._resetQuizFlags();
-    this.ui.setStatus("Quiz skipped — no boost, no penalty.", CONFIG.STATUS_MESSAGE_MS);
+    this.ui.setStatus(
+      this._isScaloneta
+        ? "Prueba saltada — sin turbo, sin penalidad."
+        : "Quiz skipped — no boost, no penalty.",
+      CONFIG.STATUS_MESSAGE_MS
+    );
   }
 
   _resetQuizFlags() {
@@ -1127,6 +1202,7 @@ export class Game {
       maxRemediations: CONFIG.MAX_REMEDIATIONS,
       finishProgress: this.runTime / CONFIG.LEVEL_DURATION,
       finishTimeLeft: CONFIG.LEVEL_DURATION - this.runTime,
+      isScaloneta: this._isScaloneta,
     });
   }
 
@@ -1139,7 +1215,7 @@ export class Game {
       this._finishLineSpawned = true;
       const timeLeft = dur - this.runTime;
       this.track.spawnFinishLine(this.player.mesh.position.z, this.worldSpeed, timeLeft);
-      this.ui.setStatus("Checkered flag ahead — finish is near!", 3000);
+      this.ui.setStatus(this._t("Checkered flag ahead — finish is near!"), 3000);
     }
 
     const finishZ = this.track.getFinishZ();
@@ -1289,8 +1365,13 @@ export class Game {
       ttCooldown: this.player.ttCooldownRemaining,
       ttCooldownMax: this.player.ttCooldownMax,
       ttActive: this.player.isTimeTraveling,
+      isScaloneta: this._isScaloneta,
     });
   }
+
+  get _isScaloneta() { return this.player.carType === "scaloneta"; }
+
+  _t(text) { return this._isScaloneta && ES[text] ? ES[text] : text; }
 
   _isSemiTruck() {
     return this.player.carType === "semi_truck";
@@ -1339,7 +1420,7 @@ export class Game {
   _onHitObstacle(e) {
     if (this.player.isAirborne) {
       this.spawner.explodeObstacle(e);
-      this.ui.setStatus("🛹 Jumped right over it!", 1200);
+      this.ui.setStatus(this._isScaloneta ? "🛹 ¡Saltó por encima!" : "🛹 Jumped right over it!", 1200);
       play(SFX.OBSTACLE_HIT, 0.4);
       return;
     }
@@ -1363,11 +1444,11 @@ export class Game {
       } else if (this.player.carType === "scaloneta") {
         play(SFX.HORN_ANDRIUS, 0.6);
         this.score += 50000;
-        this.ui.showPickupPopup("+50,000");
+        this.ui.showPickupPopup("+50.000");
         const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else {
-        this.ui.setStatus("Smashed right through it!", 1200);
+        this.ui.setStatus(this._t("Smashed right through it!"), 1200);
       }
       return;
     }
@@ -1378,7 +1459,9 @@ export class Game {
       this.player.setShieldActive(false);
       play(SFX.SHIELD_HIT, 0.7);
       this.ui.setStatus(
-        isGator ? "Gator smashed -- shield blocked it!" : "Obstacle hit -- shield blocked it! (Shield used up)",
+        this._isScaloneta
+          ? (isGator ? "¡Cocodrilo aplastado — escudo lo bloqueó!" : "¡Obstáculo — escudo lo bloqueó! (Escudo gastado)")
+          : (isGator ? "Gator smashed -- shield blocked it!" : "Obstacle hit -- shield blocked it! (Shield used up)"),
         CONFIG.STATUS_HIT_MS
       );
       return;
@@ -1394,10 +1477,11 @@ export class Game {
     this.ui.shake();
     this.shakeUntil = performance.now() + (isGator ? 300 : 200);
     this.shakeAmp = isGator ? 0.45 : 0.35;
+    const hp = Math.max(0, Math.floor(this.health));
     this.ui.setStatus(
-      isGator
-        ? `Gator attack! -${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`
-        : `Obstacle hit! -${dmg} health (Outage). You're at ${Math.max(0, Math.floor(this.health))}.`,
+      this._isScaloneta
+        ? (isGator ? `¡Ataque de cocodrilo! -${dmg} salud. Estás en ${hp}.` : `¡Obstáculo! -${dmg} salud (Corte). Estás en ${hp}.`)
+        : (isGator ? `Gator attack! -${dmg} health. You're at ${hp}.` : `Obstacle hit! -${dmg} health (Outage). You're at ${hp}.`),
       CONFIG.STATUS_HIT_MS
     );
 
@@ -1419,7 +1503,7 @@ export class Game {
   _onHitRival(e) {
     if (this.player.isAirborne) {
       this.spawner.explodeRival(e);
-      this.ui.setStatus("🛹 Skated over them!", 1200);
+      this.ui.setStatus(this._isScaloneta ? "🛹 ¡Pasó por arriba!" : "🛹 Skated over them!", 1200);
       play(SFX.OBSTACLE_HIT, 0.4);
       return;
     }
@@ -1443,11 +1527,11 @@ export class Game {
       } else if (this.player.carType === "scaloneta") {
         play(SFX.HORN_ANDRIUS, 0.6);
         this.score += 50000;
-        this.ui.showPickupPopup("+50,000");
+        this.ui.showPickupPopup("+50.000");
         const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else {
-        this.ui.setStatus("Plowed right through!", 1200);
+        this.ui.setStatus(this._t("Plowed right through!"), 1200);
       }
       return;
     }
@@ -1458,7 +1542,9 @@ export class Game {
       this.player.setShieldActive(false);
       play(SFX.SHIELD_HIT, 0.7);
       this.ui.setStatus(
-        isBus ? "School bus hit — shield absorbed the crash!" : "Rival car hit — shield absorbed the crash!",
+        this._isScaloneta
+          ? (isBus ? "¡Choque de colectivo — escudo absorbió el golpe!" : "¡Auto rival — escudo absorbió el golpe!")
+          : (isBus ? "School bus hit — shield absorbed the crash!" : "Rival car hit — shield absorbed the crash!"),
         CONFIG.STATUS_HIT_MS
       );
       return;
@@ -1473,10 +1559,11 @@ export class Game {
     this.ui.shake();
     this.shakeUntil = performance.now() + (isBus ? 350 : 200);
     this.shakeAmp = isBus ? 0.5 : 0.35;
+    const rhp = Math.max(0, Math.floor(this.health));
     this.ui.setStatus(
-      isBus
-        ? `School bus crash! −${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`
-        : `Rival car crash! −${dmg} health. You're at ${Math.max(0, Math.floor(this.health))}.`,
+      this._isScaloneta
+        ? (isBus ? `¡Choque de colectivo! −${dmg} salud. Estás en ${rhp}.` : `¡Choque rival! −${dmg} salud. Estás en ${rhp}.`)
+        : (isBus ? `School bus crash! −${dmg} health. You're at ${rhp}.` : `Rival car crash! −${dmg} health. You're at ${rhp}.`),
       CONFIG.STATUS_HIT_MS
     );
 
@@ -1527,12 +1614,15 @@ export class Game {
       this.playbookPts += pts;
       const extended = this._extendBoostOnPickup();
       let label = comboMult > 1 ? `Playbook +${pts} (x${comboMult})` : `Playbook +${pts}`;
-      if (extended) label += " ⚡+boost";
+      if (extended) label += this._isScaloneta ? " ⚡+turbo" : " ⚡+boost";
       this.ui.showPickupPopup(label);
       if (this.playbookCount % 3 === 0) {
         this._applyPickupSpeedUp("Playbook", this.playbookCount);
       } else {
-        this.ui.setStatus(`Pickup: Playbook — +${pts} score`, CONFIG.STATUS_HIT_MS);
+        this.ui.setStatus(
+          this._isScaloneta ? `Recolectado: Playbook — +${pts} puntos` : `Pickup: Playbook — +${pts} score`,
+          CONFIG.STATUS_HIT_MS
+        );
       }
     } else if (t === "CERTIFIED_COLLECTION") {
       const base = Math.floor(CONFIG.PICKUP_SCORE.COLLECTION * this._flowMult());
@@ -1541,13 +1631,17 @@ export class Game {
       this.collectionCount += 1;
       this.collectionPts += pts;
       const extended = this._extendBoostOnPickup();
-      let label = comboMult > 1 ? `Collection +${pts} (x${comboMult})` : `Collection +${pts}`;
-      if (extended) label += " ⚡+boost";
+      const cLabel = this._isScaloneta ? "Colección" : "Collection";
+      let label = comboMult > 1 ? `${cLabel} +${pts} (x${comboMult})` : `${cLabel} +${pts}`;
+      if (extended) label += this._isScaloneta ? " ⚡+turbo" : " ⚡+boost";
       this.ui.showPickupPopup(label);
       if (this.collectionCount % 3 === 0) {
-        this._applyPickupSpeedUp("Collection", this.collectionCount);
+        this._applyPickupSpeedUp(this._isScaloneta ? "Colección" : "Collection", this.collectionCount);
       } else {
-        this.ui.setStatus(`Pickup: Certified Collection — +${pts} score`, CONFIG.STATUS_HIT_MS);
+        this.ui.setStatus(
+          this._isScaloneta ? `Recolectado: Colección certificada — +${pts} puntos` : `Pickup: Certified Collection — +${pts} score`,
+          CONFIG.STATUS_HIT_MS
+        );
       }
     } else if (t === "POLICY_SHIELD") {
       if (this._isCheater()) {
@@ -1555,15 +1649,19 @@ export class Game {
         this.ui.showPickupPopup("+50");
         const msg = this.player.carType === "hippo"
           ? "Shield? The hippo IS the shield. +50 score"
-          : "Shield? You ARE the shield. +50 score";
+          : this._isScaloneta
+            ? "¿Escudo? ¡La Scaloneta ES el escudo! +50 puntos"
+            : "Shield? You ARE the shield. +50 score";
         this.ui.setStatus(msg, CONFIG.STATUS_HIT_MS);
       } else {
         this.shield = true;
         this.player.setShieldActive(true);
         play(SFX.SHIELD_ON, 0.75);
-        this.ui.showPickupPopup("Shield Active!");
+        this.ui.showPickupPopup(this._isScaloneta ? "¡Escudo activo!" : "Shield Active!");
         this.ui.setStatus(
-          "Pickup: Policy Shield — next obstacle hit won’t cost health",
+          this._isScaloneta
+            ? "Recolectado: Escudo — el próximo obstáculo no te quita salud"
+            : "Pickup: Policy Shield — next obstacle hit won’t cost health",
           CONFIG.STATUS_HIT_MS
         );
       }
@@ -1589,8 +1687,8 @@ export class Game {
         this.boostUntil = base + CONFIG.BOOST_DURATION * 1000;
         this._runBoostCount += 1;
         play(SFX.BOOST_WHOOSH, 0.85);
-        this.ui.showPickupPopup(stacking ? "Boost Extended!" : "Speed Boost!");
-        this.ui.setStatus("Boost token: Speed Boost!", CONFIG.STATUS_MESSAGE_MS);
+        this.ui.showPickupPopup(stacking ? this._t("Boost Extended!") : this._t("Speed Boost!"));
+        this.ui.setStatus(this._isScaloneta ? "Token de turbo: ¡Velocidad!" : "Boost token: Speed Boost!", CONFIG.STATUS_MESSAGE_MS);
       }
     }
   }
@@ -1606,7 +1704,9 @@ export class Game {
     this.pickupSpeedMult += 0.15;
     const pct = Math.round((this.pickupSpeedMult - 1) * 100);
     this.ui.setStatus(
-      `${count} ${type}s collected! Speed +15% (total +${pct}%)`,
+      this._isScaloneta
+        ? `${count} ${type}s recolectados! Velocidad +15% (total +${pct}%)`
+        : `${count} ${type}s collected! Speed +15% (total +${pct}%)`,
       CONFIG.STATUS_HIT_MS
     );
   }
@@ -1633,7 +1733,7 @@ export class Game {
           this._nearMissChecked.add(eid);
           this._nearMissCount += 1;
           this.score += CONFIG.NEAR_MISS_BONUS;
-          this.ui.showPickupPopup(`CLOSE CALL! +${CONFIG.NEAR_MISS_BONUS}`);
+          this.ui.showPickupPopup(this._isScaloneta ? `¡POR POCO! +${CONFIG.NEAR_MISS_BONUS}` : `CLOSE CALL! +${CONFIG.NEAR_MISS_BONUS}`);
           this._checkAchievements();
         } else {
           // Mark as checked once past to avoid repeat checks

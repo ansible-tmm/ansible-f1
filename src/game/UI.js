@@ -674,20 +674,23 @@ export class UI {
     }
     if (this.el.playbookCount)
       this.el.playbookCount.textContent = `${playbooks || 0}`;
+    const es = data.isScaloneta;
     if (this.el.playbookPts)
-      this.el.playbookPts.textContent = `${playbookPts || 0} pts`;
+      this.el.playbookPts.textContent = `${playbookPts || 0} ${es ? "pts" : "pts"}`;
     if (this.el.collectionCount)
       this.el.collectionCount.textContent = `${collections || 0}`;
     if (this.el.collectionPts)
-      this.el.collectionPts.textContent = `${collectionPts || 0} pts`;
+      this.el.collectionPts.textContent = `${collectionPts || 0} ${es ? "pts" : "pts"}`;
     if (this.el.shield) {
-      this.el.shield.textContent = shield ? "Shield: ON" : "Shield: —";
+      this.el.shield.textContent = shield
+        ? (es ? "Escudo: SÍ" : "Shield: ON")
+        : (es ? "Escudo: —" : "Shield: —");
       this.el.shield.classList.toggle("active", !!shield);
     }
     if (this.el.flow) {
       this.el.flow.textContent = automationFlow
-        ? "⚡ Flow active — 1.2× score"
-        : "Flow: —";
+        ? (es ? "⚡ Flujo activo — 1.2× puntos" : "⚡ Flow active — 1.2× score")
+        : (es ? "Flujo: —" : "Flow: —");
       this.el.flow.classList.toggle("active", !!automationFlow);
     }
     if (this.el.boostBar && this.el.boostFill) {
@@ -1250,6 +1253,185 @@ export class UI {
     if (this.el.levelSelect) {
       this.el.levelSelect.classList.toggle("hidden", !visible);
     }
+  }
+
+  setScalonetaHud(on) {
+    const _swap = (sel, en, es) => {
+      const el = document.querySelector(sel);
+      if (el) el.textContent = on ? es : en;
+    };
+    const _swapHTML = (sel, en, es) => {
+      const el = document.querySelector(sel);
+      if (el) el.innerHTML = on ? es : en;
+    };
+    _swap(".hud-health-row", "", "");
+    const hr = document.querySelector(".hud-health-row");
+    if (hr) {
+      const span = hr.querySelector("#hud-health");
+      const val = span ? span.textContent : "100";
+      hr.innerHTML = on
+        ? `Salud <span id="hud-health">${val}</span>`
+        : `Health <span id="hud-health">${val}</span>`;
+      this.el.health = document.getElementById("hud-health");
+    }
+    const scoreDiv = this.el.score?.parentElement;
+    if (scoreDiv) {
+      const val = this.el.score.textContent;
+      scoreDiv.innerHTML = on
+        ? `Puntos <span id="hud-score">${val}</span>`
+        : `Score <span id="hud-score">${val}</span>`;
+      this.el.score = document.getElementById("hud-score");
+    }
+    const speedDiv = this.el.speed?.parentElement;
+    if (speedDiv && !speedDiv.classList.contains("hud-flow-progress")) {
+      const val = this.el.speed.textContent;
+      speedDiv.innerHTML = on
+        ? `Velocidad <span id="hud-speed">${val}</span>`
+        : `Speed <span id="hud-speed">${val}</span>`;
+      this.el.speed = document.getElementById("hud-speed");
+    }
+    const flowDiv = document.querySelector(".hud-flow-progress");
+    if (flowDiv) {
+      const sVal = this.el.streak ? this.el.streak.textContent : "0";
+      flowDiv.innerHTML = on
+        ? `Flujo <span id="hud-streak">${sVal}</span> / 3<div class="flow-pips"><span class="flow-pip" id="flow-pip-0"></span><span class="flow-pip" id="flow-pip-1"></span><span class="flow-pip" id="flow-pip-2"></span></div>`
+        : `Flow <span id="hud-streak">${sVal}</span> / 3<div class="flow-pips"><span class="flow-pip" id="flow-pip-0"></span><span class="flow-pip" id="flow-pip-1"></span><span class="flow-pip" id="flow-pip-2"></span></div>`;
+      this.el.streak = document.getElementById("hud-streak");
+    }
+    const pbLabel = document.querySelectorAll(".hud-pickup-counter");
+    if (pbLabel[0]) {
+      const v = document.getElementById("hud-playbooks")?.textContent || "0";
+      const p = document.getElementById("hud-playbook-pts")?.textContent || "0 pts";
+      pbLabel[0].innerHTML = `Playbooks <span id="hud-playbooks">${v}</span><span class="hud-pickup-pts" id="hud-playbook-pts">${p}</span>`;
+    }
+    if (pbLabel[1]) {
+      const v = document.getElementById("hud-collections")?.textContent || "0";
+      const p = document.getElementById("hud-collection-pts")?.textContent || "0 pts";
+      pbLabel[1].innerHTML = on
+        ? `Colecciones <span id="hud-collections">${v}</span><span class="hud-pickup-pts" id="hud-collection-pts">${p}</span>`
+        : `Collections <span id="hud-collections">${v}</span><span class="hud-pickup-pts" id="hud-collection-pts">${p}</span>`;
+    }
+    this.el.playbookCount = document.getElementById("hud-playbooks");
+    this.el.playbookPts = document.getElementById("hud-playbook-pts");
+    this.el.collectionCount = document.getElementById("hud-collections");
+    this.el.collectionPts = document.getElementById("hud-collection-pts");
+
+    _swap(".legend-title", "Field guide", "Guía de campo");
+    _swap(".rem-label", "Fixes", "Reparaciones");
+    _swap(".mb-label", "Boost [W/\u2191]", "Turbo [W/\u2191]");
+    _swap(".finish-label", "\uD83C\uDFC1 Finish", "\uD83C\uDFC1 Meta");
+    const boostLabel = document.querySelector("#boost-bar > span");
+    if (boostLabel) boostLabel.textContent = on ? "Turbo" : "Boost";
+    const ttLabel = document.querySelector("#tt-cooldown-bar > span");
+    if (ttLabel) ttLabel.textContent = on ? "⚡ Capacitor de flujo" : "⚡ Flux Capacitor";
+
+    _swap("#quiz-title", "Skill Check", "Prueba de habilidad");
+    const pauseTitle = document.querySelector("#pause-menu h2");
+    if (pauseTitle) pauseTitle.textContent = on ? "Pausado" : "Paused";
+    _swap("#btn-resume", "Resume", "Continuar");
+    _swap("#btn-restart", "Restart Run", "Reiniciar");
+    _swap("#btn-pause-levels", "Choose Level", "Elegir nivel");
+    _swap("#btn-quit", "Main Menu", "Menú principal");
+    const escHint = document.querySelector("#pause-menu .pause-hint");
+    if (escHint) escHint.textContent = on ? "Esc para continuar" : "Esc to resume";
+
+    const goTitle = document.querySelector("#game-over h2");
+    if (goTitle) goTitle.textContent = on ? "Fin del juego" : "Game Over";
+    document.querySelectorAll("#game-over .btn-play-again").forEach(b => {
+      if (b.textContent.trim() === "Play Again" || b.textContent.trim() === "Jugar de nuevo")
+        b.textContent = on ? "Jugar de nuevo" : "Play Again";
+    });
+    document.querySelectorAll("#game-over .btn-back-menu, #level-complete .btn-back-menu").forEach(b => {
+      if (b.textContent.trim() === "Back to Menu" || b.textContent.trim() === "Volver al menú")
+        b.textContent = on ? "Volver al menú" : "Back to Menu";
+    });
+
+    const statHint = document.querySelector(".hud-stat-hint");
+    if (statHint) statHint.textContent = on
+      ? "Tu medidor de carrera — los cortes lo bajan. En 0, fin del juego."
+      : "Your run meter \u2014 outages drain it. At 0, game over.";
+
+    const legendMap = [
+      ["Outage", "hazard \u00b7 dodge it", "Corte", "peligro \u00b7 esquivalo"],
+      ["Rival car", "dodge or crash", "Auto rival", "esquivá o chocá"],
+      ["Playbook", "+100 score", "Playbook", "+100 puntos"],
+      ["Collection", "+150 score", "Colecci\u00f3n", "+150 puntos"],
+      ["Shield", "blocks next hit", "Escudo", "bloquea el pr\u00f3ximo golpe"],
+      ["Boost token", "quiz for speed", "Token de turbo", "prueba de velocidad"],
+    ];
+    const rows = document.querySelectorAll(".legend-row:not(.legend-flow-row):not(.quiz-toggle-row)");
+    legendMap.forEach((entry, i) => {
+      if (!rows[i]) return;
+      const sp = rows[i].querySelector("span:last-child");
+      if (sp) sp.innerHTML = on
+        ? `<strong>${entry[2]}</strong> \u2014 ${entry[3]}`
+        : `<strong>${entry[0]}</strong> \u2014 ${entry[1]}`;
+    });
+    const flowLegend = document.querySelector(".legend-flow-row span:last-child");
+    if (flowLegend) flowLegend.innerHTML = on
+      ? "<strong>Flujo de automatizaci\u00f3n</strong> \u2014 3 respuestas correctas seguidas activa 8s de 1.2\u00d7 puntos + im\u00e1n"
+      : "<strong>Automation Flow</strong> \u2014 3 correct answers in a row triggers 8s of 1.2\u00d7 score + pickup magnet";
+    const quizLabel = document.querySelector(".quiz-toggle-row span");
+    if (quizLabel) quizLabel.textContent = on ? "Modo prueba" : "Quiz Mode";
+
+    const recoveryTitle = document.querySelector("#recovery-overlay h3");
+    if (recoveryTitle) recoveryTitle.textContent = on ? "\u00bf Intentar remediaci\u00f3n?" : "Attempt remediation?";
+    const recoveryHint = document.querySelector("#recovery-overlay .hint");
+    if (recoveryHint) recoveryHint.textContent = on ? "Respond\u00e9 una prueba para recuperar salud." : "Answer a skill check to recover health.";
+    _swap("#recovery-yes", "Yes", "S\u00ed");
+    _swap("#recovery-no", "No", "No");
+    const quizHint = document.querySelector("#quiz-overlay .hint");
+    if (quizHint) quizHint.textContent = on ? "Teclas 1\u20134 o clic \u00b7 Esc para saltar" : "Keys 1\u20134 or click \u00b7 Esc to skip";
+    _swap("#btn-quiz-skip", "Skip", "Saltar");
+    const timerHint = document.querySelector("#quiz-result-timer");
+    if (timerHint) {
+      const cd = document.getElementById("quiz-result-countdown");
+      const v = cd ? cd.textContent : "";
+      timerHint.innerHTML = on
+        ? `<span id="quiz-result-countdown">${v}</span>s \u2014 Esc para continuar`
+        : `<span id="quiz-result-countdown">${v}</span>s \u2014 Esc to continue`;
+    }
+
+    const goStats = document.querySelectorAll("#game-over .go-stats-row > span");
+    const lcStats = document.querySelectorAll("#level-complete .go-stats-row > span");
+    const statLabels = [
+      ["Obstacles", "Obst\u00e1culos"],
+      ["Pickups", "Recolectados"],
+      ["Correct", "Correctas"],
+    ];
+    [goStats, lcStats].forEach(nodeList => {
+      statLabels.forEach((pair, i) => {
+        if (!nodeList[i]) return;
+        const inner = nodeList[i].querySelector("span");
+        if (!inner) return;
+        const val = inner.textContent;
+        nodeList[i].innerHTML = `${on ? pair[1] : pair[0]} <span id="${inner.id}">${val}</span>`;
+      });
+    });
+    const goScoreLabel = document.querySelector("#game-over .go-final-score");
+    if (goScoreLabel) {
+      const v = document.getElementById("go-score")?.textContent || "0";
+      goScoreLabel.innerHTML = on ? `Puntos: <span id="go-score">${v}</span>` : `Score: <span id="go-score">${v}</span>`;
+      this.el.goScore = document.getElementById("go-score");
+    }
+    const lcScoreLabel = document.querySelector("#level-complete .go-final-score");
+    if (lcScoreLabel) {
+      const v = document.getElementById("lc-score")?.textContent || "0";
+      lcScoreLabel.innerHTML = on ? `Puntos: <span id="lc-score">${v}</span>` : `Score: <span id="lc-score">${v}</span>`;
+      this.el.lcScore = document.getElementById("lc-score");
+    }
+    const goNameLabel = document.querySelector("#game-over .go-name-label");
+    if (goNameLabel) goNameLabel.textContent = on ? "Ingres\u00e1 tu nombre" : "Enter your name";
+    const lcNameLabel = document.querySelector("#level-complete .go-name-label");
+    if (lcNameLabel) lcNameLabel.textContent = on ? "Ingres\u00e1 tu nombre" : "Enter your name";
+    _swap("#btn-save-score", "Save", "Guardar");
+    _swap("#btn-save-score-lc", "Save", "Guardar");
+    _swap("#btn-restart-go", "Play Again", "Jugar de nuevo");
+    _swap("#btn-next-lc", "Play Again", "Jugar de nuevo");
+    _swap("#btn-choose-level-go", "Choose Level", "Elegir nivel");
+    _swap("#btn-choose-level-lc", "Choose Level", "Elegir nivel");
+    _swap("#btn-menu-go", "Back to Menu", "Volver al men\u00fa");
+    _swap("#btn-menu-lc", "Back to Menu", "Volver al men\u00fa");
   }
 
   setActiveLevel(levelId) {
