@@ -47,6 +47,11 @@ const SFX = {
   HIPPO_BLAH_4: "./assets/audio/hippo-blah-4.m4a",
   DELOREAN: "./assets/audio/delorean.m4a",
   SCALONETA: "./assets/audio/scaloneta.m4a",
+  CROONER_1: "./assets/audio/decal.m4a",
+  CROONER_2: "./assets/audio/love_it.m4a",
+  CROONER_3: "./assets/audio/driving_crooner.m4a",
+  CROONER_4: "./assets/audio/make_money.m4a",
+  CROONER_5: "./assets/audio/right_next_to_me.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -366,7 +371,7 @@ export class Game {
           this._spawnTransformSmoke();
           this.player.swapCar("crooner");
           this.ui.showHippoCrush("🎤 THE DRIVING<br>CROONER 🎤");
-          play(SFX.BOOST_WHOOSH, 0.9);
+          this._playCroonerSfx(0.9);
           this._secretBuffer = "";
         }
         if (this.currentDriver === "aubrey" && this.player.carType !== "cadillac" && this._secretBuffer.endsWith("hollywood")) {
@@ -466,6 +471,8 @@ export class Game {
       }
       if (this.player.carType === "hippo") {
         play(SFX.HIPPO_MODE, 0.9);
+      } else if (this.player.carType === "crooner") {
+        this._playCroonerSfx(0.9);
       } else if (this.player.carType === "scaloneta") {
         play(SFX.SCALONETA, 0.8);
       } else if (this.currentDriver === "andrius") {
@@ -1478,6 +1485,12 @@ export class Game {
     "🎤 I USED TO BE<br>A PIECE OF WORK! 🎤",
   ];
 
+  _croonerSfxPool = [SFX.CROONER_1, SFX.CROONER_2, SFX.CROONER_3, SFX.CROONER_4, SFX.CROONER_5];
+  _playCroonerSfx(vol = 0.8) {
+    const clip = this._croonerSfxPool[Math.floor(Math.random() * this._croonerSfxPool.length)];
+    play(clip, vol);
+  }
+
   _ogreSmashLines = [
     "🧌 OGRE SMASH! 🧌",
     "🧌 GET OUT OF<br>MY SWAMP! 🧌",
@@ -1810,7 +1823,7 @@ export class Game {
         const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else if (this.player.carType === "crooner") {
-        play(SFX.OBSTACLE_HIT, 0.6);
+        this._playCroonerSfx(0.8);
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
@@ -1918,7 +1931,7 @@ export class Game {
         const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else if (this.player.carType === "crooner") {
-        play(SFX.OBSTACLE_HIT, 0.6);
+        this._playCroonerSfx(0.8);
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
