@@ -2026,6 +2026,8 @@ export class Player {
 
   _buildOgreMesh() {
     const g = new THREE.Group();
+    const inner = new THREE.Group();
+    inner.rotation.y = Math.PI;
     const skinColor = new THREE.Color(0x5a8a3a);
     const mat = new THREE.MeshStandardMaterial({
       color: skinColor, roughness: 0.65, metalness: 0.05,
@@ -2162,15 +2164,15 @@ export class Player {
     armL.add(fistL);
     upper.add(armL);
 
-    g.add(upper);
+    inner.add(upper);
 
     // Belt / loincloth
     const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.55 * S, 0.5 * S, 0.35 * S, 8), clothMat);
     belt.position.y = 0.95 * S;
-    g.add(belt);
+    inner.add(belt);
     const flap = new THREE.Mesh(new THREE.BoxGeometry(0.5 * S, 0.5 * S, 0.08 * S), clothMat);
     flap.position.set(0, 0.65 * S, 0.4 * S);
-    g.add(flap);
+    inner.add(flap);
 
     // Legs
     this._ogreLegs = [];
@@ -2184,16 +2186,16 @@ export class Player {
       const foot = new THREE.Mesh(new THREE.BoxGeometry(0.4 * S, 0.12 * S, 0.55 * S), footMat);
       foot.position.set(0, -0.75 * S, 0.12 * S);
       legPivot.add(foot);
-      g.add(legPivot);
+      inner.add(legPivot);
       this._ogreLegs.push({ group: legPivot, phase: side * Math.PI });
     }
 
     // Green underglow
     const glow = new THREE.PointLight(0x55aa33, 1.2, 4);
     glow.position.set(0, 0.2, 0);
-    g.add(glow);
+    inner.add(glow);
 
-    g.rotation.y = Math.PI;
+    g.add(inner);
     return g;
   }
 

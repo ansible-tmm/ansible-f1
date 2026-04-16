@@ -47,6 +47,8 @@ const SFX = {
   HIPPO_BLAH_4: "./assets/audio/hippo-blah-4.m4a",
   DELOREAN: "./assets/audio/delorean.m4a",
   SCALONETA: "./assets/audio/scaloneta.m4a",
+  OGRE_GRUNT_1: "./assets/audio/ogre-grunt-1.mp4",
+  OGRE_GRUNT_2: "./assets/audio/ogre-grunt-2.mp4",
   CROONER_1: "./assets/audio/decal.m4a",
   CROONER_2: "./assets/audio/love_it.m4a",
   CROONER_3: "./assets/audio/driving_crooner.m4a",
@@ -56,6 +58,7 @@ const SFX = {
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
 const DEFAULT_BGM = "./assets/audio/bgm.m4a";
+const QUEST_BGM = "./assets/audio/quest-bgm.mp3";
 
 preload(Object.values(SFX));
 
@@ -363,8 +366,9 @@ export class Game {
           this._spawnTransformSmoke();
           this.player.swapCar("ogre");
           this.ui.showHippoCrush("🧌 OGRE MODE 🧌");
-          play(SFX.OBSTACLE_HIT, 0.9);
+          this._playOgreSfx(0.9);
           this.track.setCastle(true);
+          startBgm(QUEST_BGM, 0.15);
           this._secretBuffer = "";
         }
         if (this.currentDriver === "justin" && this.player.carType !== "crooner" && this._secretBuffer.endsWith("crooner")) {
@@ -471,6 +475,8 @@ export class Game {
       }
       if (this.player.carType === "hippo") {
         play(SFX.HIPPO_MODE, 0.9);
+      } else if (this.player.carType === "ogre") {
+        this._playOgreSfx(0.9);
       } else if (this.player.carType === "crooner") {
         this._playCroonerSfx(0.9);
       } else if (this.player.carType === "scaloneta") {
@@ -703,6 +709,9 @@ export class Game {
     this._rainbowRoad = false;
     this.track.setRainbow(false);
     this.track.setCastle(false);
+
+    const theme = LEVELS[this.currentLevel];
+    startBgm(theme?.music || DEFAULT_BGM, 0.1);
 
     this.ui.showBillboard(false);
     this.ui.showGameOver(false);
@@ -1485,6 +1494,12 @@ export class Game {
     "🎤 I USED TO BE<br>A PIECE OF WORK! 🎤",
   ];
 
+  _ogreSfxPool = [SFX.OGRE_GRUNT_1, SFX.OGRE_GRUNT_2];
+  _playOgreSfx(vol = 0.8) {
+    const clip = this._ogreSfxPool[Math.floor(Math.random() * this._ogreSfxPool.length)];
+    play(clip, vol);
+  }
+
   _croonerSfxPool = [SFX.CROONER_1, SFX.CROONER_2, SFX.CROONER_3, SFX.CROONER_4, SFX.CROONER_5];
   _playCroonerSfx(vol = 0.8) {
     const clip = this._croonerSfxPool[Math.floor(Math.random() * this._croonerSfxPool.length)];
@@ -1817,7 +1832,7 @@ export class Game {
         const line = this._hollywoodSmashLines[Math.floor(Math.random() * this._hollywoodSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else if (this.player.carType === "ogre") {
-        play(SFX.OBSTACLE_HIT, 0.7);
+        this._playOgreSfx(0.8);
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
@@ -1925,7 +1940,7 @@ export class Game {
         const line = this._hollywoodSmashLines[Math.floor(Math.random() * this._hollywoodSmashLines.length)];
         this.ui.showHippoCrush(line);
       } else if (this.player.carType === "ogre") {
-        play(SFX.OBSTACLE_HIT, 0.7);
+        this._playOgreSfx(0.8);
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
         const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
