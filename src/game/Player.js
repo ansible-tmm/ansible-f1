@@ -33,6 +33,9 @@ export class Player {
     this._smokeParticles = null;
     this._truckExhaust = null;
     this._jetFlame = null;
+    this._trexLegs = null;
+    this._trexTail = null;
+    this._trexJaw = null;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.copy(pos);
@@ -51,6 +54,7 @@ export class Player {
     if (type === "semi_truck") return this._buildSemiTruckMesh();
     if (type === "scaloneta") return this._buildScalonetaMesh();
     if (type === "f16") return this._buildF16Mesh();
+    if (type === "trex") return this._buildTrexMesh();
     if (type === "f1_yellow") return this._buildF1({
       livery: 0xffd000, liveryEmit: 0x332800,
       accent: 0xff6600, accentEmit: 0x331100,
@@ -1833,6 +1837,164 @@ export class Player {
     this.shieldRing = ring;
   }
 
+  _buildTrexMesh() {
+    const g = new THREE.Group();
+    const skin = new THREE.MeshStandardMaterial({ color: 0x3d6b35, roughness: 0.85, metalness: 0.1 });
+    const belly = new THREE.MeshStandardMaterial({ color: 0x7a9a50, roughness: 0.9 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2a4a22, roughness: 0.8 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xeeeeee });
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0x443300, emissiveIntensity: 0.5 });
+    const pupil = new THREE.MeshStandardMaterial({ color: 0x111111 });
+    const toothMat = new THREE.MeshStandardMaterial({ color: 0xfffff0, roughness: 0.4 });
+
+    // Torso — main body, angled forward
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 1.6, 8), skin);
+    torso.rotation.x = Math.PI / 2;
+    torso.position.set(0, 1.2, -0.1);
+    g.add(torso);
+
+    // Belly plate
+    const bellyPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.35, 1.2, 8), belly);
+    bellyPlate.rotation.x = Math.PI / 2;
+    bellyPlate.position.set(0, 1.0, -0.05);
+    g.add(bellyPlate);
+
+    // Neck — tilting forward
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 0.7, 8), skin);
+    neck.rotation.x = 0.4;
+    neck.position.set(0, 1.55, -0.7);
+    g.add(neck);
+
+    // Head — large, boxy skull
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.8), skin);
+    head.position.set(0, 1.85, -1.1);
+    g.add(head);
+
+    // Snout — extends forward from head
+    const snout = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.35, 0.5), skin);
+    snout.position.set(0, 1.75, -1.55);
+    g.add(snout);
+
+    // Lower jaw — animated
+    const jaw = new THREE.Group();
+    jaw.position.set(0, 1.6, -1.1);
+    const jawMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.7), skin);
+    jawMesh.position.set(0, 0, -0.3);
+    jaw.add(jawMesh);
+    const jawBelly = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.55), belly);
+    jawBelly.position.set(0, 0.05, -0.25);
+    jaw.add(jawBelly);
+    g.add(jaw);
+    this._trexJaw = jaw;
+
+    // Teeth — top row
+    for (let i = 0; i < 5; i++) {
+      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.1, 4), toothMat);
+      tooth.position.set(-0.18 + i * 0.09, 1.6, -1.75 + (i % 2) * 0.04);
+      tooth.rotation.x = Math.PI;
+      g.add(tooth);
+    }
+    // Teeth — bottom jaw
+    for (let i = 0; i < 4; i++) {
+      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.08, 4), toothMat);
+      tooth.position.set(-0.13 + i * 0.09, 0.08, -0.5 + (i % 2) * 0.03);
+      jaw.add(tooth);
+    }
+
+    // Eyes — menacing, forward-facing
+    for (const side of [-1, 1]) {
+      const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), eyeMat);
+      eyeWhite.position.set(side * 0.3, 2.0, -1.1);
+      g.add(eyeWhite);
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 6), pupil);
+      p.position.set(side * 0.32, 2.0, -1.18);
+      g.add(p);
+    }
+
+    // Brow ridges
+    for (const side of [-1, 1]) {
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.15), dark);
+      brow.position.set(side * 0.25, 2.12, -1.1);
+      brow.rotation.z = side * -0.3;
+      g.add(brow);
+    }
+
+    // Tiny arms (classic T-Rex!)
+    for (const side of [-1, 1]) {
+      const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.25, 6), skin);
+      upper.rotation.z = side * 0.5;
+      upper.position.set(side * 0.45, 1.15, -0.55);
+      g.add(upper);
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 4), dark);
+      claw.rotation.z = side * 0.8;
+      claw.position.set(side * 0.55, 1.0, -0.55);
+      g.add(claw);
+    }
+
+    // Legs with thighs and shins
+    this._trexLegs = [];
+    for (const side of [-1, 1]) {
+      const legGroup = new THREE.Group();
+      legGroup.position.set(side * 0.35, 0, 0.15);
+
+      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.14, 0.6, 6), skin);
+      thigh.position.set(0, 0.7, 0);
+      legGroup.add(thigh);
+
+      const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.5, 6), skin);
+      shin.position.set(0, 0.3, 0.1);
+      legGroup.add(shin);
+
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 0.35), dark);
+      foot.position.set(0, 0.04, 0.15);
+      legGroup.add(foot);
+
+      // Toe claws
+      for (let t = -1; t <= 1; t++) {
+        const claw = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.1, 4), toothMat);
+        claw.rotation.x = Math.PI / 2;
+        claw.position.set(t * 0.08, 0.04, 0.35);
+        legGroup.add(claw);
+      }
+
+      g.add(legGroup);
+      this._trexLegs.push({ group: legGroup, side, phase: side * Math.PI });
+    }
+
+    // Tail — thick at base, tapers
+    const tail = new THREE.Group();
+    tail.position.set(0, 1.1, 0.6);
+    const tailBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, 0.7, 6), skin);
+    tailBase.rotation.x = -Math.PI / 2;
+    tailBase.position.set(0, 0, 0.3);
+    tail.add(tailBase);
+    const tailMid = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.12, 0.7, 6), skin);
+    tailMid.rotation.x = -Math.PI / 2;
+    tailMid.position.set(0, -0.05, 0.95);
+    tail.add(tailMid);
+    const tailTip = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.04, 0.6, 6), skin);
+    tailTip.rotation.x = -Math.PI / 2;
+    tailTip.position.set(0, -0.1, 1.5);
+    tail.add(tailTip);
+    g.add(tail);
+    this._trexTail = tail;
+
+    // Dorsal ridges — small spines along the back
+    for (let i = 0; i < 6; i++) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 4), dark);
+      spike.position.set(0, 1.75 - i * 0.08, -0.4 + i * 0.25);
+      g.add(spike);
+    }
+
+    // Underglow
+    const glow = new THREE.PointLight(0x44ff44, 1.2, 4);
+    glow.position.set(0, 0.3, 0);
+    g.add(glow);
+
+    g.rotation.y = Math.PI;
+    return g;
+  }
+
   _buildHippoMesh() {
     const g = new THREE.Group();
     const grey = new THREE.MeshStandardMaterial({ color: 0x7a6e65, roughness: 0.8 });
@@ -2408,7 +2570,8 @@ export class Player {
     const isHippo = this.carType === "hippo";
     const isSkate = this.carType === "skateboard";
     const isF16 = this.carType === "f16";
-    const bob = Math.sin(t * 0.004) * (isF16 ? 0.1 : isHover ? 0.08 : isHippo ? 0.06 : isSkate ? 0.02 : 0.04);
+    const isTrex = this.carType === "trex";
+    const bob = Math.sin(t * 0.004) * (isF16 ? 0.1 : isTrex ? 0.03 : isHover ? 0.08 : isHippo ? 0.06 : isSkate ? 0.02 : 0.04);
     const hoverLift = isF16 ? 2.0 : isHover ? 0.25 : 0;
 
     if (isSkate && this._skateJumping) {
@@ -2427,7 +2590,7 @@ export class Player {
 
     this.mesh.rotation.z = THREE.MathUtils.lerp(
       this.mesh.rotation.z,
-      -(this.mesh.position.x - tx) * (isF16 ? 0.35 : isHippo ? 0.1 : isSkate ? 0.15 : 0.22),
+      -(this.mesh.position.x - tx) * (isF16 ? 0.35 : isTrex ? 0.08 : isHippo ? 0.1 : isSkate ? 0.15 : 0.22),
       0.2
     );
     this.mesh.rotation.y = Math.sin(t * 0.002) * 0.02;
@@ -2452,6 +2615,21 @@ export class Player {
           a.upper.rotation.z = a.side * 0.5 + wave;
         }
       }
+    }
+
+    if (isTrex && this._trexLegs) {
+      const stride = 14;
+      for (const leg of this._trexLegs) {
+        const swing = Math.sin(t * 0.001 * stride + leg.phase) * 0.4;
+        leg.group.rotation.x = swing;
+        leg.group.position.y = Math.abs(Math.sin(t * 0.001 * stride + leg.phase)) * 0.15;
+      }
+    }
+    if (isTrex && this._trexTail) {
+      this._trexTail.rotation.y = Math.sin(t * 0.003) * 0.25;
+    }
+    if (isTrex && this._trexJaw) {
+      this._trexJaw.rotation.x = Math.sin(t * 0.006) * 0.08 + 0.05;
     }
 
     this.mesh.rotation.x = isF16

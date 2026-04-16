@@ -67,6 +67,7 @@ Existing custom meshes to reference:
 - `_buildSkateboardMesh()` — Matt's secret skateboard with articulated rider
 - `_buildScalonetaMesh()` — Leo's secret Argentina flag bus (scaloneta unlock)
 - `_buildF16Mesh()` — Alex's secret F-16 fighter jet (topgun unlock) with jet flame particles
+- `_buildTrexMesh()` — Anshul's secret T-Rex (leavemealone unlock) with animated legs, tail, and jaw
 
 ## Adding a Secret Unlockable Mode
 
@@ -84,10 +85,10 @@ Secret modes swap a driver's default car to an alternate vehicle when the player
 
 ### Key detection pattern
 
-The `_secretBuffer` is a rolling 9-character string built from keystrokes while `state === "running"`:
+The `_secretBuffer` is a rolling 12-character string built from keystrokes while `state === "running"`:
 
 ```js
-this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-9);
+this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-12);
 if (this.currentDriver === "mydriver" &&
     this.player.carType !== "my_secret" &&
     this._secretBuffer.endsWith("keyword")) {
@@ -98,7 +99,7 @@ if (this.currentDriver === "mydriver" &&
 }
 ```
 
-The buffer is 9 characters to accommodate the longest keyword ("scaloneta"). If you add a longer keyword, increase the `slice(-N)` value.
+The buffer is 12 characters to accommodate the longest keyword ("leavemealone"). If you add a longer keyword, increase the `slice(-N)` value.
 
 ### Secret mode revert on back-to-menu
 
@@ -123,6 +124,7 @@ This means each player has to type the secret code themselves — it doesn't per
 | Matt | `matt` | `skateboard` | No — scores count | Click to jump (airborne invincibility) |
 | Leo | `scaloneta` | `scaloneta` | Yes — no leaderboard | Full Spanish UI, Argentine catchphrases, custom SFX |
 | Alex | `topgun` | `f16` | Yes — no leaderboard | Hovers above track, flies over everything, click to drop bombs |
+| Anshul | `leavemealone` | `trex` | Yes — no leaderboard | Smoke burst on activation, stomping legs/tail/jaw animation, smashes everything for +50k |
 
 ### Spanish UI mode (Scaloneta)
 
@@ -172,8 +174,9 @@ Multiple systems can make the player invincible. All are checked at the top of `
 |-------|--------|----------|--------|
 | Skateboard airborne | `player.isAirborne` | `skateboard` | Obstacle explodes, no damage, "jumped over it" status |
 | DeLorean time travel | `player.isTimeTravelInvisible` | `delorean` | Obstacle explodes, no damage, phases through silently |
-| Cheater mode | `_isCheater()` | `hippo`, `semi_truck`, `scaloneta`, `f16` | Obstacle explodes, no damage; hippo/scaloneta get +50k score and crush lines |
+| Cheater mode | `_isCheater()` | `hippo`, `semi_truck`, `scaloneta`, `f16`, `trex` | Obstacle explodes, no damage; hippo/scaloneta/trex get +50k score and crush lines |
 | F-16 flyover | `carType === "f16"` | `f16` | Hovers 2 units above track, collision handlers return immediately (flies over everything) |
+| T-Rex rampage | `_isCheater()` | `trex` | Smashes through everything with Jurassic Park-themed crush messages, +50k per hit |
 | Shield active | `this.shield > 0` | any | Obstacle hit absorbed, shield decremented, no health loss |
 
 When adding a new invincibility state:

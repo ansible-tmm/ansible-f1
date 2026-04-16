@@ -48,6 +48,7 @@ Some drivers have hidden alternate vehicles that transform the gameplay. Type th
 | Matthew Packer | `matt` | 🛹 Skate Mode | Skateboard rider with backwards cap and flannel. Click to jump — while airborne you're invincible and pass through obstacles. |
 | Leo Gallego | `scaloneta` | 🇦🇷 La Scaloneta | Argentina flag-themed Mercedes-Benz LO 1114 bus. Indestructible. Crushes everything for +50,000 pts with Argentine catchphrases. Entire UI flips to Spanish. Custom sound effect. Scores don't count on the leaderboard. |
 | Alex Walczyk | `topgun` | ✈️ Top Gun Mode | F-16 fighter jet that hovers above the track. Flies over all obstacles and cars. Click to drop bombs that explode on impact — anything caught in the blast radius is destroyed for +50,000 pts with Top Gun callouts. Scores don't count on the leaderboard. |
+| Anshul Behl | `leavemealone` | 🦖 T-Rex Mode | Smoke engulfs the screen, then a T-Rex appears! Stomps down the road with animated legs, swaying tail, and snapping jaw. Indestructible — smashes everything for +50,000 pts with Jurassic Park-themed callouts. Scores don't count on the leaderboard. |
 
 ## Special Vehicle Abilities
 
@@ -61,6 +62,7 @@ Some vehicles have unique abilities triggered by clicking (instead of honking):
 | **Semi Truck** (Andrius, after unlock) | Custom Andrius horn. |
 | **La Scaloneta** (Leo, after unlock) | Plays the scaloneta sound. |
 | **F-16** (Alex, after unlock) | Drop bomb — bomb falls to the ground and explodes, destroying anything in the blast radius. |
+| **T-Rex** (Anshul, after unlock) | Stomps everything — indestructible dino rampage. |
 
 ## Nuno's Pickup Truck
 

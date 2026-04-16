@@ -860,6 +860,10 @@ export class UI {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "✈️ Mission Complete, Maverick ✈️";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
           "You feel the need... the need for speed. But fighter jets can't be on the leaderboard.";
+      } else if (cheaterType === "trex") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🦖 Extinction-Level Finish! 🦖";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "Life found a way... but T-Rex arms can't reach the leaderboard. Those tiny arms!";
       } else {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "Nice Finish... Cheater";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
