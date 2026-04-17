@@ -50,11 +50,21 @@ export class GodzillaMode {
     this._fireActive = false;
     this._fireTimer = 0;
 
+    this._camTheta = Math.PI;
+    this._camPhi = 0.45;
+    this._camDist = 25;
+    this._dragging = false;
+    this._dragDist = 0;
+    this._lastMX = 0;
+    this._lastMY = 0;
+
     this._parts = {};
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
-    this._onClickFire = this._onClickFire.bind(this);
+    this._onMouseDown = this._onMouseDown.bind(this);
+    this._onMouseUp = this._onMouseUp.bind(this);
+    this._onMouseMove = this._onMouseMove.bind(this);
 
     this._touchActive = false;
     this._touchStartX = 0;
@@ -81,6 +91,11 @@ export class GodzillaMode {
     this._shakeUntil = 0;
     this._fireActive = false;
     this._fireTimer = 0;
+    this._dragging = false;
+    this._dragDist = 0;
+    this._camTheta = Math.PI;
+    this._camPhi = 0.45;
+    this._camDist = 25;
     this.rubble = [];
     this.fireParticles = [];
 
@@ -100,8 +115,9 @@ export class GodzillaMode {
 
     window.addEventListener("keydown", this._onKeyDown);
     window.addEventListener("keyup", this._onKeyUp);
-    window.addEventListener("mousedown", this._onClickFire);
-    window.addEventListener("mouseup", this._onClickFireEnd);
+    window.addEventListener("mousedown", this._onMouseDown);
+    window.addEventListener("mouseup", this._onMouseUp);
+    window.addEventListener("mousemove", this._onMouseMove);
 
     this._setupTouchControls();
 
@@ -112,8 +128,9 @@ export class GodzillaMode {
     this.active = false;
     window.removeEventListener("keydown", this._onKeyDown);
     window.removeEventListener("keyup", this._onKeyUp);
-    window.removeEventListener("mousedown", this._onClickFire);
-    window.removeEventListener("mouseup", this._onClickFireEnd);
+    window.removeEventListener("mousedown", this._onMouseDown);
+    window.removeEventListener("mouseup", this._onMouseUp);
+    window.removeEventListener("mousemove", this._onMouseMove);
     this._teardownTouchControls();
 
     this._disposeGroup(this.group);
@@ -143,6 +160,8 @@ export class GodzillaMode {
       this._hiddenObjects = null;
     }
 
+    clearTimeout(this._fireHoldTimer);
+    this._fireActive = false;
     this.godzilla = null;
     this._parts = {};
   }
@@ -500,8 +519,32 @@ export class GodzillaMode {
     if (k === "KeyD" || k === "ArrowRight") this._keys.d = false;
   }
 
-  _onClickFire = () => { this._fireActive = true; };
-  _onClickFireEnd = () => { this._fireActive = false; };
+  _onMouseDown(e) {
+    this._dragging = true;
+    this._lastMX = e.clientX;
+    this._lastMY = e.clientY;
+    this._dragDist = 0;
+    if (e.button === 2) e.preventDefault();
+  }
+
+  _onMouseUp(e) {
+    if (this._dragging && e.button === 0 && this._dragDist < 6) {
+      this._fireActive = true;
+      this._fireHoldTimer = setTimeout(() => { this._fireActive = false; }, 400);
+    }
+    this._dragging = false;
+  }
+
+  _onMouseMove(e) {
+    if (!this._dragging) return;
+    const dx = e.clientX - this._lastMX;
+    const dy = e.clientY - this._lastMY;
+    this._dragDist += Math.abs(dx) + Math.abs(dy);
+    this._lastMX = e.clientX;
+    this._lastMY = e.clientY;
+    this._camTheta -= dx * 0.005;
+    this._camPhi = Math.max(0.15, Math.min(1.2, this._camPhi - dy * 0.005));
+  }
 
   _setupTouchControls() {
     const isMobile = window.matchMedia("(pointer: coarse)").matches;
@@ -541,6 +584,9 @@ export class GodzillaMode {
     this._fireBtn.addEventListener("touchend", (e) => { e.preventDefault(); this._fireActive = false; }, { passive: false });
     this._fireBtn.addEventListener("touchcancel", () => { this._fireActive = false; });
     document.body.appendChild(this._fireBtn);
+
+    this._preventCtx = (e) => e.preventDefault();
+    window.addEventListener("contextmenu", this._preventCtx);
   }
 
   _teardownTouchControls() {
@@ -556,6 +602,10 @@ export class GodzillaMode {
     if (this._fireBtn) {
       this._fireBtn.remove();
       this._fireBtn = null;
+    }
+    if (this._preventCtx) {
+      window.removeEventListener("contextmenu", this._preventCtx);
+      this._preventCtx = null;
     }
     this._touchActive = false;
     this._touchDx = 0;
@@ -627,36 +677,42 @@ export class GodzillaMode {
   }
 
   _updateMovement(dt) {
-    let moveX = 0, moveZ = 0;
+    let inputX = 0, inputZ = 0;
 
     if (this._touchActive) {
-      moveX = this._touchDx;
-      moveZ = this._touchDy;
+      inputX = this._touchDx;
+      inputZ = -this._touchDy;
     } else {
-      if (this._keys.a) moveX -= 1;
-      if (this._keys.d) moveX += 1;
-      if (this._keys.w) moveZ += 1;
-      if (this._keys.s) moveZ -= 1;
+      if (this._keys.a) inputX -= 1;
+      if (this._keys.d) inputX += 1;
+      if (this._keys.w) inputZ += 1;
+      if (this._keys.s) inputZ -= 1;
     }
 
-    const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
-    if (len > 0.1) {
-      const nx = moveX / len;
-      const nz = moveZ / len;
+    const len = Math.sqrt(inputX * inputX + inputZ * inputZ);
+    const isMoving = len > 0.1;
 
-      const targetAngle = Math.atan2(nx, nz);
-      let diff = targetAngle - this._facing;
-      while (diff > Math.PI) diff -= 2 * Math.PI;
-      while (diff < -Math.PI) diff += 2 * Math.PI;
-      this._facing += diff * Math.min(1, GODZILLA_TURN_SPEED * dt * 5);
+    if (isMoving) {
+      const nx = inputX / len;
+      const nz = inputZ / len;
+
+      const camFwd = this._camTheta;
+      const mx = Math.sin(camFwd) * nz + Math.sin(camFwd - Math.PI / 2) * nx;
+      const mz = Math.cos(camFwd) * nz + Math.cos(camFwd - Math.PI / 2) * nx;
 
       const speed = GODZILLA_SPEED * Math.min(len, 1);
-      this._godzillaPos.x += Math.sin(this._facing) * speed * dt;
-      this._godzillaPos.z += Math.cos(this._facing) * speed * dt;
+      this._godzillaPos.x += mx * speed * dt;
+      this._godzillaPos.z += mz * speed * dt;
 
       const bound = CITY_SIZE - 2;
       this._godzillaPos.x = Math.max(-bound, Math.min(bound, this._godzillaPos.x));
       this._godzillaPos.z = Math.max(-bound, Math.min(bound, this._godzillaPos.z));
+
+      const targetFacing = Math.atan2(mx, mz);
+      let diff = targetFacing - this._facing;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      this._facing += diff * Math.min(1, GODZILLA_TURN_SPEED * dt * 5);
     }
 
     this.godzilla.position.set(this._godzillaPos.x, 0, this._godzillaPos.z);
@@ -689,16 +745,12 @@ export class GodzillaMode {
   }
 
   _updateCamera(dt, now) {
-    const camDist = 25;
-    const camHeight = 18;
-    const behindAngle = this._facing + Math.PI;
-    const offset = new THREE.Vector3(
-      Math.sin(behindAngle) * camDist,
-      camHeight,
-      Math.cos(behindAngle) * camDist
-    );
-    const target = this._godzillaPos.clone().add(offset);
-    this.camera.position.lerp(target, 1 - Math.exp(-3 * dt));
+    const cx = this._godzillaPos.x - Math.sin(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
+    const cy = this._godzillaPos.y + 1.0 + Math.sin(this._camPhi) * this._camDist;
+    const cz = this._godzillaPos.z - Math.cos(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
+
+    const target = new THREE.Vector3(cx, cy, cz);
+    this.camera.position.lerp(target, 1 - Math.exp(-6 * dt));
 
     let shake = 0;
     if (now < this._shakeUntil) {
@@ -707,9 +759,11 @@ export class GodzillaMode {
     this.camera.position.x += shake;
     this.camera.position.y += shake * 0.5;
 
-    const lookTarget = this._godzillaPos.clone();
-    lookTarget.y = 5;
-    this.camera.lookAt(lookTarget);
+    this.camera.lookAt(
+      this._godzillaPos.x,
+      this._godzillaPos.y + 5,
+      this._godzillaPos.z
+    );
   }
 
   _updateCollisions(now) {
