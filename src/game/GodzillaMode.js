@@ -227,8 +227,6 @@ export class GodzillaMode {
           const h = 3 + Math.random() * 10;
           const color = BUILDING_COLORS[Math.floor(Math.random() * BUILDING_COLORS.length)];
           const hasPointedRoof = Math.random() < 0.2;
-          const hasScoreMarker = Math.random() < 0.08;
-
           const bGroup = new THREE.Group();
 
           const geo = new THREE.BoxGeometry(w, h, d);
@@ -252,17 +250,6 @@ export class GodzillaMode {
             bGroup.add(roof);
           }
 
-          if (hasScoreMarker) {
-            const ringGeo = new THREE.TorusGeometry(1.2, 0.15, 8, 16);
-            const ringMat = new THREE.MeshStandardMaterial({
-              color: 0xffdd00, emissive: 0xffdd00, emissiveIntensity: 0.5,
-            });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.position.y = h + 2;
-            ring.rotation.x = Math.PI / 2;
-            bGroup.add(ring);
-          }
-
           const offX = (Math.random() - 0.5) * (GRID_SPACING - halfRoad * 2 - w);
           const offZ = (Math.random() - 0.5) * (GRID_SPACING - halfRoad * 2 - d);
           bGroup.position.set(gx + offX, 0, gz + offZ);
@@ -275,7 +262,6 @@ export class GodzillaMode {
             crushing: false,
             crushT: 0,
             origY: 0,
-            hasScoreMarker,
           });
         }
       }
@@ -401,7 +387,6 @@ export class GodzillaMode {
       mesh: tGroup,
       w: baseSpread + 2, h: towerH, d: baseSpread + 2,
       alive: true, crushing: false, crushT: 0, origY: 0,
-      hasScoreMarker: true,
     });
   }
 
@@ -787,8 +772,7 @@ export class GodzillaMode {
     b.alive = false;
     b.crushing = true;
     b.crushT = 0;
-    const pts = b.hasScoreMarker ? BUILDING_SCORE * 3 : BUILDING_SCORE;
-    this.score += pts;
+    this.score += BUILDING_SCORE;
     this.crushed++;
 
     this._shakeUntil = now + 300;
