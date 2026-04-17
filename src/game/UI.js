@@ -207,6 +207,7 @@ export class UI {
 
     on("btn-hud-info", () => this.onHudInfoOpen && this.onHudInfoOpen());
     on("btn-hud-close", () => this.onHudInfoClose && this.onHudInfoClose());
+    on("btn-hud-resume", () => this.onHudInfoClose && this.onHudInfoClose());
     on("btn-mobile-secret", () => this.onMobileSecret && this.onMobileSecret());
     on("btn-gz-back", () => { this.hideGodzillaScore(); if (this.onMenu) this.onMenu(); });
 
