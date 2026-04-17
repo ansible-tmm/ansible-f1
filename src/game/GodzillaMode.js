@@ -16,6 +16,13 @@ const SFX_STOMP = "./assets/audio/obstacle-hit.wav";
 const SFX_ROAR = "./assets/audio/godzilla.mp3";
 const SFX_FIRE = "./assets/audio/boost-whoosh.wav";
 const SFX_KONG = "./assets/audio/kong.m4a";
+const SFX_KONG_ATTACKS = [
+  "./assets/audio/kong-attack.m4a",
+  "./assets/audio/kong-attack2.m4a",
+  "./assets/audio/kong-attack3.m4a",
+  "./assets/audio/kong-attack4.m4a",
+  "./assets/audio/kong-attack5.m4a",
+];
 
 const KONG_SPEED = 16;
 const KONG_RADIUS = 2.5;
@@ -65,6 +72,7 @@ export class GodzillaMode {
     this._fireActive = false;
     this._fireTimer = 0;
     this._crushSfxPlaying = false;
+    this._kongSfxPlaying = false;
 
     this._camTheta = Math.PI;
     this._camPhi = 0.45;
@@ -1473,6 +1481,16 @@ export class GodzillaMode {
     this.camera.lookAt(this._kkPos.x, this._kkPos.y + 5, this._kkPos.z);
   }
 
+  _playKongAttack() {
+    if (this._kongSfxPlaying) return;
+    this._kongSfxPlaying = true;
+    const sfx = SFX_KONG_ATTACKS[Math.floor(Math.random() * SFX_KONG_ATTACKS.length)];
+    const a = new Audio(sfx);
+    a.volume = 0.6;
+    a.onended = () => { this._kongSfxPlaying = false; };
+    a.play().catch(() => { this._kongSfxPlaying = false; });
+  }
+
   _updateKKCollisions(now) {
     const px = this._kkPos.x;
     const pz = this._kkPos.z;
@@ -1481,6 +1499,7 @@ export class GodzillaMode {
       if (Math.abs(px - b.mesh.position.x) < b.w / 2 + KONG_RADIUS &&
           Math.abs(pz - b.mesh.position.z) < b.d / 2 + KONG_RADIUS) {
         this._crushBuilding(b, now);
+        this._playKongAttack();
       }
     }
     if (this.trees) {
@@ -1887,7 +1906,7 @@ export class GodzillaMode {
       this._mechaAttackCD = ATTACK_COOLDOWN;
       this._shakeUntil = now + 200;
       this._shakeAmp = 0.5;
-      play(SFX_STOMP, 0.5);
+      this._playKongAttack();
     }
 
     if (gDist < GODZILLA_RADIUS + MECHA_RADIUS && this._heroAttackCD <= 0) {
@@ -1899,6 +1918,7 @@ export class GodzillaMode {
     if (this._kkChestBeat && kkDist < KONG_RADIUS + MECHA_RADIUS + 5) {
       this._mechaHp -= HERO_DAMAGE * 2;
       this._shakeUntil = now + 300;
+      this._playKongAttack();
       this._shakeAmp = 0.4;
     }
   }
