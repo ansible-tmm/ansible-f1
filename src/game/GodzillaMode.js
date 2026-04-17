@@ -1097,18 +1097,16 @@ export class GodzillaMode {
   }
 
   _spawnRubble(building) {
-    const count = 6 + Math.floor(Math.random() * 6);
     const bx = building.mesh.position.x;
     const by = building.h * 0.4;
     const bz = building.mesh.position.z;
 
-    const baseColor = 0x888888;
-
-    for (let i = 0; i < count; i++) {
-      const size = 0.3 + Math.random() * 0.6;
+    const chunkCount = 5 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < chunkCount; i++) {
+      const size = 0.3 + Math.random() * 0.5;
       const geo = new THREE.BoxGeometry(size, size, size);
       const mat = new THREE.MeshStandardMaterial({
-        color: baseColor, roughness: 0.8, transparent: true, opacity: 1,
+        color: 0x999999, roughness: 0.9, transparent: true, opacity: 1,
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(
@@ -1119,46 +1117,120 @@ export class GodzillaMode {
       mesh.castShadow = true;
       this.scene.add(mesh);
       this.rubble.push({
-        mesh,
-        vx: (Math.random() - 0.5) * 12,
-        vy: 4 + Math.random() * 8,
-        vz: (Math.random() - 0.5) * 12,
+        mesh, type: "chunk",
+        vx: (Math.random() - 0.5) * 10,
+        vy: 3 + Math.random() * 6,
+        vz: (Math.random() - 0.5) * 10,
         life: 1,
         spin: new THREE.Vector3(
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 8
         ),
       });
     }
+
+    this._queueSmoke(bx, bz, building.w, building.d, building.h);
+  }
+
+  _queueSmoke(bx, bz, bw, bd, bh) {
+    const plumeCount = 4 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < plumeCount; i++) {
+      const delay = Math.random() * 1.5;
+      const sx = bx + (Math.random() - 0.5) * bw * 0.8;
+      const sz = bz + (Math.random() - 0.5) * bd * 0.8;
+      this.rubble.push({
+        type: "smoke_queued", delay,
+        sx, sz, bh,
+      });
+    }
+  }
+
+  _spawnSmokePuff(x, z, baseH) {
+    const size = 1.2 + Math.random() * 1.8;
+    const geo = new THREE.SphereGeometry(size, 6, 5);
+    const shade = 0.35 + Math.random() * 0.2;
+    const c = Math.floor(shade * 255);
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(c / 255, c / 255, c / 255),
+      roughness: 1, transparent: true, opacity: 0.5 + Math.random() * 0.15,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, 0.5 + Math.random() * baseH * 0.3, z);
+    mesh.scale.y = 0.6 + Math.random() * 0.3;
+    this.scene.add(mesh);
+    return {
+      mesh, type: "smoke",
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: 1.5 + Math.random() * 2,
+      vz: (Math.random() - 0.5) * 0.8,
+      life: 1,
+      maxLife: 3 + Math.random() * 3,
+      startOpacity: mat.opacity,
+      growRate: 1 + Math.random() * 0.5,
+    };
   }
 
   _updateRubble(dt) {
     for (let i = this.rubble.length - 1; i >= 0; i--) {
       const r = this.rubble[i];
-      r.vy -= 25 * dt;
-      r.mesh.position.x += r.vx * dt;
-      r.mesh.position.y += r.vy * dt;
-      r.mesh.position.z += r.vz * dt;
-      r.mesh.rotation.x += r.spin.x * dt;
-      r.mesh.rotation.y += r.spin.y * dt;
-      r.mesh.rotation.z += r.spin.z * dt;
 
-      if (r.mesh.position.y < 0) {
-        r.mesh.position.y = 0;
-        r.vy = Math.abs(r.vy) * 0.3;
-        r.vx *= 0.6;
-        r.vz *= 0.6;
+      if (r.type === "smoke_queued") {
+        r.delay -= dt;
+        if (r.delay <= 0) {
+          const puff = this._spawnSmokePuff(r.sx, r.sz, r.bh);
+          this.rubble[i] = puff;
+        }
+        continue;
       }
 
-      r.life -= dt * 0.8;
-      r.mesh.material.opacity = Math.max(0, r.life);
+      if (r.type === "chunk") {
+        r.vy -= 25 * dt;
+        r.mesh.position.x += r.vx * dt;
+        r.mesh.position.y += r.vy * dt;
+        r.mesh.position.z += r.vz * dt;
+        r.mesh.rotation.x += r.spin.x * dt;
+        r.mesh.rotation.y += r.spin.y * dt;
+        r.mesh.rotation.z += r.spin.z * dt;
+        if (r.mesh.position.y < 0) {
+          r.mesh.position.y = 0;
+          r.vy = Math.abs(r.vy) * 0.25;
+          r.vx *= 0.5;
+          r.vz *= 0.5;
+        }
+        r.life -= dt * 1.2;
+        r.mesh.material.opacity = Math.max(0, r.life);
+        if (r.life <= 0) {
+          this.scene.remove(r.mesh);
+          r.mesh.geometry.dispose();
+          r.mesh.material.dispose();
+          this.rubble.splice(i, 1);
+        }
+        continue;
+      }
 
-      if (r.life <= 0) {
-        this.scene.remove(r.mesh);
-        r.mesh.geometry.dispose();
-        r.mesh.material.dispose();
-        this.rubble.splice(i, 1);
+      if (r.type === "smoke") {
+        r.mesh.position.x += r.vx * dt;
+        r.mesh.position.y += r.vy * dt;
+        r.mesh.position.z += r.vz * dt;
+
+        const scale = r.mesh.scale.x + r.growRate * dt;
+        r.mesh.scale.set(scale, scale * 0.7, scale);
+
+        r.vy *= (1 - 0.3 * dt);
+        r.vx *= (1 - 0.2 * dt);
+        r.vz *= (1 - 0.2 * dt);
+
+        r.life -= dt / r.maxLife;
+        const fade = Math.max(0, r.life);
+        r.mesh.material.opacity = r.startOpacity * fade * fade;
+
+        if (r.life <= 0) {
+          this.scene.remove(r.mesh);
+          r.mesh.geometry.dispose();
+          r.mesh.material.dispose();
+          this.rubble.splice(i, 1);
+        }
       }
     }
   }
