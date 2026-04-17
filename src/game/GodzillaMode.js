@@ -1111,6 +1111,8 @@ export class GodzillaMode {
     this._saveCamTheta = this._camTheta;
     this._saveCamPhi = this._camPhi;
 
+    this.timeLeft = Math.max(this.timeLeft, 30) + 30;
+
     play(SFX_STOMP, 0.8);
   }
 
@@ -1253,10 +1255,11 @@ export class GodzillaMode {
     this.camera.lookAt(lookTarget);
 
     if (t >= 1) {
-      this._kkTransition = false;
-      this._kkMode = true;
-      this._camTheta = this._kkFacing + Math.PI;
-      this._camPhi = 0.45;
+    this._kkTransition = false;
+    this._kkMode = true;
+    this._camTheta = this._kkFacing + Math.PI;
+    this._camPhi = 0.45;
+    this._aiFacing = this._facing;
     }
   }
 
@@ -1533,17 +1536,17 @@ export class GodzillaMode {
   update(dt, now) {
     if (!this.active) return false;
 
-    this.timeLeft -= dt;
-    if (this.timeLeft <= 0) {
-      this.timeLeft = 0;
-      return true;
-    }
-
     if (this._kkTransition) {
       this._updateKKTransition(dt);
       this._updateCrushAnims(dt);
       this._updateRubble(dt);
       return false;
+    }
+
+    this.timeLeft -= dt;
+    if (this.timeLeft <= 0) {
+      this.timeLeft = 0;
+      return true;
     }
 
     if (this._kkMode) {
