@@ -35,6 +35,7 @@ export class GodzillaMode {
     this.group = new THREE.Group();
     this.godzilla = null;
     this.buildings = [];
+    this.trees = [];
     this.rubble = [];
     this.fireParticles = [];
     this.score = 0;
@@ -111,8 +112,23 @@ export class GodzillaMode {
 
     this._savedFog = this.scene.fog;
     this._savedBg = this.scene.background;
-    this.scene.background = new THREE.Color(0x87ceeb);
-    this.scene.fog = new THREE.Fog(0x87ceeb, 80, 200);
+
+    const skyCanvas = document.createElement("canvas");
+    skyCanvas.width = 1;
+    skyCanvas.height = 256;
+    const ctx = skyCanvas.getContext("2d");
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, "#3a6ec0");
+    grad.addColorStop(0.5, "#7ab8e0");
+    grad.addColorStop(1, "#c8e0f0");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1, 256);
+    const skyTex = new THREE.CanvasTexture(skyCanvas);
+    skyTex.mapping = THREE.EquirectangularReflectionMapping;
+    this.scene.background = skyTex;
+    this._skyTex = skyTex;
+
+    this.scene.fog = new THREE.Fog(0xa8d0e8, 80, 220);
 
     window.addEventListener("keydown", this._onKeyDown);
     window.addEventListener("keyup", this._onKeyUp);
@@ -139,6 +155,7 @@ export class GodzillaMode {
     this.scene.remove(this.group);
     this.group = new THREE.Group();
     this.buildings = [];
+    this.trees = [];
 
     for (const r of this.rubble) {
       this.scene.remove(r.mesh);
@@ -156,6 +173,7 @@ export class GodzillaMode {
 
     this.scene.fog = this._savedFog;
     this.scene.background = this._savedBg;
+    if (this._skyTex) { this._skyTex.dispose(); this._skyTex = null; }
 
     if (this._hiddenObjects) {
       this._hiddenObjects.forEach(o => { o.visible = true; });
@@ -288,6 +306,7 @@ export class GodzillaMode {
     this.totalBuildings = this.buildings.length;
 
     this._buildStreetTrees(roadWidth, sidewalkW);
+    this._buildParkedCars(roadWidth);
     this._buildMountains();
 
     const sun = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -309,68 +328,110 @@ export class GodzillaMode {
 
   _buildStreetTrees(roadWidth, sidewalkW) {
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4226, roughness: 0.9 });
-    const leafColors = [0x3a8a3a, 0x4a9a4a, 0x2d7a2d, 0x5aaa5a];
-    const trunkGeo = new THREE.CylinderGeometry(0.12, 0.15, 1.2, 5);
-    const leafGeo = new THREE.SphereGeometry(0.7, 6, 5);
+    const leafColors = [0x3a8a3a, 0x4a9a4a, 0x2d7a2d, 0x5aaa5a, 0x48a048];
+    this.trees = [];
+
+    const _makeTree = (tx, tz) => {
+      const treeGroup = new THREE.Group();
+      const sizeScale = 0.6 + Math.random() * 0.8;
+      const trunkH = (1.0 + Math.random() * 0.6) * sizeScale;
+      const trunkGeo = new THREE.CylinderGeometry(0.1 * sizeScale, 0.14 * sizeScale, trunkH, 5);
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = trunkH / 2;
+      treeGroup.add(trunk);
+
+      const leafR = (0.5 + Math.random() * 0.5) * sizeScale;
+      const leafGeo = new THREE.SphereGeometry(leafR, 6, 5);
+      const lc = leafColors[Math.floor(Math.random() * leafColors.length)];
+      const lMat = new THREE.MeshStandardMaterial({ color: lc, roughness: 0.8 });
+      const leaf = new THREE.Mesh(leafGeo, lMat);
+      leaf.position.y = trunkH + leafR * 0.6;
+      leaf.scale.y = 0.6 + Math.random() * 0.4;
+      treeGroup.add(leaf);
+
+      treeGroup.position.set(tx, 0, tz);
+      this.group.add(treeGroup);
+      this.trees.push({ mesh: treeGroup, x: tx, z: tz, r: leafR * sizeScale, alive: true });
+    };
 
     const treeEdge = roadWidth / 2 + sidewalkW + 0.5;
     for (let x = -CITY_SIZE + GRID_SPACING; x < CITY_SIZE; x += GRID_SPACING) {
-      for (let along = -CITY_SIZE + 4; along < CITY_SIZE; along += 6 + Math.random() * 4) {
-        if (Math.random() > 0.6) continue;
-        for (const s of [-1, 1]) {
-          const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-          trunk.position.set(x + s * treeEdge, 0.6, along);
-          this.group.add(trunk);
-          const lc = leafColors[Math.floor(Math.random() * leafColors.length)];
-          const lMat = new THREE.MeshStandardMaterial({ color: lc, roughness: 0.8 });
-          const leaf = new THREE.Mesh(leafGeo, lMat);
-          leaf.position.set(x + s * treeEdge, 1.5 + Math.random() * 0.3, along);
-          leaf.scale.y = 0.7 + Math.random() * 0.3;
-          this.group.add(leaf);
-        }
+      for (let along = -CITY_SIZE + 4; along < CITY_SIZE; along += 5 + Math.random() * 5) {
+        if (Math.random() > 0.55) continue;
+        for (const s of [-1, 1]) _makeTree(x + s * treeEdge, along);
       }
     }
     for (let z = -CITY_SIZE + GRID_SPACING; z < CITY_SIZE; z += GRID_SPACING) {
-      for (let along = -CITY_SIZE + 4; along < CITY_SIZE; along += 6 + Math.random() * 4) {
-        if (Math.random() > 0.6) continue;
-        for (const s of [-1, 1]) {
-          const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-          trunk.position.set(along, 0.6, z + s * treeEdge);
-          this.group.add(trunk);
-          const lc = leafColors[Math.floor(Math.random() * leafColors.length)];
-          const lMat = new THREE.MeshStandardMaterial({ color: lc, roughness: 0.8 });
-          const leaf = new THREE.Mesh(leafGeo, lMat);
-          leaf.position.set(along, 1.5 + Math.random() * 0.3, z + s * treeEdge);
-          leaf.scale.y = 0.7 + Math.random() * 0.3;
-          this.group.add(leaf);
-        }
+      for (let along = -CITY_SIZE + 4; along < CITY_SIZE; along += 5 + Math.random() * 5) {
+        if (Math.random() > 0.55) continue;
+        for (const s of [-1, 1]) _makeTree(along, z + s * treeEdge);
+      }
+    }
+  }
+
+  _buildParkedCars(roadWidth) {
+    const carColors = [0xcc2222, 0x2255cc, 0xeeeeee, 0x222222, 0xccaa22, 0x22aa44, 0x888888, 0x4488cc];
+    const carBodyGeo = new THREE.BoxGeometry(0.8, 0.5, 1.6);
+    const carRoofGeo = new THREE.BoxGeometry(0.7, 0.35, 0.9);
+    const parkEdge = roadWidth / 2 - 0.6;
+
+    for (let x = -CITY_SIZE + GRID_SPACING; x < CITY_SIZE; x += GRID_SPACING) {
+      for (let along = -CITY_SIZE + 3; along < CITY_SIZE; along += 3 + Math.random() * 5) {
+        if (Math.random() > 0.35) continue;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const cc = carColors[Math.floor(Math.random() * carColors.length)];
+        const cMat = new THREE.MeshStandardMaterial({ color: cc, roughness: 0.5 });
+        const body = new THREE.Mesh(carBodyGeo, cMat);
+        body.position.set(x + side * parkEdge, 0.25, along);
+        this.group.add(body);
+        const roof = new THREE.Mesh(carRoofGeo, cMat);
+        roof.position.set(x + side * parkEdge, 0.55, along);
+        this.group.add(roof);
+      }
+    }
+    for (let z = -CITY_SIZE + GRID_SPACING; z < CITY_SIZE; z += GRID_SPACING) {
+      for (let along = -CITY_SIZE + 3; along < CITY_SIZE; along += 3 + Math.random() * 5) {
+        if (Math.random() > 0.35) continue;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const cc = carColors[Math.floor(Math.random() * carColors.length)];
+        const cMat = new THREE.MeshStandardMaterial({ color: cc, roughness: 0.5 });
+        const body = new THREE.Mesh(carBodyGeo, cMat);
+        body.position.set(along, 0.25, z + side * parkEdge);
+        body.rotation.y = Math.PI / 2;
+        this.group.add(body);
+        const roof = new THREE.Mesh(carRoofGeo, cMat);
+        roof.position.set(along, 0.55, z + side * parkEdge);
+        roof.rotation.y = Math.PI / 2;
+        this.group.add(roof);
       }
     }
   }
 
   _buildClouds() {
-    const cloudMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff, roughness: 1, transparent: true, opacity: 0.85,
-    });
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 30; i++) {
       const cGroup = new THREE.Group();
-      const puffs = 3 + Math.floor(Math.random() * 4);
+      const puffs = 5 + Math.floor(Math.random() * 5);
+      const baseOpacity = 0.45 + Math.random() * 0.2;
+      const cloudMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff, roughness: 1, transparent: true, opacity: baseOpacity,
+        depthWrite: false,
+      });
       for (let p = 0; p < puffs; p++) {
-        const r = 4 + Math.random() * 6;
-        const geo = new THREE.SphereGeometry(r, 8, 6);
+        const r = 6 + Math.random() * 10;
+        const geo = new THREE.SphereGeometry(r, 7, 5);
         const puff = new THREE.Mesh(geo, cloudMat);
         puff.position.set(
-          (Math.random() - 0.5) * 12,
-          (Math.random() - 0.3) * 3,
-          (Math.random() - 0.5) * 8
+          (Math.random() - 0.5) * 25,
+          (Math.random() - 0.3) * 2,
+          (Math.random() - 0.5) * 15
         );
-        puff.scale.y = 0.4 + Math.random() * 0.2;
+        puff.scale.y = 0.25 + Math.random() * 0.12;
         cGroup.add(puff);
       }
-      const spread = CITY_SIZE * 1.5;
+      const spread = CITY_SIZE * 1.8;
       cGroup.position.set(
         (Math.random() - 0.5) * spread * 2,
-        25 + Math.random() * 20,
+        28 + Math.random() * 18,
         (Math.random() - 0.5) * spread * 2
       );
       this.group.add(cGroup);
@@ -424,12 +485,13 @@ export class GodzillaMode {
       mGroup.add(peak);
 
       if (h > 28) {
-        const capH = h * 0.18;
-        const capR = baseR * 0.3;
+        const capFrac = 0.2;
+        const capH = h * capFrac;
+        const capR = baseR * capFrac;
         const capGeo = new THREE.ConeGeometry(capR, capH, segs);
         const capMat = new THREE.MeshStandardMaterial({ color: snowColor, roughness: 0.9, flatShading: true });
         const cap = new THREE.Mesh(capGeo, capMat);
-        cap.position.set(ox, peak.position.y + h / 2 - capH / 2 + 0.5, oz);
+        cap.position.set(ox, peak.position.y + h / 2 - capH / 2 + 0.3, oz);
         cap.scale.copy(peak.scale);
         cap.rotation.y = peak.rotation.y;
         mGroup.add(cap);
@@ -668,40 +730,46 @@ export class GodzillaMode {
     g.add(head);
     this._parts.head = head;
 
-    const snoutGeo = new THREE.BoxGeometry(1.4, 1.0, 1.2);
+    const snoutGeo = new THREE.BoxGeometry(1.5, 1.1, 1.3);
     const snout = new THREE.Mesh(snoutGeo, greenMat);
-    snout.position.set(0, 7.8, 1.4);
+    snout.position.set(0, 7.85, 1.4);
     g.add(snout);
 
-    const browGeo = new THREE.BoxGeometry(2.2, 0.4, 0.6);
+    const browGeo = new THREE.BoxGeometry(2.3, 0.5, 0.7);
     const brow = new THREE.Mesh(browGeo, darkGreenMat);
-    brow.position.set(0, 8.7, 0.9);
+    brow.position.set(0, 8.75, 0.9);
     g.add(brow);
 
-    const nostrilGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    const mouthGeo = new THREE.BoxGeometry(1.1, 0.35, 0.9);
+    const mouthMat = new THREE.MeshStandardMaterial({ color: 0x4a1020, roughness: 0.9 });
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 7.3, 1.5);
+    g.add(mouth);
+
+    const nostrilGeo = new THREE.SphereGeometry(0.12, 6, 6);
     const nostrilMat = new THREE.MeshStandardMaterial({ color: 0x1a3a12, roughness: 0.8 });
-    for (const sx of [-0.3, 0.3]) {
+    for (const sx of [-0.35, 0.35]) {
       const nostril = new THREE.Mesh(nostrilGeo, nostrilMat);
-      nostril.position.set(sx, 7.9, 2.0);
+      nostril.position.set(sx, 8.0, 2.0);
       g.add(nostril);
     }
 
-    const jawGeo = new THREE.BoxGeometry(1.4, 0.5, 1.4);
+    const jawGeo = new THREE.BoxGeometry(1.5, 0.5, 1.5);
     const jaw = new THREE.Mesh(jawGeo, darkGreenMat);
-    jaw.position.set(0, 7, 0.8);
+    jaw.position.set(0, 7.0, 0.8);
     g.add(jaw);
     this._parts.jaw = jaw;
 
-    const toothMat = new THREE.MeshStandardMaterial({ color: 0xffffee, roughness: 0.4 });
-    const toothGeo = new THREE.ConeGeometry(0.08, 0.25, 4);
+    const toothMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.15, roughness: 0.3 });
+    const toothGeo = new THREE.ConeGeometry(0.1, 0.35, 4);
     const teethPositions = [-0.5, -0.25, 0, 0.25, 0.5];
     for (const tx of teethPositions) {
       const topTooth = new THREE.Mesh(toothGeo, toothMat);
-      topTooth.position.set(tx, 7.45, 1.45);
+      topTooth.position.set(tx, 7.5, 1.55);
       topTooth.rotation.x = Math.PI;
       g.add(topTooth);
       const botTooth = new THREE.Mesh(toothGeo, toothMat);
-      botTooth.position.set(tx, 7.15, 1.45);
+      botTooth.position.set(tx, 7.1, 1.55);
       g.add(botTooth);
     }
 
@@ -970,6 +1038,7 @@ export class GodzillaMode {
     this._updateWalkAnim(dt);
     this._updateCamera(dt, now);
     this._updateCollisions(now);
+    this._updateTreeCollisions();
     this._updateRubble(dt);
     this._updateCrushAnims(dt);
     this._updateFire(dt, now);
@@ -1083,6 +1152,21 @@ export class GodzillaMode {
 
       if (Math.abs(px - bx) < halfW && Math.abs(pz - bz) < halfD) {
         this._crushBuilding(b, now);
+      }
+    }
+  }
+
+  _updateTreeCollisions() {
+    if (!this.trees) return;
+    const px = this._godzillaPos.x;
+    const pz = this._godzillaPos.z;
+    for (const t of this.trees) {
+      if (!t.alive) continue;
+      const dx = px - t.x;
+      const dz = pz - t.z;
+      if (dx * dx + dz * dz < (GODZILLA_RADIUS + t.r) * (GODZILLA_RADIUS + t.r)) {
+        t.alive = false;
+        t.mesh.visible = false;
       }
     }
   }
