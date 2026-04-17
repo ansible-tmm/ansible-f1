@@ -268,6 +268,8 @@ export class GodzillaMode {
     }
     this.totalBuildings = this.buildings.length;
 
+    this._buildMountains();
+
     const sun = new THREE.DirectionalLight(0xffffff, 1.5);
     sun.position.set(30, 50, 20);
     sun.castShadow = true;
@@ -281,6 +283,95 @@ export class GodzillaMode {
 
     const ambient = new THREE.AmbientLight(0x99bbdd, 0.6);
     this.group.add(ambient);
+  }
+
+  _buildMountains() {
+    const ring = CITY_SIZE + 5;
+    const depth = 60;
+    const rockColors = [0x556655, 0x667766, 0x4a5a4a, 0x5a6a5a, 0x3d4d3d];
+    const snowColor = 0xeeeeff;
+
+    const peaksPerSide = 18;
+    const sides = [
+      { axis: "x", sign: -1 },
+      { axis: "x", sign: 1 },
+      { axis: "z", sign: -1 },
+      { axis: "z", sign: 1 },
+    ];
+
+    for (const side of sides) {
+      for (let i = 0; i < peaksPerSide; i++) {
+        const t = (i / (peaksPerSide - 1)) * 2 - 1;
+        const along = t * (CITY_SIZE + depth * 0.5);
+        const outDist = ring + Math.random() * depth * 0.6;
+
+        const baseW = 12 + Math.random() * 18;
+        const baseD = 10 + Math.random() * 14;
+        const h = 20 + Math.random() * 40;
+
+        const color = rockColors[Math.floor(Math.random() * rockColors.length)];
+        const coneGeo = new THREE.ConeGeometry(baseW / 2, h, 5 + Math.floor(Math.random() * 3));
+        const coneMat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true });
+        const peak = new THREE.Mesh(coneGeo, coneMat);
+
+        if (side.axis === "x") {
+          peak.position.set(side.sign * outDist, h / 2 - 2, along);
+        } else {
+          peak.position.set(along, h / 2 - 2, side.sign * outDist);
+        }
+        peak.scale.z = baseD / baseW;
+        peak.rotation.y = Math.random() * Math.PI;
+        peak.castShadow = true;
+        this.group.add(peak);
+
+        if (h > 35) {
+          const capH = h * 0.2;
+          const capR = baseW / 2 * 0.35;
+          const capGeo = new THREE.ConeGeometry(capR, capH, 5);
+          const capMat = new THREE.MeshStandardMaterial({ color: snowColor, roughness: 0.9, flatShading: true });
+          const cap = new THREE.Mesh(capGeo, capMat);
+          cap.position.copy(peak.position);
+          cap.position.y = peak.position.y + h / 2 - capH / 2 + 0.5;
+          cap.scale.z = baseD / baseW;
+          cap.rotation.y = peak.rotation.y;
+          this.group.add(cap);
+        }
+      }
+    }
+
+    for (let c = 0; c < 12; c++) {
+      const angle = (c / 12) * Math.PI * 2 + Math.random() * 0.3;
+      const dist = ring + depth * 0.3 + Math.random() * depth * 0.4;
+      const x = Math.cos(angle) * dist;
+      const z = Math.sin(angle) * dist;
+      const baseW = 15 + Math.random() * 20;
+      const h = 25 + Math.random() * 35;
+      const color = rockColors[Math.floor(Math.random() * rockColors.length)];
+      const geo = new THREE.ConeGeometry(baseW / 2, h, 6);
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true });
+      const peak = new THREE.Mesh(geo, mat);
+      peak.position.set(x, h / 2 - 2, z);
+      peak.rotation.y = Math.random() * Math.PI;
+      peak.castShadow = true;
+      this.group.add(peak);
+
+      if (h > 35) {
+        const capGeo = new THREE.ConeGeometry(baseW / 2 * 0.35, h * 0.2, 5);
+        const capMat = new THREE.MeshStandardMaterial({ color: snowColor, roughness: 0.9, flatShading: true });
+        const cap = new THREE.Mesh(capGeo, capMat);
+        cap.position.set(x, peak.position.y + h / 2 - h * 0.1 + 0.5, z);
+        cap.rotation.y = peak.rotation.y;
+        this.group.add(cap);
+      }
+    }
+
+    const outerGeo = new THREE.PlaneGeometry(CITY_SIZE * 6, CITY_SIZE * 6);
+    const outerMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.95 });
+    const outerGround = new THREE.Mesh(outerGeo, outerMat);
+    outerGround.rotation.x = -Math.PI / 2;
+    outerGround.position.y = -0.05;
+    outerGround.receiveShadow = true;
+    this.group.add(outerGround);
   }
 
   _addWindows(bGroup, w, h, d) {
