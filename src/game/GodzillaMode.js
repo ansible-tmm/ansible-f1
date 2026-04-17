@@ -17,6 +17,7 @@ const SFX_ROAR = "./assets/audio/godzilla.mp3";
 const SFX_FIRE = "./assets/audio/boost-whoosh.wav";
 const SFX_KONG = "./assets/audio/kong.m4a";
 const SFX_CHEST_BEAT = "./assets/audio/beat_chest.m4a";
+const SFX_MECHA = "./assets/audio/mecha_godzilla.m4a";
 const SFX_KONG_ATTACKS = [
   "./assets/audio/kong-attack.m4a",
   "./assets/audio/kong-attack2.m4a",
@@ -32,8 +33,9 @@ const HEART_DISTANCE = 18;
 const MECHA_SPEED = 14;
 const MECHA_RADIUS = 3;
 const MECHA_HP = 500;
-const HERO_HP = 200;
-const MECHA_DAMAGE = 10;
+const KK_HP = 150;
+const GZ_HP = 150;
+const MECHA_DAMAGE = 12;
 const HERO_DAMAGE = 6;
 const ATTACK_COOLDOWN = 0.6;
 
@@ -109,12 +111,15 @@ export class GodzillaMode {
     this._mechaWalkPhase = 0;
     this._mechaParts = {};
     this._mechaHp = MECHA_HP;
-    this._heroHp = HERO_HP;
+    this._kkHp = KK_HP;
+    this._gzHp = GZ_HP;
     this._mechaAttackCD = 0;
     this._heroAttackCD = 0;
     this._bossResult = null;
     this._bossEndTimer = 0;
     this._kkBeatHit = false;
+    this._kkDead = false;
+    this._gzDead = false;
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
@@ -166,12 +171,15 @@ export class GodzillaMode {
     this._bossPhase = false;
     this._mechaMesh = null;
     this._mechaHp = MECHA_HP;
-    this._heroHp = HERO_HP;
+    this._kkHp = KK_HP;
+    this._gzHp = GZ_HP;
     this._mechaAttackCD = 0;
     this._heroAttackCD = 0;
     this._bossResult = null;
     this._bossEndTimer = 0;
     this._kkBeatHit = false;
+    this._kkDead = false;
+    this._gzDead = false;
 
     hiddenObjects.forEach(o => { o.visible = false; });
 
@@ -1469,9 +1477,12 @@ export class GodzillaMode {
   }
 
   _updateKKCamera(dt, now) {
-    const cx = this._kkPos.x - Math.sin(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
-    const cy = this._kkPos.y + 1.0 + Math.sin(this._camPhi) * this._camDist;
-    const cz = this._kkPos.z - Math.cos(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
+    const followPos = (this._bossPhase && this._kkDead && !this._gzDead)
+      ? this._godzillaPos : this._kkPos;
+
+    const cx = followPos.x - Math.sin(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
+    const cy = followPos.y + 1.0 + Math.sin(this._camPhi) * this._camDist;
+    const cz = followPos.z - Math.cos(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
 
     const target = new THREE.Vector3(cx, cy, cz);
     this.camera.position.lerp(target, 1 - Math.exp(-6 * dt));
@@ -1483,7 +1494,7 @@ export class GodzillaMode {
     this.camera.position.x += shake;
     this.camera.position.y += shake * 0.5;
 
-    this.camera.lookAt(this._kkPos.x, this._kkPos.y + 5, this._kkPos.z);
+    this.camera.lookAt(followPos.x, followPos.y + 5, followPos.z);
   }
 
   _playKongAttack() {
@@ -1530,14 +1541,16 @@ export class GodzillaMode {
   }
 
   _updateHearts(dt) {
-    const dx = this._kkPos.x - this._godzillaPos.x;
-    const dz = this._kkPos.z - this._godzillaPos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (!this._bossPhase) {
+      const dx = this._kkPos.x - this._godzillaPos.x;
+      const dz = this._kkPos.z - this._godzillaPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
 
-    if (dist < HEART_DISTANCE) {
-      if (Math.random() < dt * 3) {
-        this._spawnHeart(this._godzillaPos, 9);
-        this._spawnHeart(this._kkPos, 9);
+      if (dist < HEART_DISTANCE) {
+        if (Math.random() < dt * 3) {
+          this._spawnHeart(this._godzillaPos, 9);
+          this._spawnHeart(this._kkPos, 9);
+        }
       }
     }
 
@@ -1593,7 +1606,10 @@ export class GodzillaMode {
   _startBossFight() {
     this._bossPhase = true;
     this._mechaHp = MECHA_HP;
-    this._heroHp = HERO_HP;
+    this._kkHp = KK_HP;
+    this._gzHp = GZ_HP;
+    this._kkDead = false;
+    this._gzDead = false;
     this._mechaAttackCD = 0;
     this._heroAttackCD = 0;
 
@@ -1616,7 +1632,7 @@ export class GodzillaMode {
     this._createBossHud();
     this._shakeUntil = performance.now() + 800;
     this._shakeAmp = 0.6;
-    play(SFX_ROAR, 0.7);
+    play(SFX_MECHA, 0.9);
   }
 
   _buildMechaGodzilla() {
@@ -1764,7 +1780,8 @@ export class GodzillaMode {
       return row;
     };
 
-    hud.appendChild(makeBar("HEROES", "#44cc44", "boss-hero-bar"));
+    hud.appendChild(makeBar("KONG", "#dd8833", "boss-kk-bar"));
+    hud.appendChild(makeBar("GODZILLA", "#44cc44", "boss-gz-bar"));
     hud.appendChild(makeBar("MECHA", "#cc3333", "boss-mecha-bar"));
 
     const vs = document.createElement("div");
@@ -1787,9 +1804,11 @@ export class GodzillaMode {
   }
 
   _updateBossHud() {
-    const heroBar = document.getElementById("boss-hero-bar");
+    const kkBar = document.getElementById("boss-kk-bar");
+    const gzBar = document.getElementById("boss-gz-bar");
     const mechaBar = document.getElementById("boss-mecha-bar");
-    if (heroBar) heroBar.style.width = Math.max(0, this._heroHp / HERO_HP * 100) + "%";
+    if (kkBar) kkBar.style.width = Math.max(0, this._kkHp / KK_HP * 100) + "%";
+    if (gzBar) gzBar.style.width = Math.max(0, this._gzHp / GZ_HP * 100) + "%";
     if (mechaBar) mechaBar.style.width = Math.max(0, this._mechaHp / MECHA_HP * 100) + "%";
   }
 
@@ -1797,32 +1816,46 @@ export class GodzillaMode {
     this._mechaAttackCD = Math.max(0, this._mechaAttackCD - dt);
     this._heroAttackCD = Math.max(0, this._heroAttackCD - dt);
 
-    this._updateKKMovement(dt);
-    this._updateKKWalkAnim(dt);
+    if (!this._kkDead) {
+      this._updateKKMovement(dt);
+      this._updateKKWalkAnim(dt);
+    }
     this._updateKKCamera(dt, now);
 
-    this._updateAIGodzillaBoss(dt, now);
+    if (!this._gzDead) this._updateAIGodzillaBoss(dt, now);
     this._updateMechaAI(dt, now);
     this._updateBossCollisions(now);
     this._updateHearts(dt);
     this._updateBossHud();
 
     if (this._mechaHp <= 0) return "victory";
-    if (this._heroHp <= 0) return "defeat";
+    if (this._kkDead && this._gzDead) return "defeat";
     return null;
   }
 
   _updateMechaAI(dt, now) {
-    const dxK = this._kkPos.x - this._mechaPos.x;
-    const dzK = this._kkPos.z - this._mechaPos.z;
-    const distK = Math.sqrt(dxK * dxK + dzK * dzK);
+    let targetX, targetZ;
 
-    const dxG = this._godzillaPos.x - this._mechaPos.x;
-    const dzG = this._godzillaPos.z - this._mechaPos.z;
-    const distG = Math.sqrt(dxG * dxG + dzG * dzG);
+    if (this._kkDead && this._gzDead) return;
 
-    const targetX = distK < distG ? this._kkPos.x : this._godzillaPos.x;
-    const targetZ = distK < distG ? this._kkPos.z : this._godzillaPos.z;
+    if (this._kkDead) {
+      targetX = this._godzillaPos.x;
+      targetZ = this._godzillaPos.z;
+    } else if (this._gzDead) {
+      targetX = this._kkPos.x;
+      targetZ = this._kkPos.z;
+    } else {
+      const dxK = this._kkPos.x - this._mechaPos.x;
+      const dzK = this._kkPos.z - this._mechaPos.z;
+      const distK = Math.sqrt(dxK * dxK + dzK * dzK);
+
+      const dxG = this._godzillaPos.x - this._mechaPos.x;
+      const dzG = this._godzillaPos.z - this._mechaPos.z;
+      const distG = Math.sqrt(dxG * dxG + dzG * dzG);
+
+      targetX = distK < distG ? this._kkPos.x : this._godzillaPos.x;
+      targetZ = distK < distG ? this._kkPos.z : this._godzillaPos.z;
+    }
 
     const dx = targetX - this._mechaPos.x;
     const dz = targetZ - this._mechaPos.z;
@@ -1898,7 +1931,27 @@ export class GodzillaMode {
     }
   }
 
+  _pushApart(posA, rA, posB, rB, strength) {
+    const dx = posA.x - posB.x;
+    const dz = posA.z - posB.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const minDist = rA + rB;
+    if (dist < minDist && dist > 0.1) {
+      const overlap = (minDist - dist) * strength;
+      const nx = dx / dist;
+      const nz = dz / dist;
+      posA.x += nx * overlap * 0.5;
+      posA.z += nz * overlap * 0.5;
+      posB.x -= nx * overlap * 0.5;
+      posB.z -= nz * overlap * 0.5;
+    }
+  }
+
   _updateBossCollisions(now) {
+    this._pushApart(this._kkPos, KONG_RADIUS, this._mechaPos, MECHA_RADIUS, 0.5);
+    this._pushApart(this._godzillaPos, GODZILLA_RADIUS, this._mechaPos, MECHA_RADIUS, 0.5);
+    this._pushApart(this._kkPos, KONG_RADIUS, this._godzillaPos, GODZILLA_RADIUS, 0.3);
+
     const kkDx = this._kkPos.x - this._mechaPos.x;
     const kkDz = this._kkPos.z - this._mechaPos.z;
     const kkDist = Math.sqrt(kkDx * kkDx + kkDz * kkDz);
@@ -1907,21 +1960,37 @@ export class GodzillaMode {
     const gDz = this._godzillaPos.z - this._mechaPos.z;
     const gDist = Math.sqrt(gDx * gDx + gDz * gDz);
 
-    if (kkDist < KONG_RADIUS + MECHA_RADIUS && this._mechaAttackCD <= 0) {
-      this._heroHp -= MECHA_DAMAGE;
+    if (!this._kkDead && kkDist < KONG_RADIUS + MECHA_RADIUS + 1 && this._mechaAttackCD <= 0) {
+      this._kkHp -= MECHA_DAMAGE;
       this._mechaAttackCD = ATTACK_COOLDOWN;
       this._shakeUntil = now + 200;
       this._shakeAmp = 0.5;
       this._playKongAttack();
+      if (this._kkHp <= 0) {
+        this._kkHp = 0;
+        this._kkDead = true;
+        this._kkMesh.visible = false;
+      }
     }
 
-    if (gDist < GODZILLA_RADIUS + MECHA_RADIUS && this._heroAttackCD <= 0) {
-      this._mechaHp -= HERO_DAMAGE;
-      this._heroAttackCD = ATTACK_COOLDOWN * 0.6;
-      play(SFX_STOMP, 0.4);
+    if (!this._gzDead && gDist < GODZILLA_RADIUS + MECHA_RADIUS + 1) {
+      if (this._heroAttackCD <= 0) {
+        this._mechaHp -= HERO_DAMAGE;
+        this._heroAttackCD = ATTACK_COOLDOWN * 0.6;
+        play(SFX_STOMP, 0.4);
+      }
+      if (this._mechaAttackCD <= 0) {
+        this._gzHp -= MECHA_DAMAGE;
+        this._mechaAttackCD = ATTACK_COOLDOWN;
+        if (this._gzHp <= 0) {
+          this._gzHp = 0;
+          this._gzDead = true;
+          this.godzilla.visible = false;
+        }
+      }
     }
 
-    if (this._kkChestBeat && !this._kkBeatHit && kkDist < KONG_RADIUS + MECHA_RADIUS + 5) {
+    if (!this._kkDead && this._kkChestBeat && !this._kkBeatHit && kkDist < KONG_RADIUS + MECHA_RADIUS + 5) {
       this._kkBeatHit = true;
       this._mechaHp -= HERO_DAMAGE * 3;
       this._shakeUntil = now + 300;
