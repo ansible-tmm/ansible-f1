@@ -39,6 +39,8 @@ export class Player {
     this._ogreArms = null;
     this._ogreLegs = null;
     this._trainSteam = null;
+    this._bikeLegs = null;
+    this._bikeRider = null;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.copy(pos);
@@ -104,6 +106,7 @@ export class Player {
     });
     if (type === "hippo") return this._buildHippoMesh();
     if (type === "skateboard") return this._buildSkateboardMesh();
+    if (type === "bicycle") return this._buildBicycleMesh();
     return this._buildF1();
   }
 
@@ -3145,6 +3148,235 @@ export class Player {
     return this.carType === "skateboard" && this._skateJumping;
   }
 
+  // ── Bicycle (Hicham secret) ──
+
+  _buildBicycleMesh() {
+    const g = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x0044aa, metalness: 0.7, roughness: 0.3 });
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.15 });
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+    const spokeMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.2 });
+    const seatMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+    const skin = new THREE.MeshStandardMaterial({ color: 0xc4956a, roughness: 0.7 });
+    const jersey = new THREE.MeshStandardMaterial({ color: 0x0033aa, roughness: 0.6 });
+    const jerseyAccent = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+    const shorts = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+    const shoeMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+    const helmetMat = new THREE.MeshStandardMaterial({ color: 0x0044aa, roughness: 0.4, metalness: 0.3 });
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.2, metalness: 0.5 });
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+
+    const wheelRadius = 0.45;
+    const tubeRadius = 0.035;
+
+    // Wheels
+    for (const zOff of [-0.7, 0.7]) {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(wheelRadius, 0.02, 8, 24), spokeMat);
+      rim.rotation.y = Math.PI / 2;
+      rim.position.set(0, wheelRadius, zOff);
+      g.add(rim);
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(wheelRadius, tubeRadius, 8, 24), tireMat);
+      tire.rotation.y = Math.PI / 2;
+      tire.position.set(0, wheelRadius, zOff);
+      g.add(tire);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 8), chromeMat);
+      hub.rotation.x = Math.PI / 2;
+      hub.position.set(0, wheelRadius, zOff);
+      g.add(hub);
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, wheelRadius - 0.05, 4), spokeMat);
+        spoke.position.set(0, wheelRadius, zOff);
+        spoke.rotation.y = Math.PI / 2;
+        spoke.rotation.z = angle;
+        g.add(spoke);
+      }
+    }
+
+    // Frame - main triangle
+    const downTube = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.1, 6), frameMat);
+    downTube.position.set(0, 0.55, 0.05);
+    downTube.rotation.x = 0.45;
+    g.add(downTube);
+    const seatTube = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.65, 6), frameMat);
+    seatTube.position.set(0, 0.70, -0.25);
+    seatTube.rotation.x = 0.1;
+    g.add(seatTube);
+    const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.9, 6), frameMat);
+    topTube.position.set(0, 0.95, 0.0);
+    topTube.rotation.x = 0.2;
+    g.add(topTube);
+    // Chain stay
+    const chainStay = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8, 6), frameMat);
+    chainStay.position.set(0, 0.48, -0.32);
+    chainStay.rotation.x = 0.15;
+    g.add(chainStay);
+    // Seat stay
+    const seatStay = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.85, 6), frameMat);
+    seatStay.position.set(0, 0.72, -0.38);
+    seatStay.rotation.x = 0.45;
+    g.add(seatStay);
+
+    // Fork
+    const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.55, 6), chromeMat);
+    fork.position.set(0, 0.62, 0.62);
+    fork.rotation.x = -0.2;
+    g.add(fork);
+
+    // Handlebars
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.22, 6), chromeMat);
+    stem.position.set(0, 1.02, 0.58);
+    g.add(stem);
+    const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.5, 6), chromeMat);
+    handlebar.rotation.z = Math.PI / 2;
+    handlebar.position.set(0, 1.10, 0.55);
+    g.add(handlebar);
+    // Drop bar curves
+    for (const s of [-1, 1]) {
+      const drop = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.15, 6), chromeMat);
+      drop.position.set(s * 0.25, 1.04, 0.58);
+      drop.rotation.x = 0.4;
+      g.add(drop);
+    }
+
+    // Seat
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.22), seatMat);
+    seat.position.set(0, 1.06, -0.28);
+    g.add(seat);
+    const seatPost = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.18, 6), chromeMat);
+    seatPost.position.set(0, 0.96, -0.28);
+    g.add(seatPost);
+
+    // Pedals + cranks
+    const crankMat = chromeMat;
+    for (const s of [-1, 1]) {
+      const crank = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.16, 6), crankMat);
+      crank.rotation.z = Math.PI / 2;
+      crank.position.set(s * 0.12, 0.42, -0.05);
+      g.add(crank);
+      const pedal = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.06), chromeMat);
+      pedal.position.set(s * 0.20, 0.42 + s * 0.06, -0.05);
+      g.add(pedal);
+    }
+
+    // ── RIDER ──
+    const rider = new THREE.Group();
+    rider.position.set(0, 0, 0);
+
+    // Legs (cycling position, one up one down)
+    this._bikeLegs = [];
+    // Right leg (down position)
+    const rThigh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 0.12), shorts);
+    rThigh.position.set(0.14, 0.72, -0.15);
+    rThigh.rotation.x = 0.6;
+    rider.add(rThigh);
+    const rShin = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.32, 0.10), skin);
+    rShin.position.set(0.14, 0.46, 0.02);
+    rShin.rotation.x = -0.3;
+    rider.add(rShin);
+    const rFoot = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.06, 0.16), shoeMat);
+    rFoot.position.set(0.20, 0.36, 0.0);
+    rider.add(rFoot);
+    this._bikeLegs.push({ thigh: rThigh, shin: rShin, foot: rFoot, phase: 0 });
+
+    // Left leg (up position)
+    const lThigh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.36, 0.12), shorts);
+    lThigh.position.set(-0.14, 0.72, -0.15);
+    lThigh.rotation.x = -0.3;
+    rider.add(lThigh);
+    const lShin = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.32, 0.10), skin);
+    lShin.position.set(-0.14, 0.46, 0.02);
+    lShin.rotation.x = 0.4;
+    rider.add(lShin);
+    const lFoot = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.06, 0.16), shoeMat);
+    lFoot.position.set(-0.20, 0.36, 0.0);
+    rider.add(lFoot);
+    this._bikeLegs.push({ thigh: lThigh, shin: lShin, foot: lFoot, phase: Math.PI });
+
+    // Torso (leaning forward, cycling position)
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.38, 0.20), jersey);
+    torso.position.set(0, 1.12, 0.10);
+    torso.rotation.x = -0.55;
+    rider.add(torso);
+    // Jersey stripe
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.06, 0.21), jerseyAccent);
+    stripe.position.set(0, 1.06, 0.10);
+    stripe.rotation.x = -0.55;
+    rider.add(stripe);
+    // Maple leaf on back (red diamond shape)
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.10, 0.01), redMat);
+    leaf.position.set(0, 1.14, 0.21);
+    leaf.rotation.x = -0.55;
+    leaf.rotation.z = Math.PI / 4;
+    rider.add(leaf);
+
+    // Arms (reaching forward to handlebars)
+    for (const s of [-1, 1]) {
+      const upper = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.26, 0.09), jersey);
+      upper.position.set(s * 0.20, 1.18, 0.28);
+      upper.rotation.x = -1.0;
+      rider.add(upper);
+      const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.24, 0.08), skin);
+      forearm.position.set(s * 0.22, 1.10, 0.44);
+      forearm.rotation.x = -0.5;
+      rider.add(forearm);
+      const hand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), skin);
+      hand.position.set(s * 0.22, 1.06, 0.54);
+      rider.add(hand);
+    }
+
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.24), skin);
+    head.position.set(0, 1.46, 0.22);
+    head.rotation.x = -0.2;
+    rider.add(head);
+
+    // Cycling helmet
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), helmetMat);
+    helmet.scale.set(1, 0.75, 1.3);
+    helmet.position.set(0, 1.58, 0.24);
+    rider.add(helmet);
+    // Helmet vents
+    for (let i = 0; i < 3; i++) {
+      const vent = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 0.12), new THREE.MeshStandardMaterial({ color: 0x001133 }));
+      vent.position.set((i - 1) * 0.06, 1.64, 0.24);
+      rider.add(vent);
+    }
+
+    // Sunglasses
+    for (const s of [-1, 1]) {
+      const lens = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.04, 0.03), lensMat);
+      lens.position.set(s * 0.06, 1.48, 0.09);
+      rider.add(lens);
+    }
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.015, 0.03), chromeMat);
+    bridge.position.set(0, 1.48, 0.09);
+    rider.add(bridge);
+
+    // Eyes behind glasses
+    for (const s of [-1, 1]) {
+      const eyeW = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 4), white);
+      eyeW.position.set(s * 0.06, 1.47, 0.08);
+      rider.add(eyeW);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 4), pupilMat);
+      pupil.position.set(s * 0.06, 1.47, 0.06);
+      rider.add(pupil);
+    }
+
+    g.add(rider);
+    this._bikeRider = rider;
+    this._bikePedalAngle = 0;
+
+    const glow = new THREE.PointLight(0x0055ff, 0.5, 8);
+    glow.position.set(0, 0.3, 0);
+    g.add(glow);
+    this.pointLight = glow;
+
+    return g;
+  }
+
   // ── DeLorean Time Travel ──
 
   initTimeTravel() {
@@ -3447,6 +3679,16 @@ export class Player {
       const armSwing = Math.sin(t * 0.005) * 0.2;
       this._ogreArms[0].rotation.x = armSwing;
       this._ogreArms[1].rotation.x = -armSwing;
+    }
+
+    const isBike = this.carType === "bicycle";
+    if (isBike && this._bikeLegs) {
+      this._bikePedalAngle = (this._bikePedalAngle || 0) + dt * 8;
+      for (const leg of this._bikeLegs) {
+        const angle = this._bikePedalAngle + leg.phase;
+        leg.thigh.rotation.x = 0.15 + Math.sin(angle) * 0.55;
+        leg.shin.rotation.x = 0.05 + Math.cos(angle) * 0.45;
+      }
     }
 
     if (isTrain && this._trainSteam) {

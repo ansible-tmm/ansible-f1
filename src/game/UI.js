@@ -880,6 +880,10 @@ export class UI {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "🚂 Great Scott! 🚂";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
           "You made it to the future! But where we're going, we don't need leaderboards.";
+      } else if (cheaterType === "bicycle") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🚲 Go Leafs Go! 🚲";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "Hicham pedaled his way to victory! The Architect of Clouds conquers on two wheels. No leaderboard though, eh?";
       } else {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "Nice Finish... Cheater";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
@@ -1139,6 +1143,7 @@ export class UI {
     if (carType === "lightcycle") return "Lightcycle";
     if (carType === "delorean") return "DeLorean";
     if (carType === "semi_truck") return "18-Wheeler";
+    if (carType === "bicycle") return "Bicycle";
     return "F1 Racer";
   }
 
