@@ -1155,7 +1155,7 @@ export class GodzillaMode {
     this._saveCamTheta = this._camTheta;
     this._saveCamPhi = this._camPhi;
 
-    this.timeLeft = Math.max(this.timeLeft, 30) + 30;
+    this.timeLeft = Math.min(this.timeLeft + 15, 30);
 
     play(SFX_KONG, 0.9);
   }
