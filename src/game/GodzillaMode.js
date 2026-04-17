@@ -16,6 +16,7 @@ const SFX_STOMP = "./assets/audio/obstacle-hit.wav";
 const SFX_ROAR = "./assets/audio/godzilla.mp3";
 const SFX_FIRE = "./assets/audio/boost-whoosh.wav";
 const SFX_KONG = "./assets/audio/kong.m4a";
+const SFX_CHEST_BEAT = "./assets/audio/beat_chest.m4a";
 const SFX_KONG_ATTACKS = [
   "./assets/audio/kong-attack.m4a",
   "./assets/audio/kong-attack2.m4a",
@@ -1523,7 +1524,7 @@ export class GodzillaMode {
     this._kkChestBeat = true;
     this._kkChestBeatTimer = 0.8;
     this._kkBeatHit = false;
-    play(SFX_STOMP, 0.7);
+    play(SFX_CHEST_BEAT, 0.8);
     this._shakeUntil = performance.now() + 400;
     this._shakeAmp = 0.3;
   }
