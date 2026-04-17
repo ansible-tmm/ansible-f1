@@ -620,8 +620,40 @@ export class GodzillaMode {
       g.add(spine);
     }
 
+    const nameTag = this._makeNameSprite("Scott Harwell");
+    nameTag.position.set(0, 11, 0);
+    g.add(nameTag);
+
     this.godzilla = g;
     this.group.add(g);
+  }
+
+  _makeNameSprite(name) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    const r = 16;
+    const pad = 20;
+    const textW = 460;
+    ctx.beginPath();
+    ctx.roundRect((512 - textW) / 2 - pad, 10, textW + pad * 2, 80, r);
+    ctx.fill();
+
+    ctx.fillStyle = "#44ff44";
+    ctx.font = "bold 42px 'Orbitron', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(name, 256, 50);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(6, 1.5, 1);
+    return sprite;
   }
 
   // --- Input ---
