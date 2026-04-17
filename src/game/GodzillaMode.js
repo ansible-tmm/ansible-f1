@@ -15,6 +15,7 @@ const SFX_CRUSH = "./assets/audio/train-explosion.m4a";
 const SFX_STOMP = "./assets/audio/obstacle-hit.wav";
 const SFX_ROAR = "./assets/audio/godzilla.mp3";
 const SFX_FIRE = "./assets/audio/boost-whoosh.wav";
+const SFX_KONG = "./assets/audio/kong.m4a";
 
 const KONG_SPEED = 16;
 const KONG_RADIUS = 2.5;
@@ -1144,7 +1145,7 @@ export class GodzillaMode {
 
     this.timeLeft = Math.max(this.timeLeft, 30) + 30;
 
-    play(SFX_STOMP, 0.8);
+    play(SFX_KONG, 0.9);
   }
 
   _buildKingKong() {
