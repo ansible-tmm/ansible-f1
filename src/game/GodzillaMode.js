@@ -17,9 +17,10 @@ const SFX_ROAR = "./assets/audio/godzilla.mp3";
 const SFX_FIRE = "./assets/audio/boost-whoosh.wav";
 
 const BUILDING_COLORS = [
-  0x8899aa, 0x667788, 0x556677, 0x99aabb,
-  0xbbaa88, 0xccbb99, 0x778899, 0x6688aa,
-  0x445566, 0x7799bb, 0xaa9977, 0x889988,
+  0xc8d0d8, 0xa8b8c8, 0xe8dcc8, 0xd4c8b0,
+  0xf0ece4, 0xb0c0d0, 0x8ab0d0, 0xc0b8a8,
+  0xd8d0c0, 0xa0a8b0, 0xb8c8d8, 0xe0d8c8,
+  0x98b8d8, 0xc8c0b0, 0xd0d8e0, 0xb0a898,
 ];
 
 const WINDOW_COLOR = 0xffeeaa;
@@ -183,14 +184,14 @@ export class GodzillaMode {
 
   _buildCity() {
     const groundGeo = new THREE.PlaneGeometry(CITY_SIZE * 2, CITY_SIZE * 2);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x445544, roughness: 0.9 });
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x6a8a5a, roughness: 0.9 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.01;
     ground.receiveShadow = true;
     this.group.add(ground);
 
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.85 });
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x606060, roughness: 0.85 });
     const roadWidth = 5;
     for (let x = -CITY_SIZE + GRID_SPACING; x < CITY_SIZE; x += GRID_SPACING) {
       const rGeo = new THREE.PlaneGeometry(roadWidth, CITY_SIZE * 2);
@@ -283,14 +284,57 @@ export class GodzillaMode {
     this.group.add(sun);
     this.group.add(sun.target);
 
-    const ambient = new THREE.AmbientLight(0x99bbdd, 0.6);
+    const ambient = new THREE.AmbientLight(0xc0d8f0, 0.8);
     this.group.add(ambient);
+
+    this._buildClouds();
+  }
+
+  _buildClouds() {
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, roughness: 1, transparent: true, opacity: 0.85,
+    });
+    for (let i = 0; i < 25; i++) {
+      const cGroup = new THREE.Group();
+      const puffs = 3 + Math.floor(Math.random() * 4);
+      for (let p = 0; p < puffs; p++) {
+        const r = 4 + Math.random() * 6;
+        const geo = new THREE.SphereGeometry(r, 8, 6);
+        const puff = new THREE.Mesh(geo, cloudMat);
+        puff.position.set(
+          (Math.random() - 0.5) * 12,
+          (Math.random() - 0.3) * 3,
+          (Math.random() - 0.5) * 8
+        );
+        puff.scale.y = 0.4 + Math.random() * 0.2;
+        cGroup.add(puff);
+      }
+      const spread = CITY_SIZE * 1.5;
+      cGroup.position.set(
+        (Math.random() - 0.5) * spread * 2,
+        40 + Math.random() * 30,
+        (Math.random() - 0.5) * spread * 2
+      );
+      this.group.add(cGroup);
+    }
+  }
+
+  _spawnScorchMark(x, z, w, d) {
+    const size = Math.max(w, d) * 1.2;
+    const geo = new THREE.CircleGeometry(size, 8);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x222222, roughness: 1, transparent: true, opacity: 0.6,
+    });
+    const mark = new THREE.Mesh(geo, mat);
+    mark.rotation.x = -Math.PI / 2;
+    mark.position.set(x, 0.02, z);
+    this.group.add(mark);
   }
 
   _buildMountains() {
     const ring = CITY_SIZE + 5;
     const depth = 60;
-    const rockColors = [0x556655, 0x667766, 0x4a5a4a, 0x5a6a5a, 0x3d4d3d];
+    const rockColors = [0x7a8a6a, 0x8a9a78, 0x6a7a5a, 0x9aaa88, 0x808868, 0x708060, 0xa0a888];
     const snowColor = 0xeeeeff;
 
     const peaksPerSide = 18;
@@ -307,9 +351,9 @@ export class GodzillaMode {
         const along = t * (CITY_SIZE + depth * 0.5);
         const outDist = ring + Math.random() * depth * 0.6;
 
-        const baseW = 12 + Math.random() * 18;
-        const baseD = 10 + Math.random() * 14;
-        const h = 20 + Math.random() * 40;
+        const baseW = 20 + Math.random() * 25;
+        const baseD = 18 + Math.random() * 20;
+        const h = 15 + Math.random() * 35;
 
         const color = rockColors[Math.floor(Math.random() * rockColors.length)];
         const coneGeo = new THREE.ConeGeometry(baseW / 2, h, 5 + Math.floor(Math.random() * 3));
@@ -346,8 +390,8 @@ export class GodzillaMode {
       const dist = ring + depth * 0.3 + Math.random() * depth * 0.4;
       const x = Math.cos(angle) * dist;
       const z = Math.sin(angle) * dist;
-      const baseW = 15 + Math.random() * 20;
-      const h = 25 + Math.random() * 35;
+      const baseW = 25 + Math.random() * 25;
+      const h = 18 + Math.random() * 30;
       const color = rockColors[Math.floor(Math.random() * rockColors.length)];
       const geo = new THREE.ConeGeometry(baseW / 2, h, 6);
       const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, flatShading: true });
@@ -368,7 +412,7 @@ export class GodzillaMode {
     }
 
     const outerGeo = new THREE.PlaneGeometry(CITY_SIZE * 6, CITY_SIZE * 6);
-    const outerMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.95 });
+    const outerMat = new THREE.MeshStandardMaterial({ color: 0x5a7a4a, roughness: 0.95 });
     const outerGround = new THREE.Mesh(outerGeo, outerMat);
     outerGround.rotation.x = -Math.PI / 2;
     outerGround.position.y = -0.05;
@@ -532,35 +576,35 @@ export class GodzillaMode {
 
   _buildGodzilla() {
     const g = new THREE.Group();
-    const green = 0x2d5a27;
-    const darkGreen = 0x1e3d1a;
-    const belly = 0x8a9a6a;
+    const green = 0x4aaf3a;
+    const darkGreen = 0x357a28;
+    const belly = 0xb0c88a;
     const eye = 0xffcc00;
 
+    const greenMat = new THREE.MeshStandardMaterial({ color: green, roughness: 0.5, emissive: green, emissiveIntensity: 0.12 });
+    const darkGreenMat = new THREE.MeshStandardMaterial({ color: darkGreen, roughness: 0.5, emissive: darkGreen, emissiveIntensity: 0.1 });
+
     const torsoGeo = new THREE.BoxGeometry(3, 4, 2.5);
-    const torsoMat = new THREE.MeshStandardMaterial({ color: green, roughness: 0.6 });
-    const torso = new THREE.Mesh(torsoGeo, torsoMat);
+    const torso = new THREE.Mesh(torsoGeo, greenMat);
     torso.position.y = 5;
     torso.castShadow = true;
     g.add(torso);
 
     const bellyGeo = new THREE.BoxGeometry(2.4, 3, 1.8);
-    const bellyMat = new THREE.MeshStandardMaterial({ color: belly, roughness: 0.7 });
+    const bellyMat = new THREE.MeshStandardMaterial({ color: belly, roughness: 0.6, emissive: belly, emissiveIntensity: 0.08 });
     const bellyMesh = new THREE.Mesh(bellyGeo, bellyMat);
     bellyMesh.position.set(0, 4.8, 0.4);
     g.add(bellyMesh);
 
     const headGeo = new THREE.BoxGeometry(2, 1.8, 2);
-    const headMat = new THREE.MeshStandardMaterial({ color: green, roughness: 0.5 });
-    const head = new THREE.Mesh(headGeo, headMat);
+    const head = new THREE.Mesh(headGeo, greenMat);
     head.position.set(0, 8, 0.3);
     head.castShadow = true;
     g.add(head);
     this._parts.head = head;
 
     const jawGeo = new THREE.BoxGeometry(1.8, 0.6, 1.8);
-    const jawMat = new THREE.MeshStandardMaterial({ color: darkGreen, roughness: 0.5 });
-    const jaw = new THREE.Mesh(jawGeo, jawMat);
+    const jaw = new THREE.Mesh(jawGeo, darkGreenMat);
     jaw.position.set(0, 7, 0.4);
     g.add(jaw);
     this._parts.jaw = jaw;
@@ -575,23 +619,21 @@ export class GodzillaMode {
     g.add(rEye);
 
     const armGeo = new THREE.BoxGeometry(0.7, 2, 0.7);
-    const armMat = new THREE.MeshStandardMaterial({ color: green, roughness: 0.6 });
-    const lArm = new THREE.Mesh(armGeo, armMat);
+    const lArm = new THREE.Mesh(armGeo, greenMat);
     lArm.position.set(-2, 5.5, 0.3);
     g.add(lArm);
-    const rArm = new THREE.Mesh(armGeo, armMat);
+    const rArm = new THREE.Mesh(armGeo, greenMat);
     rArm.position.set(2, 5.5, 0.3);
     g.add(rArm);
     this._parts.lArm = lArm;
     this._parts.rArm = rArm;
 
     const legGeo = new THREE.BoxGeometry(1.2, 3, 1.2);
-    const legMat = new THREE.MeshStandardMaterial({ color: darkGreen, roughness: 0.6 });
-    const lLeg = new THREE.Mesh(legGeo, legMat);
+    const lLeg = new THREE.Mesh(legGeo, darkGreenMat);
     lLeg.position.set(-1, 1.5, 0);
     lLeg.castShadow = true;
     g.add(lLeg);
-    const rLeg = new THREE.Mesh(legGeo, legMat);
+    const rLeg = new THREE.Mesh(legGeo, darkGreenMat);
     rLeg.position.set(1, 1.5, 0);
     rLeg.castShadow = true;
     g.add(rLeg);
@@ -602,8 +644,7 @@ export class GodzillaMode {
     for (let i = 0; i < 5; i++) {
       const s = 1 - i * 0.15;
       const tGeo = new THREE.BoxGeometry(1.2 * s, 1 * s, 1.5);
-      const tMat = new THREE.MeshStandardMaterial({ color: darkGreen, roughness: 0.6 });
-      const seg = new THREE.Mesh(tGeo, tMat);
+      const seg = new THREE.Mesh(tGeo, darkGreenMat);
       seg.position.set(0, 3 - i * 0.5, -1.5 - i * 1.4);
       seg.castShadow = true;
       g.add(seg);
@@ -949,6 +990,7 @@ export class GodzillaMode {
     this._shakeAmp = 0.4;
 
     this._spawnRubble(b);
+    this._spawnScorchMark(b.mesh.position.x, b.mesh.position.z, b.w, b.d);
 
     if (this.crushed % 3 === 0) {
       play(SFX_CRUSH, 0.7);
