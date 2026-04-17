@@ -196,6 +196,9 @@ export class UI {
 
     on("btn-touch-pause", () => this.onTouchPause && this.onTouchPause());
 
+    on("btn-hud-info", () => this.onHudInfoOpen && this.onHudInfoOpen());
+    on("btn-hud-close", () => this.onHudInfoClose && this.onHudInfoClose());
+
     on("btn-quiz-skip", () => this.onQuizSkip && this.onQuizSkip());
     on("btn-choose-driver", () => this._showDriverSelect());
     on("btn-driver-back", () => this._hideDriverSelect());
@@ -285,6 +288,8 @@ export class UI {
     this.onUnstick = h.onUnstick;
     this.onBillboardClose = h.onBillboardClose;
     this.onTouchPause = h.onTouchPause;
+    this.onHudInfoOpen = h.onHudInfoOpen;
+    this.onHudInfoClose = h.onHudInfoClose;
     this.onLevelSelect = h.onLevelSelect;
     this.onQuizSkip = h.onQuizSkip;
     this.onDriverSelect = h.onDriverSelect;
@@ -626,6 +631,17 @@ export class UI {
 
   showHud(visible) {
     this.el.hud.classList.toggle("hidden", !visible);
+    if (!visible) this.closeMobileHud();
+  }
+
+  openMobileHud() {
+    const left = this.el.hud?.querySelector(".hud-left");
+    if (left) left.classList.add("mobile-open");
+  }
+
+  closeMobileHud() {
+    const left = this.el.hud?.querySelector(".hud-left");
+    if (left) left.classList.remove("mobile-open");
   }
 
   async updateMenuBest(localBest) {
