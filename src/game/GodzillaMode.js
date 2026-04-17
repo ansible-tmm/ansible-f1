@@ -16,6 +16,10 @@ const SFX_STOMP = "./assets/audio/obstacle-hit.wav";
 const SFX_ROAR = "./assets/audio/godzilla.mp3";
 const SFX_FIRE = "./assets/audio/boost-whoosh.wav";
 
+const KONG_SPEED = 16;
+const KONG_RADIUS = 2.5;
+const HEART_DISTANCE = 18;
+
 const BUILDING_COLORS = [
   0xc8d0d8, 0xa8b8c8, 0xe8dcc8, 0xd4c8b0,
   0xf0ece4, 0xb0c0d0, 0x8ab0d0, 0xc0b8a8,
@@ -63,6 +67,23 @@ export class GodzillaMode {
 
     this._parts = {};
 
+    this._kkMode = false;
+    this._kkTransition = false;
+    this._kkTransitionT = 0;
+    this._kkMesh = null;
+    this._kkPos = new THREE.Vector3();
+    this._kkFacing = 0;
+    this._kkWalkPhase = 0;
+    this._kkParts = {};
+    this._kkSecretBuf = "";
+    this._kkChestBeat = false;
+    this._kkChestBeatTimer = 0;
+    this._heartParticles = [];
+
+    this._aiTarget = null;
+    this._aiTimer = 0;
+    this._aiFacing = 0;
+
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
     this._onMouseDown = this._onMouseDown.bind(this);
@@ -101,6 +122,15 @@ export class GodzillaMode {
     this._camDist = 25;
     this.rubble = [];
     this.fireParticles = [];
+    this._kkMode = false;
+    this._kkTransition = false;
+    this._kkTransitionT = 0;
+    this._kkSecretBuf = "";
+    this._kkChestBeat = false;
+    this._kkChestBeatTimer = 0;
+    this._heartParticles = [];
+    this._aiTarget = null;
+    this._aiTimer = 0;
 
     hiddenObjects.forEach(o => { o.visible = false; });
 
@@ -185,6 +215,16 @@ export class GodzillaMode {
     this._fireActive = false;
     this.godzilla = null;
     this._parts = {};
+    this._kkMesh = null;
+    this._kkParts = {};
+    this._kkMode = false;
+    this._kkTransition = false;
+    for (const h of this._heartParticles) {
+      this.scene.remove(h.mesh);
+      h.mesh.geometry.dispose();
+      h.mesh.material.dispose();
+    }
+    this._heartParticles = [];
     resumeBgm();
   }
 
@@ -882,6 +922,12 @@ export class GodzillaMode {
     if (k === "KeyS" || k === "ArrowDown") { this._keys.s = true; e.preventDefault(); }
     if (k === "KeyA" || k === "ArrowLeft") { this._keys.a = true; e.preventDefault(); }
     if (k === "KeyD" || k === "ArrowRight") { this._keys.d = true; e.preventDefault(); }
+
+    if (!this._kkMode && !this._kkTransition && e.key && e.key.length === 1) {
+      this._kkSecretBuf += e.key.toLowerCase();
+      if (this._kkSecretBuf.length > 10) this._kkSecretBuf = this._kkSecretBuf.slice(-10);
+      if (this._kkSecretBuf.endsWith("kingkong")) this._triggerKingKong();
+    }
   }
 
   _onKeyUp(e) {
@@ -902,8 +948,12 @@ export class GodzillaMode {
 
   _onMouseUp(e) {
     if (this._dragging && e.button === 0 && this._dragDist < 6) {
-      this._fireActive = true;
-      this._fireHoldTimer = setTimeout(() => { this._fireActive = false; }, 400);
+      if (this._kkMode) {
+        if (!this._kkChestBeat) this._triggerChestBeat();
+      } else {
+        this._fireActive = true;
+        this._fireHoldTimer = setTimeout(() => { this._fireActive = false; }, 400);
+      }
     }
     this._dragging = false;
   }
@@ -953,7 +1003,11 @@ export class GodzillaMode {
       fontSize: "2rem", zIndex: "800", touchAction: "none",
       color: "#fff", cursor: "pointer",
     });
-    this._fireBtn.addEventListener("touchstart", (e) => { e.preventDefault(); this._fireActive = true; }, { passive: false });
+    this._fireBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      if (this._kkMode) { if (!this._kkChestBeat) this._triggerChestBeat(); }
+      else { this._fireActive = true; }
+    }, { passive: false });
     this._fireBtn.addEventListener("touchend", (e) => { e.preventDefault(); this._fireActive = false; }, { passive: false });
     this._fireBtn.addEventListener("touchcancel", () => { this._fireActive = false; });
     document.body.appendChild(this._fireBtn);
@@ -1027,6 +1081,453 @@ export class GodzillaMode {
     }
   }
 
+  // --- King Kong ---
+
+  _triggerKingKong() {
+    this._kkTransition = true;
+    this._kkTransitionT = 0;
+    this._keys = { w: false, a: false, s: false, d: false };
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 40 + Math.random() * 20;
+    this._kkPos.set(
+      this._godzillaPos.x + Math.sin(angle) * dist,
+      0,
+      this._godzillaPos.z + Math.cos(angle) * dist
+    );
+    const bound = CITY_SIZE - 5;
+    this._kkPos.x = Math.max(-bound, Math.min(bound, this._kkPos.x));
+    this._kkPos.z = Math.max(-bound, Math.min(bound, this._kkPos.z));
+
+    this._kkFacing = Math.atan2(
+      this._godzillaPos.x - this._kkPos.x,
+      this._godzillaPos.z - this._kkPos.z
+    );
+
+    this._buildKingKong();
+    this._kkMesh.position.set(this._kkPos.x, 0, this._kkPos.z);
+    this._kkMesh.rotation.y = this._kkFacing;
+
+    this._saveCamTheta = this._camTheta;
+    this._saveCamPhi = this._camPhi;
+
+    play(SFX_STOMP, 0.8);
+  }
+
+  _buildKingKong() {
+    const g = new THREE.Group();
+    const brown = 0x5a3a1a;
+    const darkBrown = 0x3a2510;
+    const chest = 0x7a6040;
+    const skin = 0x6a5a4a;
+
+    const brownMat = new THREE.MeshStandardMaterial({ color: brown, roughness: 0.8, emissive: brown, emissiveIntensity: 0.08 });
+    const darkBrownMat = new THREE.MeshStandardMaterial({ color: darkBrown, roughness: 0.8, emissive: darkBrown, emissiveIntensity: 0.06 });
+
+    const torsoGeo = new THREE.BoxGeometry(3.5, 3.5, 2.8);
+    const torso = new THREE.Mesh(torsoGeo, brownMat);
+    torso.position.y = 5;
+    torso.castShadow = true;
+    g.add(torso);
+
+    const chestGeo = new THREE.BoxGeometry(3, 2.8, 1.5);
+    const chestMat = new THREE.MeshStandardMaterial({ color: chest, roughness: 0.7 });
+    const chestMesh = new THREE.Mesh(chestGeo, chestMat);
+    chestMesh.position.set(0, 5.2, 0.7);
+    g.add(chestMesh);
+
+    const headGeo = new THREE.BoxGeometry(2.2, 2, 2);
+    const head = new THREE.Mesh(headGeo, brownMat);
+    head.position.set(0, 7.8, 0.2);
+    head.castShadow = true;
+    g.add(head);
+    this._kkParts.head = head;
+
+    const browGeo = new THREE.BoxGeometry(2.4, 0.6, 0.8);
+    const brow = new THREE.Mesh(browGeo, darkBrownMat);
+    brow.position.set(0, 8.6, 0.8);
+    g.add(brow);
+
+    const snoutGeo = new THREE.BoxGeometry(1.4, 1.2, 1.0);
+    const skinMat = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.6 });
+    const snout = new THREE.Mesh(snoutGeo, skinMat);
+    snout.position.set(0, 7.6, 1.2);
+    g.add(snout);
+
+    const mouthGeo = new THREE.BoxGeometry(1.0, 0.3, 0.6);
+    const mouthMat = new THREE.MeshStandardMaterial({ color: 0x3a1015, roughness: 0.9 });
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 7.1, 1.3);
+    g.add(mouth);
+
+    const jawGeo = new THREE.BoxGeometry(1.6, 0.5, 1.2);
+    const jaw = new THREE.Mesh(jawGeo, darkBrownMat);
+    jaw.position.set(0, 6.8, 0.6);
+    g.add(jaw);
+    this._kkParts.jaw = jaw;
+
+    const nostrilGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    const nostrilMat = new THREE.MeshStandardMaterial({ color: 0x2a1a0a, roughness: 0.8 });
+    for (const sx of [-0.3, 0.3]) {
+      const n = new THREE.Mesh(nostrilGeo, nostrilMat);
+      n.position.set(sx, 7.7, 1.7);
+      g.add(n);
+    }
+
+    const eyeWhiteGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+    const eyeGeo = new THREE.SphereGeometry(0.2, 8, 8);
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x442200, roughness: 0.3 });
+    const pupilGeo = new THREE.SphereGeometry(0.1, 6, 6);
+    const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
+    for (const sx of [-0.6, 0.6]) {
+      const w = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+      w.position.set(sx, 8.2, 1.0);
+      g.add(w);
+      const iris = new THREE.Mesh(eyeGeo, eyeMat);
+      iris.position.set(sx, 8.2, 1.15);
+      g.add(iris);
+      const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+      pupil.position.set(sx, 8.2, 1.25);
+      g.add(pupil);
+    }
+
+    const armGeo = new THREE.BoxGeometry(1.2, 3.5, 1.2);
+    const lArm = new THREE.Mesh(armGeo, brownMat);
+    lArm.position.set(-2.3, 4.5, 0.2);
+    g.add(lArm);
+    const rArm = new THREE.Mesh(armGeo, brownMat);
+    rArm.position.set(2.3, 4.5, 0.2);
+    g.add(rArm);
+    this._kkParts.lArm = lArm;
+    this._kkParts.rArm = rArm;
+
+    const fistGeo = new THREE.SphereGeometry(0.6, 6, 6);
+    const lFist = new THREE.Mesh(fistGeo, skinMat);
+    lFist.position.set(-2.3, 2.6, 0.2);
+    g.add(lFist);
+    const rFist = new THREE.Mesh(fistGeo, skinMat);
+    rFist.position.set(2.3, 2.6, 0.2);
+    g.add(rFist);
+    this._kkParts.lFist = lFist;
+    this._kkParts.rFist = rFist;
+
+    const legGeo = new THREE.BoxGeometry(1.3, 2.8, 1.3);
+    const lLeg = new THREE.Mesh(legGeo, darkBrownMat);
+    lLeg.position.set(-1, 1.4, 0);
+    lLeg.castShadow = true;
+    g.add(lLeg);
+    const rLeg = new THREE.Mesh(legGeo, darkBrownMat);
+    rLeg.position.set(1, 1.4, 0);
+    rLeg.castShadow = true;
+    g.add(rLeg);
+    this._kkParts.lLeg = lLeg;
+    this._kkParts.rLeg = rLeg;
+
+    const nameTag = this._makeNameSprite("Sean");
+    nameTag.position.set(0, 11, 0);
+    g.add(nameTag);
+
+    this._kkMesh = g;
+    this.group.add(g);
+  }
+
+  _updateKKTransition(dt) {
+    this._kkTransitionT += dt;
+    const dur = 3.0;
+    const t = Math.min(1, this._kkTransitionT / dur);
+    const ease = t * t * (3 - 2 * t);
+
+    const startLook = this._godzillaPos.clone();
+    const endLook = this._kkPos.clone();
+    const lookTarget = startLook.lerp(endLook, ease);
+    lookTarget.y += 5;
+
+    const camBehindKK = new THREE.Vector3(
+      this._kkPos.x - Math.sin(this._kkFacing) * Math.cos(0.45) * this._camDist,
+      1.0 + Math.sin(0.45) * this._camDist,
+      this._kkPos.z - Math.cos(this._kkFacing) * Math.cos(0.45) * this._camDist
+    );
+
+    this.camera.position.lerp(camBehindKK, 1 - Math.exp(-2 * dt));
+    this.camera.lookAt(lookTarget);
+
+    if (t >= 1) {
+      this._kkTransition = false;
+      this._kkMode = true;
+      this._camTheta = this._kkFacing + Math.PI;
+      this._camPhi = 0.45;
+    }
+  }
+
+  _updateAIGodzilla(dt, now) {
+    this._aiTimer -= dt;
+    if (this._aiTimer <= 0 || !this._aiTarget) {
+      let closest = null;
+      let closestD = Infinity;
+      for (const b of this.buildings) {
+        if (!b.alive || b.crushing) continue;
+        const dx = b.mesh.position.x - this._godzillaPos.x;
+        const dz = b.mesh.position.z - this._godzillaPos.z;
+        const d = dx * dx + dz * dz;
+        if (d < closestD && d > 4) {
+          closestD = d;
+          closest = b;
+        }
+      }
+      if (closest) {
+        this._aiTarget = new THREE.Vector3(closest.mesh.position.x, 0, closest.mesh.position.z);
+      } else {
+        const angle = Math.random() * Math.PI * 2;
+        this._aiTarget = new THREE.Vector3(
+          Math.sin(angle) * 30,
+          0,
+          Math.cos(angle) * 30
+        );
+      }
+      this._aiTimer = 2 + Math.random() * 3;
+    }
+
+    const dx = this._aiTarget.x - this._godzillaPos.x;
+    const dz = this._aiTarget.z - this._godzillaPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist > 2) {
+      const targetFacing = Math.atan2(dx, dz);
+      let diff = targetFacing - this._aiFacing;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      this._aiFacing += diff * Math.min(1, 3 * dt);
+
+      const speed = GODZILLA_SPEED * 0.7;
+      this._godzillaPos.x += Math.sin(this._aiFacing) * speed * dt;
+      this._godzillaPos.z += Math.cos(this._aiFacing) * speed * dt;
+
+      const bound = CITY_SIZE - 5;
+      this._godzillaPos.x = Math.max(-bound, Math.min(bound, this._godzillaPos.x));
+      this._godzillaPos.z = Math.max(-bound, Math.min(bound, this._godzillaPos.z));
+    } else {
+      this._aiTimer = 0;
+    }
+
+    this.godzilla.position.set(this._godzillaPos.x, 0, this._godzillaPos.z);
+    this.godzilla.rotation.y = this._aiFacing;
+    this._facing = this._aiFacing;
+
+    this._walkPhase += dt * 8;
+    const s = Math.sin(this._walkPhase);
+    if (this._parts.lLeg) this._parts.lLeg.rotation.x = s * 0.4;
+    if (this._parts.rLeg) this._parts.rLeg.rotation.x = -s * 0.4;
+    if (this._parts.lArm) this._parts.lArm.rotation.x = -s * 0.3;
+    if (this._parts.rArm) this._parts.rArm.rotation.x = s * 0.3;
+    if (this._parts.tail) {
+      for (let i = 0; i < this._parts.tail.length; i++) {
+        this._parts.tail[i].rotation.y = Math.sin(this._walkPhase - i * 0.5) * 0.15;
+      }
+    }
+
+    const px = this._godzillaPos.x;
+    const pz = this._godzillaPos.z;
+    for (const b of this.buildings) {
+      if (!b.alive || b.crushing) continue;
+      const bx = b.mesh.position.x;
+      const bz = b.mesh.position.z;
+      if (Math.abs(px - bx) < b.w / 2 + GODZILLA_RADIUS && Math.abs(pz - bz) < b.d / 2 + GODZILLA_RADIUS) {
+        this._crushBuilding(b, now);
+      }
+    }
+    if (this.trees) {
+      for (const t of this.trees) {
+        if (!t.alive) continue;
+        const tdx = px - t.x;
+        const tdz = pz - t.z;
+        if (tdx * tdx + tdz * tdz < (GODZILLA_RADIUS + t.r) ** 2) {
+          t.alive = false;
+          t.mesh.visible = false;
+        }
+      }
+    }
+  }
+
+  _updateKKMovement(dt) {
+    let inputX = 0, inputZ = 0;
+    if (this._touchActive) {
+      inputX = this._touchDx;
+      inputZ = -this._touchDy;
+    } else {
+      if (this._keys.a) inputX -= 1;
+      if (this._keys.d) inputX += 1;
+      if (this._keys.w) inputZ += 1;
+      if (this._keys.s) inputZ -= 1;
+    }
+
+    const len = Math.sqrt(inputX * inputX + inputZ * inputZ);
+    if (len > 0.1) {
+      const nx = inputX / len;
+      const nz = inputZ / len;
+      const camFwd = this._camTheta;
+      const mx = Math.sin(camFwd) * nz + Math.sin(camFwd - Math.PI / 2) * nx;
+      const mz = Math.cos(camFwd) * nz + Math.cos(camFwd - Math.PI / 2) * nx;
+
+      const speed = KONG_SPEED * Math.min(len, 1);
+      this._kkPos.x += mx * speed * dt;
+      this._kkPos.z += mz * speed * dt;
+
+      const bound = CITY_SIZE - 2;
+      this._kkPos.x = Math.max(-bound, Math.min(bound, this._kkPos.x));
+      this._kkPos.z = Math.max(-bound, Math.min(bound, this._kkPos.z));
+
+      const hasForward = this._touchActive ? inputZ > 0.1 : (this._keys.w || this._keys.a || this._keys.d);
+      if (hasForward) {
+        const targetFacing = Math.atan2(mx, mz);
+        let diff = targetFacing - this._kkFacing;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+        this._kkFacing += diff * Math.min(1, 3 * dt * 5);
+      }
+    }
+
+    this._kkMesh.position.set(this._kkPos.x, 0, this._kkPos.z);
+    this._kkMesh.rotation.y = this._kkFacing;
+  }
+
+  _updateKKWalkAnim(dt) {
+    const moving = this._keys.w || this._keys.s || this._keys.a || this._keys.d || this._touchActive;
+    if (moving) {
+      this._kkWalkPhase += dt * 8;
+    } else {
+      this._kkWalkPhase *= 0.9;
+    }
+
+    if (this._kkChestBeat) {
+      this._kkChestBeatTimer -= dt;
+      const beat = Math.sin(this._kkChestBeatTimer * 25) * 0.6;
+      if (this._kkParts.lArm) this._kkParts.lArm.rotation.x = -1.2 + beat;
+      if (this._kkParts.rArm) this._kkParts.rArm.rotation.x = -1.2 - beat;
+      if (this._kkParts.lFist) this._kkParts.lFist.position.set(-1.5, 5.0 + beat * 0.3, 1.0);
+      if (this._kkParts.rFist) this._kkParts.rFist.position.set(1.5, 5.0 - beat * 0.3, 1.0);
+      if (this._kkChestBeatTimer <= 0) {
+        this._kkChestBeat = false;
+        if (this._kkParts.lFist) this._kkParts.lFist.position.set(-2.3, 2.6, 0.2);
+        if (this._kkParts.rFist) this._kkParts.rFist.position.set(2.3, 2.6, 0.2);
+      }
+    } else {
+      const s = Math.sin(this._kkWalkPhase);
+      if (this._kkParts.lLeg) this._kkParts.lLeg.rotation.x = s * 0.4;
+      if (this._kkParts.rLeg) this._kkParts.rLeg.rotation.x = -s * 0.4;
+      if (this._kkParts.lArm) this._kkParts.lArm.rotation.x = -s * 0.3;
+      if (this._kkParts.rArm) this._kkParts.rArm.rotation.x = s * 0.3;
+    }
+  }
+
+  _updateKKCamera(dt, now) {
+    const cx = this._kkPos.x - Math.sin(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
+    const cy = this._kkPos.y + 1.0 + Math.sin(this._camPhi) * this._camDist;
+    const cz = this._kkPos.z - Math.cos(this._camTheta) * Math.cos(this._camPhi) * this._camDist;
+
+    const target = new THREE.Vector3(cx, cy, cz);
+    this.camera.position.lerp(target, 1 - Math.exp(-6 * dt));
+
+    let shake = 0;
+    if (now < this._shakeUntil) {
+      shake = this._shakeAmp * Math.sin(now * 0.08) * ((this._shakeUntil - now) / 200);
+    }
+    this.camera.position.x += shake;
+    this.camera.position.y += shake * 0.5;
+
+    this.camera.lookAt(this._kkPos.x, this._kkPos.y + 5, this._kkPos.z);
+  }
+
+  _updateKKCollisions(now) {
+    const px = this._kkPos.x;
+    const pz = this._kkPos.z;
+    for (const b of this.buildings) {
+      if (!b.alive || b.crushing) continue;
+      if (Math.abs(px - b.mesh.position.x) < b.w / 2 + KONG_RADIUS &&
+          Math.abs(pz - b.mesh.position.z) < b.d / 2 + KONG_RADIUS) {
+        this._crushBuilding(b, now);
+      }
+    }
+    if (this.trees) {
+      for (const t of this.trees) {
+        if (!t.alive) continue;
+        const dx = px - t.x;
+        const dz = pz - t.z;
+        if (dx * dx + dz * dz < (KONG_RADIUS + t.r) ** 2) {
+          t.alive = false;
+          t.mesh.visible = false;
+        }
+      }
+    }
+  }
+
+  _triggerChestBeat() {
+    this._kkChestBeat = true;
+    this._kkChestBeatTimer = 0.8;
+    play(SFX_STOMP, 0.7);
+    this._shakeUntil = performance.now() + 400;
+    this._shakeAmp = 0.3;
+  }
+
+  _updateHearts(dt) {
+    const dx = this._kkPos.x - this._godzillaPos.x;
+    const dz = this._kkPos.z - this._godzillaPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist < HEART_DISTANCE) {
+      if (Math.random() < dt * 3) {
+        this._spawnHeart(this._godzillaPos, 9);
+        this._spawnHeart(this._kkPos, 9);
+      }
+    }
+
+    for (let i = this._heartParticles.length - 1; i >= 0; i--) {
+      const h = this._heartParticles[i];
+      h.mesh.position.y += h.vy * dt;
+      h.mesh.position.x += Math.sin(h.wobble) * 0.3 * dt;
+      h.wobble += dt * 3;
+      h.life -= dt / h.maxLife;
+      h.mesh.material.opacity = Math.max(0, h.life);
+      const s = 0.5 + (1 - h.life) * 0.5;
+      h.mesh.scale.setScalar(s);
+      if (h.life <= 0) {
+        this.scene.remove(h.mesh);
+        h.mesh.geometry.dispose();
+        h.mesh.material.dispose();
+        this._heartParticles.splice(i, 1);
+      }
+    }
+  }
+
+  _spawnHeart(pos, baseY) {
+    const shape = new THREE.Shape();
+    const x = 0, y = 0;
+    shape.moveTo(x, y + 0.3);
+    shape.bezierCurveTo(x, y + 0.5, x - 0.25, y + 0.5, x - 0.25, y + 0.3);
+    shape.bezierCurveTo(x - 0.25, y + 0.1, x, y, x, y - 0.2);
+    shape.bezierCurveTo(x, y, x + 0.25, y + 0.1, x + 0.25, y + 0.3);
+    shape.bezierCurveTo(x + 0.25, y + 0.5, x, y + 0.5, x, y + 0.3);
+
+    const geo = new THREE.ShapeGeometry(shape);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff2266, emissive: 0xff2266, emissiveIntensity: 0.6,
+      transparent: true, opacity: 1, side: THREE.DoubleSide, depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(
+      pos.x + (Math.random() - 0.5) * 3,
+      baseY + Math.random() * 2,
+      pos.z + (Math.random() - 0.5) * 3
+    );
+    mesh.rotation.y = Math.random() * Math.PI * 2;
+    this.scene.add(mesh);
+    this._heartParticles.push({
+      mesh, vy: 1.5 + Math.random() * 1.5,
+      wobble: Math.random() * Math.PI * 2,
+      life: 1, maxLife: 2 + Math.random() * 1.5,
+    });
+  }
+
   // --- Update loop ---
 
   update(dt, now) {
@@ -1038,14 +1539,31 @@ export class GodzillaMode {
       return true;
     }
 
-    this._updateMovement(dt);
-    this._updateWalkAnim(dt);
-    this._updateCamera(dt, now);
-    this._updateCollisions(now);
-    this._updateTreeCollisions();
+    if (this._kkTransition) {
+      this._updateKKTransition(dt);
+      this._updateCrushAnims(dt);
+      this._updateRubble(dt);
+      return false;
+    }
+
+    if (this._kkMode) {
+      this._updateKKMovement(dt);
+      this._updateKKWalkAnim(dt);
+      this._updateKKCamera(dt, now);
+      this._updateKKCollisions(now);
+      this._updateAIGodzilla(dt, now);
+      this._updateHearts(dt);
+    } else {
+      this._updateMovement(dt);
+      this._updateWalkAnim(dt);
+      this._updateCamera(dt, now);
+      this._updateCollisions(now);
+      this._updateTreeCollisions();
+      this._updateFire(dt, now);
+    }
+
     this._updateRubble(dt);
     this._updateCrushAnims(dt);
-    this._updateFire(dt, now);
 
     return false;
   }
