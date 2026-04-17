@@ -30,11 +30,11 @@ const HEART_DISTANCE = 18;
 
 const MECHA_SPEED = 14;
 const MECHA_RADIUS = 3;
-const MECHA_HP = 100;
-const HERO_HP = 100;
-const MECHA_DAMAGE = 8;
-const HERO_DAMAGE = 5;
-const ATTACK_COOLDOWN = 0.8;
+const MECHA_HP = 500;
+const HERO_HP = 200;
+const MECHA_DAMAGE = 10;
+const HERO_DAMAGE = 6;
+const ATTACK_COOLDOWN = 0.6;
 
 const BUILDING_COLORS = [
   0xc8d0d8, 0xa8b8c8, 0xe8dcc8, 0xd4c8b0,
@@ -112,6 +112,8 @@ export class GodzillaMode {
     this._mechaAttackCD = 0;
     this._heroAttackCD = 0;
     this._bossResult = null;
+    this._bossEndTimer = 0;
+    this._kkBeatHit = false;
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
@@ -167,6 +169,8 @@ export class GodzillaMode {
     this._mechaAttackCD = 0;
     this._heroAttackCD = 0;
     this._bossResult = null;
+    this._bossEndTimer = 0;
+    this._kkBeatHit = false;
 
     hiddenObjects.forEach(o => { o.visible = false; });
 
@@ -1518,6 +1522,7 @@ export class GodzillaMode {
   _triggerChestBeat() {
     this._kkChestBeat = true;
     this._kkChestBeatTimer = 0.8;
+    this._kkBeatHit = false;
     play(SFX_STOMP, 0.7);
     this._shakeUntil = performance.now() + 400;
     this._shakeAmp = 0.3;
@@ -1915,8 +1920,9 @@ export class GodzillaMode {
       play(SFX_STOMP, 0.4);
     }
 
-    if (this._kkChestBeat && kkDist < KONG_RADIUS + MECHA_RADIUS + 5) {
-      this._mechaHp -= HERO_DAMAGE * 2;
+    if (this._kkChestBeat && !this._kkBeatHit && kkDist < KONG_RADIUS + MECHA_RADIUS + 5) {
+      this._kkBeatHit = true;
+      this._mechaHp -= HERO_DAMAGE * 3;
       this._shakeUntil = now + 300;
       this._playKongAttack();
       this._shakeAmp = 0.4;
@@ -1936,12 +1942,19 @@ export class GodzillaMode {
     }
 
     if (this._bossPhase) {
+      if (this._bossEndTimer > 0) {
+        this._bossEndTimer -= dt;
+        if (this._bossEndTimer <= 0) return true;
+        this._updateRubble(dt);
+        return false;
+      }
       const result = this._updateBossFight(dt, now);
       this._updateRubble(dt);
       this._updateCrushAnims(dt);
       if (result) {
         this._bossResult = result;
-        return true;
+        this._bossEndTimer = 2.0;
+        this._removeBossHud();
       }
       return false;
     }
