@@ -1706,16 +1706,22 @@ export class UI {
   }
 
   updateGodzillaHud(timeLeft, score, crushed) {
-    if (this.el.gzTime) this.el.gzTime.textContent = Math.ceil(timeLeft);
+    if (this.el.gzTime) this.el.gzTime.textContent = timeLeft < 0 ? "⚔" : Math.ceil(timeLeft);
     if (this.el.gzScore) this.el.gzScore.textContent = score;
     if (this.el.gzCrushed) this.el.gzCrushed.textContent = crushed;
   }
 
-  showGodzillaScore(score, crushed, total) {
+  showGodzillaScore(score, crushed, total, bossResult) {
     const pct = total > 0 ? Math.round((crushed / total) * 100) : 0;
     if (this.el.gzFinalScore) this.el.gzFinalScore.textContent = score;
     if (this.el.gzFinalCrushed) this.el.gzFinalCrushed.textContent = crushed;
     if (this.el.gzFinalPct) this.el.gzFinalPct.textContent = pct + "%";
+    const titleEl = this.el.godzillaScore?.querySelector(".gz-score-title");
+    if (titleEl) {
+      if (bossResult === "victory") titleEl.textContent = "🏆 MECHA DEFEATED! 🏆";
+      else if (bossResult === "defeat") titleEl.textContent = "💀 MECHA WINS... 💀";
+      else titleEl.textContent = "🦎 RAMPAGE OVER 🦎";
+    }
     if (this.el.godzillaScore) this.el.godzillaScore.classList.remove("hidden");
   }
 

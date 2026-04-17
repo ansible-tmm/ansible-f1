@@ -490,10 +490,11 @@ export class Game {
     const finalScore = this._godzillaMode.score;
     const finalCrushed = this._godzillaMode.crushed;
     const totalBuildings = this._godzillaMode.totalBuildings;
+    const bossResult = this._godzillaMode._bossResult;
     this._godzillaMode.exit();
     this.ui.showGodzillaHud(false);
     this.backToMenu();
-    this.ui.showGodzillaScore(finalScore, finalCrushed, totalBuildings);
+    this.ui.showGodzillaScore(finalScore, finalCrushed, totalBuildings, bossResult);
   }
 
   _bindQuizUi() {
@@ -1327,7 +1328,11 @@ export class Game {
 
     if (this.state === "godzilla") {
       const done = this._godzillaMode.update(dt, now);
-      this.ui.updateGodzillaHud(this._godzillaMode.timeLeft, this._godzillaMode.score, this._godzillaMode.crushed);
+      this.ui.updateGodzillaHud(
+        this._godzillaMode._bossPhase ? -1 : this._godzillaMode.timeLeft,
+        this._godzillaMode.score,
+        this._godzillaMode.crushed
+      );
       if (done) this._exitGodzilla();
       return;
     }

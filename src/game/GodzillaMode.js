@@ -20,6 +20,14 @@ const KONG_SPEED = 16;
 const KONG_RADIUS = 2.5;
 const HEART_DISTANCE = 18;
 
+const MECHA_SPEED = 14;
+const MECHA_RADIUS = 3;
+const MECHA_HP = 100;
+const HERO_HP = 100;
+const MECHA_DAMAGE = 8;
+const HERO_DAMAGE = 5;
+const ATTACK_COOLDOWN = 0.8;
+
 const BUILDING_COLORS = [
   0xc8d0d8, 0xa8b8c8, 0xe8dcc8, 0xd4c8b0,
   0xf0ece4, 0xb0c0d0, 0x8ab0d0, 0xc0b8a8,
@@ -84,6 +92,18 @@ export class GodzillaMode {
     this._aiTimer = 0;
     this._aiFacing = 0;
 
+    this._bossPhase = false;
+    this._mechaMesh = null;
+    this._mechaPos = new THREE.Vector3();
+    this._mechaFacing = 0;
+    this._mechaWalkPhase = 0;
+    this._mechaParts = {};
+    this._mechaHp = MECHA_HP;
+    this._heroHp = HERO_HP;
+    this._mechaAttackCD = 0;
+    this._heroAttackCD = 0;
+    this._bossResult = null;
+
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
     this._onMouseDown = this._onMouseDown.bind(this);
@@ -131,6 +151,13 @@ export class GodzillaMode {
     this._heartParticles = [];
     this._aiTarget = null;
     this._aiTimer = 0;
+    this._bossPhase = false;
+    this._mechaMesh = null;
+    this._mechaHp = MECHA_HP;
+    this._heroHp = HERO_HP;
+    this._mechaAttackCD = 0;
+    this._heroAttackCD = 0;
+    this._bossResult = null;
 
     hiddenObjects.forEach(o => { o.visible = false; });
 
@@ -219,6 +246,10 @@ export class GodzillaMode {
     this._kkParts = {};
     this._kkMode = false;
     this._kkTransition = false;
+    this._bossPhase = false;
+    this._mechaMesh = null;
+    this._mechaParts = {};
+    this._removeBossHud();
     for (const h of this._heartParticles) {
       this.scene.remove(h.mesh);
       h.mesh.geometry.dispose();
@@ -1531,6 +1562,346 @@ export class GodzillaMode {
     });
   }
 
+  // --- Boss Fight: Mecha Godzilla ---
+
+  _startBossFight() {
+    this._bossPhase = true;
+    this._mechaHp = MECHA_HP;
+    this._heroHp = HERO_HP;
+    this._mechaAttackCD = 0;
+    this._heroAttackCD = 0;
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50;
+    this._mechaPos.set(
+      Math.sin(angle) * dist,
+      0,
+      Math.cos(angle) * dist
+    );
+    const bound = CITY_SIZE - 10;
+    this._mechaPos.x = Math.max(-bound, Math.min(bound, this._mechaPos.x));
+    this._mechaPos.z = Math.max(-bound, Math.min(bound, this._mechaPos.z));
+    this._mechaFacing = Math.atan2(-this._mechaPos.x, -this._mechaPos.z);
+
+    this._buildMechaGodzilla();
+    this._mechaMesh.position.set(this._mechaPos.x, 0, this._mechaPos.z);
+    this._mechaMesh.rotation.y = this._mechaFacing;
+
+    this._createBossHud();
+    this._shakeUntil = performance.now() + 800;
+    this._shakeAmp = 0.6;
+    play(SFX_ROAR, 0.7);
+  }
+
+  _buildMechaGodzilla() {
+    const g = new THREE.Group();
+    const silver = 0xb0b8c0;
+    const darkMetal = 0x606870;
+    const accent = 0xcc3333;
+
+    const metalMat = new THREE.MeshStandardMaterial({
+      color: silver, roughness: 0.25, metalness: 0.8,
+      emissive: silver, emissiveIntensity: 0.05,
+    });
+    const darkMat = new THREE.MeshStandardMaterial({
+      color: darkMetal, roughness: 0.3, metalness: 0.7,
+    });
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: accent, emissive: accent, emissiveIntensity: 0.4, roughness: 0.3,
+    });
+
+    const torsoGeo = new THREE.BoxGeometry(4, 5, 3);
+    const torso = new THREE.Mesh(torsoGeo, metalMat);
+    torso.position.y = 6;
+    torso.castShadow = true;
+    g.add(torso);
+
+    const chestGeo = new THREE.BoxGeometry(3.5, 2, 1.5);
+    const chest = new THREE.Mesh(chestGeo, darkMat);
+    chest.position.set(0, 6.5, 1.6);
+    g.add(chest);
+
+    const headGeo = new THREE.BoxGeometry(2.4, 2.2, 2.4);
+    const head = new THREE.Mesh(headGeo, metalMat);
+    head.position.set(0, 9.8, 0.3);
+    head.castShadow = true;
+    g.add(head);
+    this._mechaParts.head = head;
+
+    const jawGeo = new THREE.BoxGeometry(2.0, 0.6, 2.0);
+    const jaw = new THREE.Mesh(jawGeo, darkMat);
+    jaw.position.set(0, 8.5, 0.5);
+    g.add(jaw);
+    this._mechaParts.jaw = jaw;
+
+    const snoutGeo = new THREE.BoxGeometry(1.6, 1.2, 1.4);
+    const snout = new THREE.Mesh(snoutGeo, metalMat);
+    snout.position.set(0, 9.5, 1.6);
+    g.add(snout);
+
+    const hornGeo = new THREE.ConeGeometry(0.3, 1.5, 4);
+    const horn = new THREE.Mesh(hornGeo, accentMat);
+    horn.position.set(0, 11.5, 0);
+    g.add(horn);
+
+    const eyeGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 1.5, roughness: 0.1,
+    });
+    for (const sx of [-0.7, 0.7]) {
+      const eye = new THREE.Mesh(eyeGeo, eyeMat);
+      eye.position.set(sx, 10.0, 1.3);
+      g.add(eye);
+    }
+
+    const armGeo = new THREE.BoxGeometry(1.0, 3.5, 1.0);
+    const lArm = new THREE.Mesh(armGeo, metalMat);
+    lArm.position.set(-2.8, 6, 0.3);
+    g.add(lArm);
+    const rArm = new THREE.Mesh(armGeo, metalMat);
+    rArm.position.set(2.8, 6, 0.3);
+    g.add(rArm);
+    this._mechaParts.lArm = lArm;
+    this._mechaParts.rArm = rArm;
+
+    const clawGeo = new THREE.BoxGeometry(0.8, 0.6, 1.2);
+    for (const sx of [-2.8, 2.8]) {
+      const claw = new THREE.Mesh(clawGeo, accentMat);
+      claw.position.set(sx, 4.0, 0.6);
+      g.add(claw);
+    }
+
+    const legGeo = new THREE.BoxGeometry(1.4, 3.5, 1.4);
+    const lLeg = new THREE.Mesh(legGeo, darkMat);
+    lLeg.position.set(-1.2, 1.75, 0);
+    lLeg.castShadow = true;
+    g.add(lLeg);
+    const rLeg = new THREE.Mesh(legGeo, darkMat);
+    rLeg.position.set(1.2, 1.75, 0);
+    rLeg.castShadow = true;
+    g.add(rLeg);
+    this._mechaParts.lLeg = lLeg;
+    this._mechaParts.rLeg = rLeg;
+
+    for (let i = 0; i < 5; i++) {
+      const s = 1 - i * 0.15;
+      const tGeo = new THREE.BoxGeometry(1.4 * s, 1.2 * s, 1.8);
+      const seg = new THREE.Mesh(tGeo, darkMat);
+      seg.position.set(0, 3.5 - i * 0.6, -1.8 - i * 1.5);
+      seg.castShadow = true;
+      g.add(seg);
+    }
+
+    const spineGeo = new THREE.ConeGeometry(0.25, 1.0, 4);
+    for (let i = 0; i < 5; i++) {
+      const spine = new THREE.Mesh(spineGeo, accentMat);
+      spine.position.set(0, 9 - i * 1.2, -1 - i * 0.3);
+      spine.rotation.x = -0.2;
+      g.add(spine);
+    }
+
+    const nameTag = this._makeNameSprite("MECHA GODZILLA");
+    nameTag.position.set(0, 13, 0);
+    g.add(nameTag);
+
+    this._mechaMesh = g;
+    this.group.add(g);
+  }
+
+  _createBossHud() {
+    if (this._bossHud) return;
+    const hud = document.createElement("div");
+    hud.id = "boss-hud";
+    Object.assign(hud.style, {
+      position: "fixed", top: "140px", left: "50%", transform: "translateX(-50%)",
+      display: "flex", flexDirection: "column", gap: "8px", alignItems: "center",
+      zIndex: "600", fontFamily: "'Press Start 2P', monospace", pointerEvents: "none",
+    });
+
+    const makeBar = (label, color, id) => {
+      const row = document.createElement("div");
+      Object.assign(row.style, { display: "flex", alignItems: "center", gap: "8px" });
+      const lbl = document.createElement("span");
+      lbl.textContent = label;
+      Object.assign(lbl.style, { color: "#fff", fontSize: "0.55rem", width: "120px", textAlign: "right", textShadow: "0 0 4px #000" });
+      row.appendChild(lbl);
+      const bg = document.createElement("div");
+      Object.assign(bg.style, {
+        width: "200px", height: "16px", background: "rgba(0,0,0,0.6)",
+        border: "1px solid rgba(255,255,255,0.3)", borderRadius: "3px", overflow: "hidden",
+      });
+      const fill = document.createElement("div");
+      fill.id = id;
+      Object.assign(fill.style, { width: "100%", height: "100%", background: color, transition: "width 0.2s" });
+      bg.appendChild(fill);
+      row.appendChild(bg);
+      return row;
+    };
+
+    hud.appendChild(makeBar("HEROES", "#44cc44", "boss-hero-bar"));
+    hud.appendChild(makeBar("MECHA", "#cc3333", "boss-mecha-bar"));
+
+    const vs = document.createElement("div");
+    vs.textContent = "⚔ BOSS FIGHT ⚔";
+    Object.assign(vs.style, {
+      color: "#ff4444", fontSize: "0.7rem", textShadow: "0 0 8px #ff0000",
+      marginBottom: "4px",
+    });
+    hud.insertBefore(vs, hud.firstChild);
+
+    document.body.appendChild(hud);
+    this._bossHud = hud;
+  }
+
+  _removeBossHud() {
+    if (this._bossHud) {
+      this._bossHud.remove();
+      this._bossHud = null;
+    }
+  }
+
+  _updateBossHud() {
+    const heroBar = document.getElementById("boss-hero-bar");
+    const mechaBar = document.getElementById("boss-mecha-bar");
+    if (heroBar) heroBar.style.width = Math.max(0, this._heroHp / HERO_HP * 100) + "%";
+    if (mechaBar) mechaBar.style.width = Math.max(0, this._mechaHp / MECHA_HP * 100) + "%";
+  }
+
+  _updateBossFight(dt, now) {
+    this._mechaAttackCD = Math.max(0, this._mechaAttackCD - dt);
+    this._heroAttackCD = Math.max(0, this._heroAttackCD - dt);
+
+    this._updateKKMovement(dt);
+    this._updateKKWalkAnim(dt);
+    this._updateKKCamera(dt, now);
+
+    this._updateAIGodzillaBoss(dt, now);
+    this._updateMechaAI(dt, now);
+    this._updateBossCollisions(now);
+    this._updateHearts(dt);
+    this._updateBossHud();
+
+    if (this._mechaHp <= 0) return "victory";
+    if (this._heroHp <= 0) return "defeat";
+    return null;
+  }
+
+  _updateMechaAI(dt, now) {
+    const dxK = this._kkPos.x - this._mechaPos.x;
+    const dzK = this._kkPos.z - this._mechaPos.z;
+    const distK = Math.sqrt(dxK * dxK + dzK * dzK);
+
+    const dxG = this._godzillaPos.x - this._mechaPos.x;
+    const dzG = this._godzillaPos.z - this._mechaPos.z;
+    const distG = Math.sqrt(dxG * dxG + dzG * dzG);
+
+    const targetX = distK < distG ? this._kkPos.x : this._godzillaPos.x;
+    const targetZ = distK < distG ? this._kkPos.z : this._godzillaPos.z;
+
+    const dx = targetX - this._mechaPos.x;
+    const dz = targetZ - this._mechaPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist > MECHA_RADIUS) {
+      const targetFacing = Math.atan2(dx, dz);
+      let diff = targetFacing - this._mechaFacing;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      this._mechaFacing += diff * Math.min(1, 4 * dt);
+
+      const speed = MECHA_SPEED;
+      this._mechaPos.x += Math.sin(this._mechaFacing) * speed * dt;
+      this._mechaPos.z += Math.cos(this._mechaFacing) * speed * dt;
+
+      const bound = CITY_SIZE - 5;
+      this._mechaPos.x = Math.max(-bound, Math.min(bound, this._mechaPos.x));
+      this._mechaPos.z = Math.max(-bound, Math.min(bound, this._mechaPos.z));
+    }
+
+    this._mechaMesh.position.set(this._mechaPos.x, 0, this._mechaPos.z);
+    this._mechaMesh.rotation.y = this._mechaFacing;
+
+    this._mechaWalkPhase += dt * 7;
+    const s = Math.sin(this._mechaWalkPhase);
+    if (this._mechaParts.lLeg) this._mechaParts.lLeg.rotation.x = s * 0.35;
+    if (this._mechaParts.rLeg) this._mechaParts.rLeg.rotation.x = -s * 0.35;
+    if (this._mechaParts.lArm) this._mechaParts.lArm.rotation.x = -s * 0.25;
+    if (this._mechaParts.rArm) this._mechaParts.rArm.rotation.x = s * 0.25;
+
+    for (const b of this.buildings) {
+      if (!b.alive || b.crushing) continue;
+      const bx = b.mesh.position.x;
+      const bz = b.mesh.position.z;
+      if (Math.abs(this._mechaPos.x - bx) < b.w / 2 + MECHA_RADIUS &&
+          Math.abs(this._mechaPos.z - bz) < b.d / 2 + MECHA_RADIUS) {
+        this._crushBuilding(b, now);
+      }
+    }
+  }
+
+  _updateAIGodzillaBoss(dt, now) {
+    const dx = this._mechaPos.x - this._godzillaPos.x;
+    const dz = this._mechaPos.z - this._godzillaPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+
+    if (dist > GODZILLA_RADIUS + MECHA_RADIUS) {
+      const targetFacing = Math.atan2(dx, dz);
+      let diff = targetFacing - this._aiFacing;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      this._aiFacing += diff * Math.min(1, 3 * dt);
+
+      const speed = GODZILLA_SPEED * 0.65;
+      this._godzillaPos.x += Math.sin(this._aiFacing) * speed * dt;
+      this._godzillaPos.z += Math.cos(this._aiFacing) * speed * dt;
+    }
+
+    this.godzilla.position.set(this._godzillaPos.x, 0, this._godzillaPos.z);
+    this.godzilla.rotation.y = this._aiFacing;
+
+    this._walkPhase += dt * 8;
+    const s = Math.sin(this._walkPhase);
+    if (this._parts.lLeg) this._parts.lLeg.rotation.x = s * 0.4;
+    if (this._parts.rLeg) this._parts.rLeg.rotation.x = -s * 0.4;
+    if (this._parts.lArm) this._parts.lArm.rotation.x = -s * 0.3;
+    if (this._parts.rArm) this._parts.rArm.rotation.x = s * 0.3;
+    if (this._parts.tail) {
+      for (let i = 0; i < this._parts.tail.length; i++) {
+        this._parts.tail[i].rotation.y = Math.sin(this._walkPhase - i * 0.5) * 0.15;
+      }
+    }
+  }
+
+  _updateBossCollisions(now) {
+    const kkDx = this._kkPos.x - this._mechaPos.x;
+    const kkDz = this._kkPos.z - this._mechaPos.z;
+    const kkDist = Math.sqrt(kkDx * kkDx + kkDz * kkDz);
+
+    const gDx = this._godzillaPos.x - this._mechaPos.x;
+    const gDz = this._godzillaPos.z - this._mechaPos.z;
+    const gDist = Math.sqrt(gDx * gDx + gDz * gDz);
+
+    if (kkDist < KONG_RADIUS + MECHA_RADIUS && this._mechaAttackCD <= 0) {
+      this._heroHp -= MECHA_DAMAGE;
+      this._mechaAttackCD = ATTACK_COOLDOWN;
+      this._shakeUntil = now + 200;
+      this._shakeAmp = 0.5;
+      play(SFX_STOMP, 0.5);
+    }
+
+    if (gDist < GODZILLA_RADIUS + MECHA_RADIUS && this._heroAttackCD <= 0) {
+      this._mechaHp -= HERO_DAMAGE;
+      this._heroAttackCD = ATTACK_COOLDOWN * 0.6;
+      play(SFX_STOMP, 0.4);
+    }
+
+    if (this._kkChestBeat && kkDist < KONG_RADIUS + MECHA_RADIUS + 5) {
+      this._mechaHp -= HERO_DAMAGE * 2;
+      this._shakeUntil = now + 300;
+      this._shakeAmp = 0.4;
+    }
+  }
+
   // --- Update loop ---
 
   update(dt, now) {
@@ -1543,9 +1914,24 @@ export class GodzillaMode {
       return false;
     }
 
+    if (this._bossPhase) {
+      const result = this._updateBossFight(dt, now);
+      this._updateRubble(dt);
+      this._updateCrushAnims(dt);
+      if (result) {
+        this._bossResult = result;
+        return true;
+      }
+      return false;
+    }
+
     this.timeLeft -= dt;
     if (this.timeLeft <= 0) {
       this.timeLeft = 0;
+      if (this._kkMode) {
+        this._startBossFight();
+        return false;
+      }
       return true;
     }
 
