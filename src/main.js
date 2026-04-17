@@ -59,6 +59,7 @@ ui.setHandlers({
     }
     ui.openMobileHud();
   },
+  onMobileSecret: () => game.triggerSecret(),
   onHudInfoClose: () => {
     ui.closeMobileHud();
     if (game.state === "paused") {

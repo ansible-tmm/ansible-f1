@@ -419,6 +419,33 @@ export class Game {
     });
   }
 
+  triggerSecret() {
+    if (this.state !== "running") return;
+    const d = this.currentDriver;
+    const ct = this.player.carType;
+    const secrets = {
+      nuno:    { car: "hippo",     label: "🦛 HIPPO MODE 🦛",           sfx: SFX.HIPPO_MODE },
+      matt:    { car: "skateboard", label: "🛹 SKATE MODE 🛹",          sfx: SFX.CORRECT },
+      andrius: { car: "semi_truck", label: "🚛 CHUNKY MODE 🚛",        sfx: SFX.HORN_ANDRIUS },
+      leo:     { car: "scaloneta",  label: "🇦🇷 LA SCALONETA 🇦🇷",      sfx: SFX.SCALONETA, extra: () => this.ui.setScalonetaHud(true) },
+      alex:    { car: "f16",        label: "✈️ TOP GUN MODE ✈️",        sfx: SFX.BOOST_WHOOSH },
+      anshul:  { car: "trex",       label: "🦖 T-REX MODE 🦖",         sfx: SFX.OBSTACLE_HIT },
+      remy:    { car: "ogre",       label: "🧌 OGRE MODE 🧌",          sfx: null, extra: () => { this._playOgreSfx(0.9); this.track.setCastle(true); startBgm(QUEST_BGM, 0.15); } },
+      justin:  { car: "crooner",    label: "🎤 THE DRIVING<br>CROONER 🎤", sfx: null, extra: () => this._playCroonerSfx(0.9) },
+      roger:   { car: "timetrain",  label: "🚂 TIME TRAIN<br>MODE 🚂",  sfx: SFX.TRAIN_WHISTLE, extra: () => { this._trainHitCount = 0; } },
+      hicham:  { car: "bicycle",    label: "🚲 LEAFS MODE 🚲",         sfx: SFX.BOOST_WHOOSH },
+      aubrey:  { car: "cadillac",   label: "🌟 HOLLYWOOD MODE 🌟",     sfx: SFX.BOOST_WHOOSH, extra: () => { this._rainbowRoad = true; this.track.setRainbow(true); } },
+    };
+    const s = secrets[d];
+    if (!s || ct === s.car) return;
+    this._spawnTransformSmoke();
+    this.player.swapCar(s.car);
+    if (d === "nuno") { this.ui.showHippoAnnounce(); } else { this.ui.showHippoCrush(s.label); }
+    if (s.sfx) play(s.sfx, 0.9);
+    if (s.extra) s.extra();
+    this._secretBuffer = "";
+  }
+
   _bindQuizUi() {
     const opts = this.ui.el.quizOpts;
     if (opts) {

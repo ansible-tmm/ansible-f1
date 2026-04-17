@@ -1487,8 +1487,34 @@ body {
   border-color: rgba(0, 255, 204, 0.5);
 }
 
+.mobile-secret-btn {
+  display: none;
+  position: absolute;
+  bottom: 0.6rem;
+  right: 0.6rem;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 200, 0, 0.2);
+  border-radius: 50%;
+  background: rgba(5, 10, 20, 0.4);
+  color: rgba(255, 200, 0, 0.35);
+  font-size: 11px;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 10;
+}
+.mobile-secret-btn:active {
+  background: rgba(255, 200, 0, 0.15);
+  color: rgba(255, 200, 0, 0.8);
+}
+
 @media (pointer: coarse) {
   .touch-pause {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-secret-btn {
     display: flex;
     align-items: center;
     justify-content: center;

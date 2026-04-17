@@ -198,10 +198,12 @@ export class UI {
 
     on("btn-hud-info", () => this.onHudInfoOpen && this.onHudInfoOpen());
     on("btn-hud-close", () => this.onHudInfoClose && this.onHudInfoClose());
+    on("btn-mobile-secret", () => this.onMobileSecret && this.onMobileSecret());
 
     on("btn-quiz-skip", () => this.onQuizSkip && this.onQuizSkip());
-    on("btn-choose-driver", () => this._showDriverSelect());
-    on("btn-driver-back", () => this._hideDriverSelect());
+    on("btn-choose-driver", () => this._openDriverSelect("main_menu"));
+    on("btn-choose-driver-pause", () => this._openDriverSelect("running"));
+    on("btn-driver-back", () => this._closeDriverSelect());
     on("btn-select-driver", () => this._confirmDriver());
 
     window.addEventListener("keydown", (e) => {
@@ -290,6 +292,7 @@ export class UI {
     this.onTouchPause = h.onTouchPause;
     this.onHudInfoOpen = h.onHudInfoOpen;
     this.onHudInfoClose = h.onHudInfoClose;
+    this.onMobileSecret = h.onMobileSecret;
     this.onLevelSelect = h.onLevelSelect;
     this.onQuizSkip = h.onQuizSkip;
     this.onDriverSelect = h.onDriverSelect;
@@ -1138,20 +1141,26 @@ export class UI {
     this._toggleMenuButtons(true);
   }
 
-  _showDriverSelect() {
+  _openDriverSelect(returnTo) {
+    this._driverSelectReturnTo = returnTo;
     if (!this.el.driverSelect) return;
     this.el.mainMenu.classList.add("hidden");
     this.el.attractScores.classList.add("hidden");
+    if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
     this.el.driverSelect.classList.remove("hidden");
     this.el.driverDetail.classList.add("hidden");
     this.el.driverCards.classList.remove("compact");
     this._renderDriverCards();
   }
 
-  _hideDriverSelect() {
+  _closeDriverSelect() {
     this._stopCarPreview();
     if (this.el.driverSelect) this.el.driverSelect.classList.add("hidden");
-    this.el.mainMenu.classList.remove("hidden");
+    if (this._driverSelectReturnTo === "running") {
+      if (this.el.pauseMenu) this.el.pauseMenu.classList.remove("hidden");
+    } else {
+      this.el.mainMenu.classList.remove("hidden");
+    }
   }
 
   _carLabel(carType) {
@@ -1266,7 +1275,7 @@ export class UI {
     if (!this._pendingDriver) return;
     this._selectedDriver = this._pendingDriver;
     if (this.onDriverSelect) this.onDriverSelect(this._selectedDriver);
-    this._hideDriverSelect();
+    this._closeDriverSelect();
   }
 
   showDriverSelect(visible) {
