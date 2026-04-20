@@ -226,7 +226,7 @@ export const LEVELS = {
     id: "A",
     /** URL segment for GitHub Pages (must match index.html & themePath slugs) */
     pathSegment: "AIOps",
-    name: "AIOps",
+    name: "AIOps with Red Hat Ansible",
     subtitle: "Tame the Alert Storm",
     road:     0x2a2c38,
     roadEmissive: 0x06080c,
@@ -269,7 +269,7 @@ export const LEVELS = {
   B: {
     id: "B",
     pathSegment: "Workflows",
-    name: "Workflows",
+    name: "Workflow orchestration",
     subtitle: "Automation & orchestration",
     road:     0x555960,
     roadEmissive: 0x0a0a0c,
@@ -292,7 +292,7 @@ export const LEVELS = {
   C: {
     id: "C",
     pathSegment: "Developer-Experience",
-    name: "Developer Experience",
+    name: "Developer experience",
     subtitle: "Ship automation faster",
     road:     0x8b7355,
     roadEmissive: 0x1a1208,
@@ -315,7 +315,7 @@ export const LEVELS = {
   D: {
     id: "D",
     pathSegment: "Policy-and-governance",
-    name: "Policy & governance",
+    name: "Governance & compliance",
     subtitle: "Compliance at speed",
     road:     0x3a3828,
     roadEmissive: 0x0a0a04,
@@ -338,7 +338,7 @@ export const LEVELS = {
   E: {
     id: "E",
     pathSegment: "Infrastructure-and-network",
-    name: "Infrastructure & network",
+    name: "Network & infrastructure",
     subtitle: "Day 2 at machine speed",
     road:     0x667788,
     roadEmissive: 0x0a0c10,
@@ -361,7 +361,7 @@ export const LEVELS = {
   F: {
     id: "F",
     pathSegment: "AAP-on-cloud",
-    name: "AAP on cloud",
+    name: "Cloud automation",
     subtitle: "Automate across clouds",
     road:     0x445566,
     roadEmissive: 0x060810,
@@ -384,7 +384,7 @@ export const LEVELS = {
   G: {
     id: "G",
     pathSegment: "Metrics-and-telemetry",
-    name: "Metrics & telemetry",
+    name: "Automation ROI",
     subtitle: "Visibility for operators",
     road:     0x555555,
     roadEmissive: 0x080808,
@@ -408,7 +408,7 @@ export const LEVELS = {
   H: {
     id: "H",
     pathSegment: "AAP-101",
-    name: "AAP 101",
+    name: "Red Hat Ansible 101",
     subtitle: "Operator / ops quickstart",
     road:     0x2a2a30,
     roadEmissive: 0x040408,
