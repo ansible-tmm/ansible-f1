@@ -238,6 +238,7 @@ export class GodzillaMode {
     this.trees = [];
 
     for (const r of this.rubble) {
+      if (!r.mesh) continue;
       this.scene.remove(r.mesh);
       r.mesh.geometry.dispose();
       r.mesh.material.dispose();
