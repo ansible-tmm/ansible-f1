@@ -226,7 +226,7 @@ export const LEVELS = {
     id: "A",
     /** URL segment for GitHub Pages (must match index.html & themePath slugs) */
     pathSegment: "AIOps",
-    name: "AIOps with Red Hat Ansible",
+    name: "AIOps",
     subtitle: "Tame the Alert Storm",
     road:     0x2a2c38,
     roadEmissive: 0x06080c,
@@ -400,7 +400,13 @@ export const LEVELS = {
     music: "./assets/audio/bgm-coast.m4a",
     curve: { amplitude: 5, frequency: 0.018 },
     billboards: [
-      { id: "demo19", label: "Demo 19", accent: 0xff8822 },
+      {
+        id: "demo19",
+        label: "Ansible Automation Dashboard Installation",
+        accent: 0xff8822,
+        embed: "https://interact.redhat.com/share/rRlctHhxxxojPuls1oui",
+        embedTitle: "Ansible Automation Dashboard Installation",
+      },
       { id: "demo20", label: "Demo 20", accent: 0xffcc44 },
       { id: "demo21", label: "Demo 21", accent: 0x44aacc },
     ],

@@ -183,6 +183,8 @@ export class Track {
   }
 
   _forestProps() {
+    /** Workflow orchestration (B): shorter trees so billboards stay visible */
+    const ts = this.levelId === "B" ? 0.68 : 1;
     const trunkMat = new THREE.MeshStandardMaterial({
       color: 0x5c3a1a, roughness: 0.9, metalness: 0.05,
     });
@@ -199,14 +201,14 @@ export class Track {
 
       for (const side of [-1, 1]) {
         const x = side * (8 + Math.random() * 5);
-        const trunkH = 3 + Math.random() * 2;
+        const trunkH = (3 + Math.random() * 2) * ts;
         const trunk = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.2, 0.35, trunkH, 6), trunkMat
+          new THREE.CylinderGeometry(0.2 * ts, 0.35 * ts, trunkH, 6), trunkMat
         );
         trunk.position.set(x, trunkH / 2, Math.random() * 4);
         slot.add(trunk);
 
-        const crownR = 1.2 + Math.random() * 1;
+        const crownR = (1.2 + Math.random() * 1) * ts;
         const crown = new THREE.Mesh(
           new THREE.SphereGeometry(crownR, 6, 5), leafMat
         );
@@ -215,16 +217,16 @@ export class Track {
 
         if (Math.random() < 0.4) {
           const x2 = side * (14 + Math.random() * 4);
-          const h2 = 2 + Math.random() * 3;
+          const h2 = (2 + Math.random() * 3) * ts;
           const t2 = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.15, 0.3, h2, 6), trunkMat
+            new THREE.CylinderGeometry(0.15 * ts, 0.3 * ts, h2, 6), trunkMat
           );
           t2.position.set(x2, h2 / 2, 3);
           slot.add(t2);
           const c2 = new THREE.Mesh(
-            new THREE.SphereGeometry(1 + Math.random() * 0.8, 6, 5), leafMat
+            new THREE.SphereGeometry((1 + Math.random() * 0.8) * ts, 6, 5), leafMat
           );
-          c2.position.set(x2, h2 + 0.5, 3);
+          c2.position.set(x2, h2 + 0.5 * ts, 3);
           slot.add(c2);
         }
       }
@@ -279,6 +281,8 @@ export class Track {
   }
 
   _swampProps() {
+    /** Governance & compliance (D): shorter trees so billboards stay visible */
+    const ts = this.levelId === "D" ? 0.68 : 1;
     const trunkMat = new THREE.MeshStandardMaterial({
       color: 0x3a2a1a, roughness: 0.95, metalness: 0.05,
     });
@@ -302,15 +306,15 @@ export class Track {
 
       for (const side of [-1, 1]) {
         const x = side * (8 + Math.random() * 5);
-        const trunkH = 2.5 + Math.random() * 2;
+        const trunkH = (2.5 + Math.random() * 2) * ts;
         const trunk = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.15, 0.3, trunkH, 6), trunkMat
+          new THREE.CylinderGeometry(0.15 * ts, 0.3 * ts, trunkH, 6), trunkMat
         );
         trunk.position.set(x, trunkH / 2, Math.random() * 3);
         trunk.rotation.z = (Math.random() - 0.5) * 0.3;
         slot.add(trunk);
 
-        const crownR = 1.5 + Math.random() * 1;
+        const crownR = (1.5 + Math.random() * 1) * ts;
         const crown = new THREE.Mesh(
           new THREE.SphereGeometry(crownR, 6, 5), mossLeafMat
         );
@@ -320,7 +324,7 @@ export class Track {
         // hanging moss
         for (let m = 0; m < 3; m++) {
           const vine = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.02, 0.02, 0.8 + Math.random() * 0.6, 4),
+            new THREE.CylinderGeometry(0.02, 0.02, (0.8 + Math.random() * 0.6) * ts, 4),
             mossLeafMat
           );
           vine.position.set(
@@ -502,6 +506,8 @@ export class Track {
   }
 
   _coastProps() {
+    /** Automation ROI (G): lower right-side embankment for clearer billboards */
+    const shortRightSlope = this.levelId === "G";
     const cliffMat = new THREE.MeshStandardMaterial({
       color: 0x8a7a60, roughness: 0.95, metalness: 0.05, flatShading: true,
     });
@@ -562,7 +568,9 @@ export class Track {
       }
 
       // right: hillside rising up with dirt, shrubs, and slope
-      const slopeH = 3 + Math.random() * 4;
+      const slopeH = shortRightSlope
+        ? 1.35 + Math.random() * 2.05
+        : 3 + Math.random() * 4;
       const slope = new THREE.Mesh(
         new THREE.BoxGeometry(14, slopeH, this._propSpacing + 0.5), hillMat
       );
@@ -591,18 +599,24 @@ export class Track {
   }
 
   _billboards() {
+    /** Bigger faces + closer to play (higher Z) = easier to read & click */
+    const BB_Z = -40;
     const defs = this.theme.billboards.map((b, i) => ({
       ...b,
-      x: i === 0 ? -18 : i === 1 ? 18 : 36,
-      z: -65,
+      x: i === 0 ? -14 : i === 1 ? 14 : 28,
+      z: BB_Z,
     }));
 
-    const boardW = 8, boardH = 5;
-    const poleH = 5;
+    const boardW = 11;
+    const boardH = 6.75;
+    const poleH = 6;
+    const canvasW = 768;
+    const canvasH = 480;
 
     for (const def of defs) {
       const g = new THREE.Group();
       g.userData.billboardId = def.id;
+      g.userData.faceCenterY = poleH + boardH / 2;
 
       const poleMat = new THREE.MeshStandardMaterial({
         color: 0x4a5a78, metalness: 0.6, roughness: 0.4,
@@ -651,8 +665,8 @@ export class Track {
       g.add(stripBot);
 
       const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 320;
+      canvas.width = canvasW;
+      canvas.height = canvasH;
       const ctx = canvas.getContext("2d");
 
       const accentHex = "#" + def.accent.toString(16).padStart(6, "0");
@@ -669,20 +683,21 @@ export class Track {
 
       const drawFace = (logoImg) => {
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, 512, 320);
+        ctx.fillRect(0, 0, canvasW, canvasH);
 
         if (logoImg) {
-          const pad = 24;
-          const maxW = 512 - pad * 2, maxH = 320 - pad * 2;
+          const pad = 28;
+          const maxW = canvasW - pad * 2;
+          const maxH = canvasH - pad * 2;
           let w = logoImg.width, h = logoImg.height;
           const scale = Math.min(maxW / w, maxH / h);
           w *= scale; h *= scale;
-          ctx.drawImage(logoImg, 256 - w / 2, 160 - h / 2, w, h);
+          ctx.drawImage(logoImg, canvasW / 2 - w / 2, canvasH / 2 - h / 2, w, h);
         } else {
           ctx.textAlign = "center";
-          ctx.font = "bold 56px 'Courier New', monospace";
+          ctx.font = "bold 72px 'Courier New', monospace";
           ctx.fillStyle = "#1a1a2e";
-          ctx.fillText(def.label.toUpperCase(), 256, 175);
+          ctx.fillText(def.label.toUpperCase(), canvasW / 2, canvasH / 2 + 22);
         }
 
         tex.needsUpdate = true;
@@ -698,23 +713,24 @@ export class Track {
         drawFace(null);
       }
 
-      const spotL = new THREE.SpotLight(0xffffff, 5, 18, Math.PI / 5, 0.5, 1);
-      spotL.position.set(-boardW / 3, poleH + boardH + 1.5, 3);
+      const spotL = new THREE.SpotLight(0xffffff, 7, 26, Math.PI / 4.8, 0.48, 1);
+      spotL.position.set(-boardW / 3, poleH + boardH + 2, 4);
       spotL.target.position.set(0, poleH + boardH / 2, 0);
       g.add(spotL); g.add(spotL.target);
 
-      const spotR = new THREE.SpotLight(0xffffff, 5, 18, Math.PI / 5, 0.5, 1);
-      spotR.position.set(boardW / 3, poleH + boardH + 1.5, 3);
+      const spotR = new THREE.SpotLight(0xffffff, 7, 26, Math.PI / 4.8, 0.48, 1);
+      spotR.position.set(boardW / 3, poleH + boardH + 2, 4);
       spotR.target.position.set(0, poleH + boardH / 2, 0);
       g.add(spotR); g.add(spotR.target);
 
-      const glow = new THREE.PointLight(def.accent, 1.5, 18);
-      glow.position.set(0, poleH + boardH / 2, 3);
+      const glow = new THREE.PointLight(def.accent, 2.4, 24);
+      glow.position.set(0, poleH + boardH / 2, 4.2);
       g.add(glow);
 
       g.position.set(def.x, 0, def.z);
-      if (def.x < 0) g.rotation.y = -0.25;
-      else g.rotation.y = 0.25;
+      /* Face the roadway a bit more so the canvas reads from the car */
+      if (def.x < 0) g.rotation.y = -0.34;
+      else g.rotation.y = 0.34;
 
       this.billboards[def.id] = g;
       this.group.add(g);
@@ -1141,12 +1157,20 @@ export class Track {
     const hillMat = new THREE.MeshStandardMaterial({
       color: 0x4a7a3a, roughness: 0.9, metalness: 0.05, flatShading: true,
     });
-    const hillPositions = [
-      { x: 30, h: 30, r: 18 },
-      { x: 50, h: 40, r: 24 },
-      { x: 70, h: 32, r: 20 },
-      { x: 88, h: 25, r: 16 },
-    ];
+    const hillPositions =
+      this.levelId === "G"
+        ? [
+            { x: 30, h: 11, r: 12 },
+            { x: 50, h: 14, r: 14 },
+            { x: 70, h: 12, r: 12 },
+            { x: 88, h: 10, r: 10 },
+          ]
+        : [
+            { x: 30, h: 30, r: 18 },
+            { x: 50, h: 40, r: 24 },
+            { x: 70, h: 32, r: 20 },
+            { x: 88, h: 25, r: 16 },
+          ];
     for (const hp of hillPositions) {
       const hill = new THREE.Mesh(
         new THREE.ConeGeometry(hp.r, hp.h, 6), hillMat

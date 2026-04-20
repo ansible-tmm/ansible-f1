@@ -1850,14 +1850,33 @@ body {
   font-style: italic;
 }
 
-/* HUD level name + choose level button */
-.hud-level-name {
+/* Current theme — top center, prominent during play */
+.hud-theme-strip {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  text-align: center;
+  max-width: min(94vw, 620px);
+  padding: 0 0.5rem;
+  pointer-events: none;
+}
+
+.hud-theme-title {
   font-family: "Orbitron", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: rgba(0, 255, 204, 0.8);
-  margin-top: 0.6rem;
-  letter-spacing: 0.05em;
+  font-size: clamp(0.88rem, 3.8vw, 1.55rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  color: #f0f8ff;
+  text-shadow:
+    0 0 20px rgba(0, 255, 204, 0.5),
+    0 0 40px rgba(0, 255, 204, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.85);
+  margin: 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid rgba(0, 255, 204, 0.45);
 }
 
 /* Quiz countdown */
