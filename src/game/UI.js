@@ -98,6 +98,8 @@ export class UI {
       driverDetailOrigin: document.getElementById("driver-detail-origin"),
       driverDetailBio: document.getElementById("driver-detail-bio"),
 
+      tutorialOverlay: document.getElementById("tutorial-overlay"),
+
       levelComplete: document.getElementById("level-complete"),
       lcTitle: document.getElementById("lc-title"),
       lcMessage: document.getElementById("lc-message"),
@@ -168,7 +170,9 @@ export class UI {
       const b = document.getElementById(id);
       if (b) b.addEventListener("click", fn);
     };
-    on("btn-start", () => this.onStart && this.onStart());
+    on("btn-start", () => this._openTutorial());
+    on("btn-tutorial-back", () => this._closeTutorialToMenu());
+    on("btn-tutorial-start", () => this._startFromTutorial());
     on("btn-highscores", () => this._showMenuLeaderboard());
     on("btn-lb-back", () => this._hideMenuLeaderboard());
     on("btn-achievements", () => this._showMenuAchievements());
@@ -202,6 +206,13 @@ export class UI {
     }
 
     document.addEventListener("keydown", (e) => {
+      if (e.code === "Escape" && this.el.tutorialOverlay &&
+          !this.el.tutorialOverlay.classList.contains("hidden")) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._closeTutorialToMenu();
+        return;
+      }
       if (e.code === "Escape" && this.el.billboardOverlay &&
           !this.el.billboardOverlay.classList.contains("hidden")) {
         e.preventDefault();
@@ -314,6 +325,35 @@ export class UI {
       this._updateMenuFocus();
     }
     this._syncSummitDockVisibility();
+  }
+
+  _openTutorial() {
+    if (!this.el.tutorialOverlay || !this.el.mainMenu) return;
+    this.el.mainMenu.classList.add("hidden");
+    this.el.tutorialOverlay.classList.remove("hidden");
+    this.el.tutorialOverlay.setAttribute("aria-hidden", "false");
+    this._syncSummitDockVisibility();
+    const startBtn = document.getElementById("btn-tutorial-start");
+    if (startBtn) startBtn.focus();
+  }
+
+  _closeTutorialToMenu() {
+    if (!this.el.tutorialOverlay || !this.el.mainMenu) return;
+    this.el.tutorialOverlay.classList.add("hidden");
+    this.el.tutorialOverlay.setAttribute("aria-hidden", "true");
+    this.el.mainMenu.classList.remove("hidden");
+    this._menuIdx = 0;
+    this._updateMenuFocus();
+    const start = document.getElementById("btn-start");
+    if (start) start.focus();
+    this._syncSummitDockVisibility();
+  }
+
+  _startFromTutorial() {
+    if (!this.el.tutorialOverlay) return;
+    this.el.tutorialOverlay.classList.add("hidden");
+    this.el.tutorialOverlay.setAttribute("aria-hidden", "true");
+    if (this.onStart) this.onStart();
   }
 
   /**

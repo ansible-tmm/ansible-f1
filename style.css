@@ -845,6 +845,112 @@ body {
   display: none;
 }
 
+.tutorial-overlay {
+  z-index: 7;
+}
+
+.tutorial-panel {
+  width: min(38rem, 94vw);
+  max-height: min(88vh, 760px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  padding: 0.5rem 0 0;
+}
+
+.tutorial-title {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+  line-height: 1.45;
+  margin: 0 0 0.75rem;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(0, 255, 204, 0.4);
+  text-align: center;
+}
+
+.tutorial-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 0.25rem 0.75rem 0;
+  margin-right: -0.25rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.tutorial-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.tutorial-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 204, 0.25);
+  border-radius: 4px;
+}
+
+.tutorial-section {
+  margin-bottom: 1rem;
+}
+
+.tutorial-section:last-child {
+  margin-bottom: 0.35rem;
+}
+
+.tutorial-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--neon);
+  font-weight: 700;
+}
+
+.tutorial-section p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tutorial-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.tutorial-list li {
+  margin-bottom: 0.35rem;
+}
+
+.tutorial-list li:last-child {
+  margin-bottom: 0;
+}
+
+.tutorial-scroll kbd {
+  display: inline-block;
+  padding: 0.1em 0.35em;
+  font-size: 0.72em;
+  font-family: inherit;
+  border: 1px solid rgba(0, 255, 204, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 20, 40, 0.6);
+  color: var(--neon);
+}
+
+.tutorial-spoiler {
+  border-left: 3px solid rgba(255, 0, 170, 0.55);
+  padding-left: 0.65rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+  padding: 0.85rem 0 0.25rem;
+  border-top: 1px solid rgba(0, 255, 204, 0.12);
+  flex-shrink: 0;
+}
+
 .panel {
   text-align: center;
   max-width: 520px;
