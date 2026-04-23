@@ -54,6 +54,20 @@ ui.setHandlers({
       ui.showPause(true);
     }
   },
+  onHudInfoOpen: () => {
+    if (game.state === "running") {
+      game.state = "paused";
+    }
+    ui.openMobileHud();
+  },
+  onMobileSecret: () => game.triggerSecret(),
+  onHudInfoClose: () => {
+    ui.closeMobileHud();
+    if (game.state === "paused") {
+      game.state = "running";
+      ui.showPause(false);
+    }
+  },
   onQuizSkip: () => game.skipQuiz(),
   onLevelSelect: (levelId, returnTo) => {
     game.switchLevel(levelId, returnTo);

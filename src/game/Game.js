@@ -26,6 +26,7 @@ import {
 } from "../utils/storage.js";
 import { preload, play, startLoop, stopLoop, startBgm } from "../utils/audio.js";
 import { submitGlobalScore } from "../utils/firebase.js";
+import { GodzillaMode } from "./GodzillaMode.js";
 
 const SFX = {
   SHIELD_HIT: "./assets/audio/shield-hit.wav",
@@ -46,15 +47,30 @@ const SFX = {
   HIPPO_BLAH_3: "./assets/audio/hippo-blah-3.m4a",
   HIPPO_BLAH_4: "./assets/audio/hippo-blah-4.m4a",
   DELOREAN: "./assets/audio/delorean.m4a",
+  TRAIN_WHISTLE: "./assets/audio/train-whistle.m4a",
+  TRAIN_35MPH: "./assets/audio/train-35mph.m4a",
+  TRAIN_45MPH: "./assets/audio/train-45mph.m4a",
+  TRAIN_WHISTLE_ALT: "./assets/audio/train-whistle-alt.m4a",
+  TRAIN_EXPLOSION: "./assets/audio/train-explosion.m4a",
+  TRAIN_FINALE: "./assets/audio/train-finale.m4a",
+  SCALONETA: "./assets/audio/scaloneta.m4a",
+  OGRE_GRUNT_1: "./assets/audio/ogre-grunt-1.mp4",
+  OGRE_GRUNT_2: "./assets/audio/ogre-grunt-2.mp4",
+  CROONER_1: "./assets/audio/decal.m4a",
+  CROONER_2: "./assets/audio/love_it.m4a",
+  CROONER_3: "./assets/audio/driving_crooner.m4a",
+  CROONER_4: "./assets/audio/make_money.m4a",
+  CROONER_5: "./assets/audio/right_next_to_me.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
 const DEFAULT_BGM = "./assets/audio/bgm.m4a";
+const QUEST_BGM = "./assets/audio/quest-bgm.mp3";
 
 preload(Object.values(SFX));
 
 /**
- * @typedef {'boot'|'main_menu'|'running'|'quiz'|'paused'|'game_over'|'billboard'} GameState
+ * @typedef {'boot'|'main_menu'|'running'|'quiz'|'paused'|'game_over'|'billboard'|'godzilla'} GameState
  */
 
 const ES = {
@@ -157,6 +173,7 @@ export class Game {
     this.collectionCount = 0;
     this.collectionPts = 0;
     this.pickupSpeedMult = 1;
+    this._lastCheaterPopupTs = 0;
 
     this.recoveryPrompt = false;
     this.remediationsUsed = 0;
@@ -211,6 +228,9 @@ export class Game {
     this._celebCrowd = [];
     this._celebConfetti = [];
     this._secretBuffer = "";
+    this._globalSecretBuffer = "";
+
+    this._godzillaMode = new GodzillaMode(scene, camera);
 
     // Attract mode (demo play behind main menu)
     this._attractActive = false;
@@ -234,6 +254,23 @@ export class Game {
 
   _bindKeys() {
     window.addEventListener("keydown", (e) => {
+      if (this.state === "godzilla") {
+        if (e.code === "Escape") {
+          this._exitGodzilla();
+          e.preventDefault();
+        }
+        return;
+      }
+
+      if (e.key.length === 1) {
+        this._globalSecretBuffer = (this._globalSecretBuffer + e.key.toLowerCase()).slice(-12);
+        if (this._globalSecretBuffer.endsWith("godzilla")) {
+          this._globalSecretBuffer = "";
+          this._enterGodzilla();
+          return;
+        }
+      }
+
       if (this.state === "main_menu" && this._attractScoreShowing) {
         this._attractScoreShowing = false;
         this.ui.showAttractScores(false);
@@ -309,29 +346,88 @@ export class Game {
       }
 
       if (this.state === "running" && e.key.length === 1) {
-        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-9);
+        this._secretBuffer = (this._secretBuffer + e.key.toLowerCase()).slice(-12);
         if (this.currentDriver === "nuno" && this.player.carType !== "hippo" && this._secretBuffer.endsWith("hippo")) {
+          this._spawnTransformSmoke();
           this.player.swapCar("hippo");
           this.ui.showHippoAnnounce();
           play(SFX.HIPPO_MODE, 0.9);
           this._secretBuffer = "";
         }
-        if (this.currentDriver === "matt" && this.player.carType !== "skateboard" && this._secretBuffer.endsWith("matt")) {
+        if (this.currentDriver === "matt" && this.player.carType !== "skateboard" && this._secretBuffer.endsWith("skate")) {
+          this._spawnTransformSmoke();
           this.player.swapCar("skateboard");
           this.ui.showHippoCrush("🛹 SKATE MODE 🛹");
           play(SFX.CORRECT, 0.9);
           this._secretBuffer = "";
         }
         if (this.currentDriver === "andrius" && this.player.carType !== "semi_truck" && this._secretBuffer.endsWith("chunky")) {
+          this._spawnTransformSmoke();
           this.player.swapCar("semi_truck");
           this.ui.showHippoCrush("🚛 CHUNKY MODE 🚛");
           play(SFX.HORN_ANDRIUS, 0.9);
           this._secretBuffer = "";
         }
         if (this.currentDriver === "leo" && this.player.carType !== "scaloneta" && this._secretBuffer.endsWith("scaloneta")) {
+          this._spawnTransformSmoke();
           this.player.swapCar("scaloneta");
           this.ui.showHippoCrush("🇦🇷 LA SCALONETA 🇦🇷");
-          play(SFX.HORN_ANDRIUS, 0.9);
+          play(SFX.SCALONETA, 0.9);
+          this.ui.setScalonetaHud(true);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "alex" && this.player.carType !== "f16" && this._secretBuffer.endsWith("topgun")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("f16");
+          this.ui.showHippoCrush("✈️ TOP GUN MODE ✈️");
+          play(SFX.BOOST_WHOOSH, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "anshul" && this.player.carType !== "trex" && this._secretBuffer.endsWith("leavemealone")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("trex");
+          this.ui.showHippoCrush("🦖 T-REX MODE 🦖");
+          play(SFX.OBSTACLE_HIT, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "remy" && this.player.carType !== "ogre" && this._secretBuffer.endsWith("quest")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("ogre");
+          this.ui.showHippoCrush("🧌 OGRE MODE 🧌");
+          this._playOgreSfx(0.9);
+          this.track.setCastle(true);
+          startBgm(QUEST_BGM, 0.15);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "justin" && this.player.carType !== "crooner" && this._secretBuffer.endsWith("crooner")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("crooner");
+          this.ui.showHippoCrush("🎤 THE DRIVING<br>CROONER 🎤");
+          this._playCroonerSfx(0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "roger" && this.player.carType !== "timetrain" && this._secretBuffer.endsWith("crossfit")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("timetrain");
+          this._trainHitCount = 0;
+          this.ui.showHippoCrush("🚂 TIME TRAIN<br>MODE 🚂");
+          play(SFX.TRAIN_WHISTLE, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "hicham" && this.player.carType !== "bicycle" && this._secretBuffer.endsWith("leafs")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("bicycle");
+          this.ui.showHippoCrush("🚲 LEAFS MODE 🚲");
+          play(SFX.BOOST_WHOOSH, 0.9);
+          this._secretBuffer = "";
+        }
+        if (this.currentDriver === "aubrey" && this.player.carType !== "cadillac" && this._secretBuffer.endsWith("hollywood")) {
+          this._spawnTransformSmoke();
+          this.player.swapCar("cadillac");
+          this.ui.showHippoCrush("🌟 HOLLYWOOD MODE 🌟");
+          play(SFX.BOOST_WHOOSH, 0.9);
+          this._rainbowRoad = true;
+          this.track.setRainbow(true);
           this._secretBuffer = "";
         }
       }
@@ -342,6 +438,63 @@ export class Game {
         this.braking = false;
       }
     });
+  }
+
+  triggerSecret() {
+    if (this.state !== "running") return;
+    const d = this.currentDriver;
+    const ct = this.player.carType;
+    const secrets = {
+      nuno:    { car: "hippo",     label: "🦛 HIPPO MODE 🦛",           sfx: SFX.HIPPO_MODE },
+      matt:    { car: "skateboard", label: "🛹 SKATE MODE 🛹",          sfx: SFX.CORRECT },
+      andrius: { car: "semi_truck", label: "🚛 CHUNKY MODE 🚛",        sfx: SFX.HORN_ANDRIUS },
+      leo:     { car: "scaloneta",  label: "🇦🇷 LA SCALONETA 🇦🇷",      sfx: SFX.SCALONETA, extra: () => this.ui.setScalonetaHud(true) },
+      alex:    { car: "f16",        label: "✈️ TOP GUN MODE ✈️",        sfx: SFX.BOOST_WHOOSH },
+      anshul:  { car: "trex",       label: "🦖 T-REX MODE 🦖",         sfx: SFX.OBSTACLE_HIT },
+      remy:    { car: "ogre",       label: "🧌 OGRE MODE 🧌",          sfx: null, extra: () => { this._playOgreSfx(0.9); this.track.setCastle(true); startBgm(QUEST_BGM, 0.15); } },
+      justin:  { car: "crooner",    label: "🎤 THE DRIVING<br>CROONER 🎤", sfx: null, extra: () => this._playCroonerSfx(0.9) },
+      roger:   { car: "timetrain",  label: "🚂 TIME TRAIN<br>MODE 🚂",  sfx: SFX.TRAIN_WHISTLE, extra: () => { this._trainHitCount = 0; } },
+      hicham:  { car: "bicycle",    label: "🚲 LEAFS MODE 🚲",         sfx: SFX.BOOST_WHOOSH },
+      aubrey:  { car: "cadillac",   label: "🌟 HOLLYWOOD MODE 🌟",     sfx: SFX.BOOST_WHOOSH, extra: () => { this._rainbowRoad = true; this.track.setRainbow(true); } },
+    };
+    const s = secrets[d];
+    if (!s || ct === s.car) return;
+    this._spawnTransformSmoke();
+    this.player.swapCar(s.car);
+    if (d === "nuno") { this.ui.showHippoAnnounce(); } else { this.ui.showHippoCrush(s.label); }
+    if (s.sfx) play(s.sfx, 0.9);
+    if (s.extra) s.extra();
+    this._secretBuffer = "";
+  }
+
+  _enterGodzilla() {
+    if (this.state === "godzilla") return;
+    this._preGodzillaState = this.state;
+
+    if (this._attractActive) this._stopAttractMode();
+    stopLoop();
+
+    const hidden = [];
+    if (this.player.mesh) hidden.push(this.player.mesh);
+    if (this.track && this.track.group) hidden.push(this.track.group);
+    for (const e of this.spawner.obstacles) if (e.mesh) hidden.push(e.mesh);
+    for (const e of this.spawner.pickups) if (e.mesh) hidden.push(e.mesh);
+
+    this.ui.hideAll();
+    this.state = "godzilla";
+    this._godzillaMode.enter(hidden);
+    this.ui.showGodzillaHud(true);
+  }
+
+  _exitGodzilla() {
+    const finalScore = this._godzillaMode.score;
+    const finalCrushed = this._godzillaMode.crushed;
+    const totalBuildings = this._godzillaMode.totalBuildings;
+    const bossResult = this._godzillaMode._bossResult;
+    this._godzillaMode.exit();
+    this.ui.showGodzillaHud(false);
+    this.backToMenu();
+    this.ui.showGodzillaScore(finalScore, finalCrushed, totalBuildings, bossResult);
   }
 
   _bindQuizUi() {
@@ -395,6 +548,10 @@ export class Game {
         play(SFX.BOOST_WHOOSH, 0.6);
         return;
       }
+      if (this.player.carType === "f16") {
+        this._dropBomb();
+        return;
+      }
       if (this.player.carType === "delorean") {
         if (this.player.startTimeTravel()) {
           play(SFX.DELOREAN, 0.9);
@@ -418,7 +575,15 @@ export class Game {
       }
       if (this.player.carType === "hippo") {
         play(SFX.HIPPO_MODE, 0.9);
-      } else if (this.currentDriver === "andrius" || this.player.carType === "scaloneta") {
+      } else if (this.player.carType === "timetrain") {
+        play(SFX.TRAIN_WHISTLE, 0.9);
+      } else if (this.player.carType === "ogre") {
+        this._playOgreSfx(0.9);
+      } else if (this.player.carType === "crooner") {
+        this._playCroonerSfx(0.9);
+      } else if (this.player.carType === "scaloneta") {
+        play(SFX.SCALONETA, 0.8);
+      } else if (this.currentDriver === "andrius") {
         play(SFX.HORN_ANDRIUS, 0.8);
       } else {
         play(SFX.HORN, 0.8);
@@ -596,6 +761,7 @@ export class Game {
     this.collectionCount = 0;
     this.collectionPts = 0;
     this.pickupSpeedMult = 1;
+    this._lastCheaterPopupTs = 0;
     this.recoveryPrompt = false;
     this.remediationsUsed = 0;
     this.timeScale = 1;
@@ -609,6 +775,8 @@ export class Game {
     this._finishing = false;
     this._finishCoastSpeed = 0;
     this._cleanupCelebration();
+    this._cleanupBombs();
+    this._cleanupTransformSmoke();
     this.track.removeFinishLine();
     this.player.targetLaneIndex = 1;
     this.player.laneIndex = 1;
@@ -636,6 +804,19 @@ export class Game {
     this._cleanupCelebration();
     this.player.resetCelebrationPose();
     stopLoop();
+
+    const d = DRIVERS[this.currentDriver];
+    if (d && this.player.carType !== d.car) {
+      this.player.swapCar(d.car);
+    }
+    this.ui.setScalonetaHud(false);
+    this._rainbowRoad = false;
+    this.track.setRainbow(false);
+    this.track.setCastle(false);
+
+    const theme = LEVELS[this.currentLevel];
+    startBgm(theme?.music || DEFAULT_BGM, 0.1);
+
     this.ui.showBillboard(false);
     this.ui.showGameOver(false);
     this.ui.showLevelComplete(false);
@@ -954,6 +1135,7 @@ export class Game {
     stopLoop();
     play(SFX.CORRECT, 0.9);
     play(SFX.CROWD_CHEERS, 0.7);
+    if (this.player.carType === "timetrain") play(SFX.TRAIN_FINALE, 0.85);
 
     const finishBonus = 5000;
     this.score += finishBonus;
@@ -964,7 +1146,7 @@ export class Game {
     this._spawnCelebration(this._orbitCenter);
 
     const isCheater = this._isCheater();
-    const cheaterType = this.player.carType === "hippo" ? "hippo" : this.player.carType === "scaloneta" ? "scaloneta" : isCheater ? "semi" : null;
+    const cheaterType = this.player.carType === "hippo" ? "hippo" : this.player.carType === "scaloneta" ? "scaloneta" : this.player.carType === "f16" ? "f16" : this.player.carType === "trex" ? "trex" : this.player.carType === "cadillac" ? "cadillac" : this.player.carType === "ogre" ? "ogre" : this.player.carType === "crooner" ? "crooner" : this.player.carType === "timetrain" ? "timetrain" : this.player.carType === "bicycle" ? "bicycle" : isCheater ? "semi" : null;
     this.ui.setLevelCompleteStats({
       score: this.score,
       hits: this.obstaclesHit,
@@ -987,6 +1169,20 @@ export class Game {
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
         : this.player.carType === "scaloneta"
         ? "¡La Scaloneta no necesita leaderboard, campeón!"
+        : this.player.carType === "f16"
+        ? "Nice try, Maverick. Fighter jets don't qualify for the leaderboard."
+        : this.player.carType === "trex"
+        ? "T-Rex arms are too short to reach the leaderboard. Nice try though!"
+        : this.player.carType === "cadillac"
+        ? "Sorry darling, Hollywood stars don't do leaderboards. Too glamorous!"
+        : this.player.carType === "ogre"
+        ? "Ogres don't do leaderboards. Now get out of my swamp!"
+        : this.player.carType === "crooner"
+        ? "I gotta figure out how to make money on this — not leaderboards!"
+        : this.player.carType === "timetrain"
+        ? "Where we're going, we don't need leaderboards!"
+        : this.player.carType === "bicycle"
+        ? "Bicycles don't have leaderboards, eh? Go Leafs Go!"
         : "Nice try, but you can't set a high score as Andrius. Too easy!";
       this.ui.setStatus(msg, 4000);
       return;
@@ -1006,6 +1202,20 @@ export class Game {
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
         : this.player.carType === "scaloneta"
         ? "¡La Scaloneta no necesita leaderboard, campeón!"
+        : this.player.carType === "f16"
+        ? "Nice try, Maverick. Fighter jets don't qualify for the leaderboard."
+        : this.player.carType === "trex"
+        ? "T-Rex arms are too short to reach the leaderboard. Nice try though!"
+        : this.player.carType === "cadillac"
+        ? "Sorry darling, Hollywood stars don't do leaderboards. Too glamorous!"
+        : this.player.carType === "ogre"
+        ? "Ogres don't do leaderboards. Now get out of my swamp!"
+        : this.player.carType === "crooner"
+        ? "I gotta figure out how to make money on this — not leaderboards!"
+        : this.player.carType === "timetrain"
+        ? "Where we're going, we don't need leaderboards!"
+        : this.player.carType === "bicycle"
+        ? "Bicycles don't have leaderboards, eh? Go Leafs Go!"
         : "Nice try, but you can't set a high score as Andrius. Too easy!";
       this.ui.setStatus(msg, 4000);
       return;
@@ -1116,6 +1326,17 @@ export class Game {
     const now = performance.now();
     let dt = Math.min(0.05, (now - this._lastTs) / 1000);
     this._lastTs = now;
+
+    if (this.state === "godzilla") {
+      const done = this._godzillaMode.update(dt, now);
+      this.ui.updateGodzillaHud(
+        this._godzillaMode._bossPhase ? -1 : this._godzillaMode.timeLeft,
+        this._godzillaMode.score,
+        this._godzillaMode.crushed
+      );
+      if (done) this._exitGodzilla();
+      return;
+    }
 
     if (this.state === "boot") {
       this._updateCamera(dt, now);
@@ -1298,6 +1519,8 @@ export class Game {
     this.spawner.update(rawDt, ws, this.runTime, scale);
 
     this.player.update(effDt);
+    this._updateBombs(effDt);
+    this._updateTransformSmoke(effDt);
 
     // Combo timer countdown
     if (this.comboTimer > 0) {
@@ -1379,7 +1602,304 @@ export class Game {
   }
 
   _isCheater() {
-    return this._isSemiTruck() || this.player.carType === "hippo" || this.player.carType === "scaloneta";
+    return this._isSemiTruck() || this.player.carType === "hippo" || this.player.carType === "scaloneta" || this.player.carType === "f16" || this.player.carType === "trex" || this.player.carType === "cadillac" || this.player.carType === "ogre" || this.player.carType === "crooner" || this.player.carType === "timetrain" || this.player.carType === "bicycle";
+  }
+
+  _croonerSmashLines = [
+    "🎤 I GOTTA MAKE MONEY<br>ON THIS! 🎤",
+    "🎤 IT'S SIMPLY<br>TOO GOOD! 🎤",
+    "🎤 THEY'RE TRYING TO<br>MAKE IT LOOK FAKE! 🎤",
+    "🎤 HE'S TRYING TO<br>STEAL MY DECALS! 🎤",
+    "🎤 YOU'RE DRIVING WITH<br>THE DRIVING CROONER, BABY! 🎤",
+    "🎤 THE HAT AND<br>THE CIGAR! 🎤",
+    "🎤 FIVE CARS GOING<br>AROUND STATEWIDE! 🎤",
+    "🎤 GOTTA BE RIGHT NEXT<br>TO ME FOR IT TO LOOK REAL! 🎤",
+    "🎤 SLOPPY STEAKS<br>AT TRUFFONI'S! 🎤",
+    "🎤 I USED TO BE<br>A PIECE OF WORK! 🎤",
+  ];
+
+  _timeTrainSmashLines = [
+    "🚂 WHERE WE'RE GOING, WE<br>DON'T NEED ROADS! 🚂",
+    "🚂 GREAT SCOTT!<br>88 MILES PER HOUR! 🚂",
+    "🚂 YOUR FUTURE HASN'T<br>BEEN WRITTEN YET! 🚂",
+    "🚂 1.21 GIGAWATTS<br>OF PAIN! 🚂",
+    "🚂 THIS IS HEAVY! 🚂",
+    "🚂 THE FLUX CAPACITOR<br>IS FLUXING! 🚂",
+    "🚂 BACK TO<br>THE FUTURE! 🚂",
+    "🚂 NOBODY CALLS ME<br>CHICKEN! 🚂",
+    "🚂 SCIENCE! 🚂",
+    "🚂 FULL STEAM<br>AHEAD, DOC! 🚂",
+  ];
+
+  _bicycleSmashLines = [
+    "🚲 HICHAM DELIVERS<br>THE HIT! 🚲",
+    "🚲 TWO WHEELS OF<br>DESTRUCTION! 🚲",
+    "🚲 PELOTON<br>PILE-UP! 🚲",
+    "🚲 BREAKAWAY<br>SMASH! 🚲",
+    "🚲 TOUR DE FORCE! 🚲",
+    "🚲 MAPLE POWERED<br>CRUSH! 🚲",
+    "🚲 DROPPED FROM<br>THE PACK! 🚲",
+    "🚲 GO LEAFS GO! 🚲",
+    "🚲 SPRINT FINISH<br>KNOCKOUT! 🚲",
+    "🚲 THE ARCHITECT<br>DESTROYS! 🚲",
+  ];
+
+  _ogreSfxPool = [SFX.OGRE_GRUNT_1, SFX.OGRE_GRUNT_2];
+  _playOgreSfx(vol = 0.8) {
+    const clip = this._ogreSfxPool[Math.floor(Math.random() * this._ogreSfxPool.length)];
+    play(clip, vol);
+  }
+
+  _croonerSfxPool = [SFX.CROONER_1, SFX.CROONER_2, SFX.CROONER_3, SFX.CROONER_4, SFX.CROONER_5];
+  _playCroonerSfx(vol = 0.8) {
+    const clip = this._croonerSfxPool[Math.floor(Math.random() * this._croonerSfxPool.length)];
+    play(clip, vol);
+  }
+
+  _ogreSmashLines = [
+    "🧌 OGRE SMASH! 🧌",
+    "🧌 GET OUT OF<br>MY SWAMP! 🧌",
+    "🧌 CLUBBED! 🧌",
+    "🧌 BETTER OUT<br>THAN IN! 🧌",
+    "🧌 ONION<br>LAYERS! 🧌",
+    "🧌 WHAT ARE YE<br>DOING IN MY LANE?! 🧌",
+    "🧌 THIS IS<br>MY ROAD! 🧌",
+    "🧌 OGRES ARE<br>LIKE ONIONS! 🧌",
+    "🧌 FEE FI<br>FO FUM! 🧌",
+    "🧌 DO THE<br>ROAR! 🧌",
+  ];
+
+  _hollywoodSmashLines = [
+    "🌟 LIGHTS, CAMERA,<br>DESTRUCTION! 🌟",
+    "🌟 AND THE OSCAR<br>GOES TO... 🌟",
+    "🌟 THAT'S A WRAP! 🌟",
+    "🌟 STUNT DOUBLE<br>NOT REQUIRED! 🌟",
+    "🌟 BOX OFFICE<br>SMASH HIT! 🌟",
+    "🌟 SCENE<br>STEALER! 🌟",
+    "🌟 STARRING<br>AUBREY! 🌟",
+    "🌟 RED CARPET<br>ROLLOVER! 🌟",
+    "🌟 AAAND CUT! 🌟",
+    "🌟 BLOCKBUSTER! 🌟",
+  ];
+
+  _trexSmashLines = [
+    "🦖 ROOAARRR!! 🦖",
+    "🦖 STOMPED! 🦖",
+    "🦖 CHOMP! 🦖",
+    "🦖 JURASSIC<br>JUSTICE! 🦖",
+    "🦖 EXTINCT! 🦖",
+    "🦖 CLEVER GIRL... 🦖",
+    "🦖 LIFE FINDS<br>A WAY! 🦖",
+    "🦖 MUST GO<br>FASTER! 🦖",
+    "🦖 DINO<br>DAMAGE! 🦖",
+    "🦖 CRETACEOUS<br>CRUNCH! 🦖",
+  ];
+
+  _transformSmoke = [];
+
+  _spawnTransformSmoke() {
+    const pos = this.player.mesh.position;
+    const count = 60;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const velocities = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 3;
+      positions[i * 3 + 1] = Math.random() * 0.5;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 3;
+      velocities[i * 3] = (Math.random() - 0.5) * 2;
+      velocities[i * 3 + 1] = Math.random() * 2 + 1;
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 2;
+    }
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0x888888,
+      size: 0.5,
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false,
+    });
+    const smoke = new THREE.Points(geo, mat);
+    smoke.position.copy(pos);
+    this.scene.add(smoke);
+    this._transformSmoke.push({ points: smoke, velocities, count, age: 0 });
+  }
+
+  _updateTransformSmoke(dt) {
+    for (let i = this._transformSmoke.length - 1; i >= 0; i--) {
+      const s = this._transformSmoke[i];
+      s.age += dt;
+      const p = s.points.geometry.attributes.position;
+      for (let j = 0; j < s.count; j++) {
+        p.array[j * 3] += s.velocities[j * 3] * dt;
+        p.array[j * 3 + 1] += s.velocities[j * 3 + 1] * dt;
+        p.array[j * 3 + 2] += s.velocities[j * 3 + 2] * dt;
+      }
+      p.needsUpdate = true;
+      s.points.material.opacity = Math.max(0, 0.8 - s.age * 0.6);
+      if (s.age > 1.5) {
+        this.scene.remove(s.points);
+        s.points.geometry.dispose();
+        s.points.material.dispose();
+        this._transformSmoke.splice(i, 1);
+      }
+    }
+  }
+
+  _cleanupTransformSmoke() {
+    for (const s of this._transformSmoke) {
+      this.scene.remove(s.points);
+      s.points.geometry.dispose();
+      s.points.material.dispose();
+    }
+    this._transformSmoke = [];
+  }
+
+  _f16BombLines = [
+    "✈️ BOMBS AWAY! ✈️",
+    "✈️ DANGER ZONE! ✈️",
+    "✈️ FOX TWO! ✈️",
+    "✈️ SPLASH ONE! ✈️",
+    "✈️ TALLY HO! ✈️",
+    "✈️ GOOD KILL! ✈️",
+    "✈️ TARGET<br>DESTROYED! ✈️",
+    "✈️ HIGHWAY TO<br>THE DANGER ZONE ✈️",
+  ];
+
+  _bombs = [];
+  _explosions = [];
+  _bombCooldown = 0;
+
+  _dropBomb() {
+    if (this._bombCooldown > 0) return;
+    this._bombCooldown = 0.3;
+    play(SFX.OBSTACLE_HIT, 0.7);
+    const px = this.player.mesh.position.x;
+    const pz = this.player.mesh.position.z;
+    const py = this.player.mesh.position.y;
+
+    if (!this._bombGeoCache) {
+      this._bombGeoCache = new THREE.SphereGeometry(0.12, 4, 4);
+      this._bombMatCache = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 });
+    }
+    const bomb = new THREE.Mesh(this._bombGeoCache, this._bombMatCache);
+    bomb.position.set(px, py - 0.3, pz);
+    this.scene.add(bomb);
+
+    this._bombs.push({ mesh: bomb, vy: -8, age: 0 });
+  }
+
+  _updateBombs(dt) {
+    this._bombCooldown = Math.max(0, this._bombCooldown - dt);
+
+    for (let i = this._bombs.length - 1; i >= 0; i--) {
+      const b = this._bombs[i];
+      b.age += dt;
+      b.vy -= 20 * dt;
+      b.mesh.position.y += b.vy * dt;
+      b.mesh.position.z -= this.worldSpeed * dt * 0.5;
+
+      if (b.mesh.position.y <= 0.1) {
+        this._explodeBomb(b.mesh.position.clone());
+        this.scene.remove(b.mesh);
+        this._bombs.splice(i, 1);
+      } else if (b.age > 5) {
+        this.scene.remove(b.mesh);
+        this._bombs.splice(i, 1);
+      }
+    }
+
+    for (let i = this._explosions.length - 1; i >= 0; i--) {
+      const ex = this._explosions[i];
+      ex.age += dt;
+      const p = ex.points.geometry.attributes.position;
+      const v = ex.velocities;
+      for (let j = 0; j < ex.count; j++) {
+        p.array[j * 3] += v[j * 3] * dt;
+        p.array[j * 3 + 1] += v[j * 3 + 1] * dt;
+        v[j * 3 + 1] -= 9.8 * dt;
+        p.array[j * 3 + 2] += v[j * 3 + 2] * dt;
+      }
+      p.needsUpdate = true;
+      ex.points.material.opacity = Math.max(0, 1 - ex.age * 2.5);
+      if (ex.age > 0.5) {
+        this.scene.remove(ex.points);
+        ex.points.geometry.dispose();
+        ex.points.material.dispose();
+        this._explosions.splice(i, 1);
+      }
+    }
+  }
+
+  _cleanupBombs() {
+    for (const b of this._bombs) this.scene.remove(b.mesh);
+    this._bombs = [];
+    for (const ex of this._explosions) {
+      this.scene.remove(ex.points);
+      ex.points.geometry.dispose();
+      ex.points.material.dispose();
+    }
+    this._explosions = [];
+  }
+
+  _explodeBomb(pos) {
+    play(SFX.OBSTACLE_HIT, 0.9);
+    this.ui.shake();
+    this.shakeUntil = performance.now() + 200;
+    this.shakeAmp = 0.3;
+
+    const count = 20;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const velocities = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      velocities[i * 3] = (Math.random() - 0.5) * 5;
+      velocities[i * 3 + 1] = Math.random() * 4 + 2;
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 5;
+    }
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0xff6600,
+      size: 0.3,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const points = new THREE.Points(geo, mat);
+    points.position.copy(pos);
+    this.scene.add(points);
+    this._explosions.push({ points, velocities, count, age: 0 });
+
+    const blastRadius = 2.5;
+    let hitSomething = false;
+    for (let i = this.spawner.obstacles.length - 1; i >= 0; i--) {
+      const o = this.spawner.obstacles[i];
+      if (!o.active) continue;
+      const dx = o.mesh.position.x - pos.x;
+      const dz = o.mesh.position.z - pos.z;
+      if (dx * dx + dz * dz < blastRadius * blastRadius) {
+        this.spawner.explodeObstacle(o);
+        this.score += 50000;
+        hitSomething = true;
+      }
+    }
+    for (let i = this.spawner.rivals.length - 1; i >= 0; i--) {
+      const r = this.spawner.rivals[i];
+      if (!r.active) continue;
+      const dx = r.mesh.position.x - pos.x;
+      const dz = r.mesh.position.z - pos.z;
+      if (dx * dx + dz * dz < blastRadius * blastRadius) {
+        this.spawner.explodeRival(r);
+        this.score += 50000;
+        hitSomething = true;
+      }
+    }
+    if (hitSomething) {
+      this.ui.showPickupPopup("+50,000");
+      const line = this._f16BombLines[Math.floor(Math.random() * this._f16BombLines.length)];
+      this.ui.showHippoCrush(line);
+    }
   }
 
   _hippoSmashLines = [
@@ -1418,7 +1938,15 @@ export class Game {
     "🇦🇷 ¡ARGENTINA<br>PAPÁ! 🇦🇷",
   ];
 
+  _cheaterPopupAllowed() {
+    const now = performance.now();
+    if (now - this._lastCheaterPopupTs < 400) return false;
+    this._lastCheaterPopupTs = now;
+    return true;
+  }
+
   _onHitObstacle(e) {
+    if (this.player.carType === "f16") return;
     if (this.player.isAirborne) {
       this.spawner.explodeObstacle(e);
       this.ui.setStatus(this._isScaloneta ? "🛹 ¡Saltó por encima!" : "🛹 Jumped right over it!", 1200);
@@ -1431,25 +1959,84 @@ export class Game {
     }
     if (this._isCheater()) {
       this.spawner.explodeObstacle(e);
-      play(SFX.OBSTACLE_HIT, 0.6);
-      this.ui.shake();
-      this.shakeUntil = performance.now() + 100;
-      this.shakeAmp = 0.15;
+      const showPopup = this._cheaterPopupAllowed();
+      if (showPopup) {
+        play(SFX.OBSTACLE_HIT, 0.6);
+        this.ui.shake();
+        this.shakeUntil = performance.now() + 100;
+        this.shakeAmp = 0.15;
+      }
       if (this.player.carType === "hippo") {
-        const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
-        play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
         this.score += 50000;
-        this.ui.showPickupPopup("+50,000");
-        const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
-        this.ui.showHippoCrush(line);
+        if (showPopup) {
+          const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
+          play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
       } else if (this.player.carType === "scaloneta") {
-        play(SFX.HORN_ANDRIUS, 0.6);
         this.score += 50000;
-        this.ui.showPickupPopup("+50.000");
-        const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
-        this.ui.showHippoCrush(line);
+        if (showPopup) {
+          play(SFX.SCALONETA, 0.6);
+          this.ui.showPickupPopup("+50.000");
+          const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "trex") {
+        this.score += 50000;
+        if (showPopup) {
+          play(SFX.OBSTACLE_HIT, 0.7);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._trexSmashLines[Math.floor(Math.random() * this._trexSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "cadillac") {
+        this.score += 50000;
+        if (showPopup) {
+          play(SFX.OBSTACLE_HIT, 0.6);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._hollywoodSmashLines[Math.floor(Math.random() * this._hollywoodSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "ogre") {
+        this.score += 50000;
+        if (showPopup) {
+          this._playOgreSfx(0.8);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "crooner") {
+        this.score += 50000;
+        if (showPopup) {
+          this._playCroonerSfx(0.8);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "timetrain") {
+        this.score += 50000;
+        this._trainHitCount = (this._trainHitCount || 0) + 1;
+        if (showPopup) {
+          const trainSfx = this._trainHitCount === 1 ? SFX.TRAIN_35MPH
+            : this._trainHitCount === 2 ? SFX.TRAIN_45MPH
+            : [SFX.TRAIN_WHISTLE, SFX.TRAIN_WHISTLE_ALT, SFX.TRAIN_EXPLOSION][Math.floor(Math.random() * 3)];
+          play(trainSfx, 0.7);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._timeTrainSmashLines[Math.floor(Math.random() * this._timeTrainSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "bicycle") {
+        this.score += 50000;
+        if (showPopup) {
+          play(SFX.OBSTACLE_HIT, 0.7);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._bicycleSmashLines[Math.floor(Math.random() * this._bicycleSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
       } else {
-        this.ui.setStatus(this._t("Smashed right through it!"), 1200);
+        if (showPopup) this.ui.setStatus(this._t("Smashed right through it!"), 1200);
       }
       return;
     }
@@ -1491,7 +2078,7 @@ export class Game {
       return;
     }
 
-    if (this.quizEnabled && this.remediationsUsed < CONFIG.MAX_REMEDIATIONS) {
+    if (this.quizEnabled && !this._isCheater() && this.remediationsUsed < CONFIG.MAX_REMEDIATIONS) {
       this.recoveryPrompt = true;
       const showTip = !hasSeenRecoveryTip();
       this.ui.showRecovery(true, showTip, () => {
@@ -1502,6 +2089,7 @@ export class Game {
   }
 
   _onHitRival(e) {
+    if (this.player.carType === "f16") return;
     if (this.player.isAirborne) {
       this.spawner.explodeRival(e);
       this.ui.setStatus(this._isScaloneta ? "🛹 ¡Pasó por arriba!" : "🛹 Skated over them!", 1200);
@@ -1514,25 +2102,84 @@ export class Game {
     }
     if (this._isCheater()) {
       this.spawner.explodeRival(e);
-      play(SFX.OBSTACLE_HIT, 0.6);
-      this.ui.shake();
-      this.shakeUntil = performance.now() + 100;
-      this.shakeAmp = 0.15;
+      const showPopup = this._cheaterPopupAllowed();
+      if (showPopup) {
+        play(SFX.OBSTACLE_HIT, 0.6);
+        this.ui.shake();
+        this.shakeUntil = performance.now() + 100;
+        this.shakeAmp = 0.15;
+      }
       if (this.player.carType === "hippo") {
-        const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
-        play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
         this.score += 50000;
-        this.ui.showPickupPopup("+50,000");
-        const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
-        this.ui.showHippoCrush(line);
+        if (showPopup) {
+          const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
+          play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
       } else if (this.player.carType === "scaloneta") {
-        play(SFX.HORN_ANDRIUS, 0.6);
         this.score += 50000;
-        this.ui.showPickupPopup("+50.000");
-        const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
-        this.ui.showHippoCrush(line);
+        if (showPopup) {
+          play(SFX.SCALONETA, 0.6);
+          this.ui.showPickupPopup("+50.000");
+          const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "trex") {
+        this.score += 50000;
+        if (showPopup) {
+          play(SFX.OBSTACLE_HIT, 0.7);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._trexSmashLines[Math.floor(Math.random() * this._trexSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "cadillac") {
+        this.score += 50000;
+        if (showPopup) {
+          play(SFX.OBSTACLE_HIT, 0.6);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._hollywoodSmashLines[Math.floor(Math.random() * this._hollywoodSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "ogre") {
+        this.score += 50000;
+        if (showPopup) {
+          this._playOgreSfx(0.8);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "crooner") {
+        this.score += 50000;
+        if (showPopup) {
+          this._playCroonerSfx(0.8);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "timetrain") {
+        this.score += 50000;
+        this._trainHitCount = (this._trainHitCount || 0) + 1;
+        if (showPopup) {
+          const trainSfx = this._trainHitCount === 1 ? SFX.TRAIN_35MPH
+            : this._trainHitCount === 2 ? SFX.TRAIN_45MPH
+            : [SFX.TRAIN_WHISTLE, SFX.TRAIN_WHISTLE_ALT, SFX.TRAIN_EXPLOSION][Math.floor(Math.random() * 3)];
+          play(trainSfx, 0.7);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._timeTrainSmashLines[Math.floor(Math.random() * this._timeTrainSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
+      } else if (this.player.carType === "bicycle") {
+        this.score += 50000;
+        if (showPopup) {
+          play(SFX.OBSTACLE_HIT, 0.7);
+          this.ui.showPickupPopup("+50,000");
+          const line = this._bicycleSmashLines[Math.floor(Math.random() * this._bicycleSmashLines.length)];
+          this.ui.showHippoCrush(line);
+        }
       } else {
-        this.ui.setStatus(this._t("Plowed right through!"), 1200);
+        if (showPopup) this.ui.setStatus(this._t("Plowed right through!"), 1200);
       }
       return;
     }
@@ -1573,7 +2220,7 @@ export class Game {
       return;
     }
 
-    if (this.quizEnabled && this.remediationsUsed < CONFIG.MAX_REMEDIATIONS) {
+    if (this.quizEnabled && !this._isCheater() && this.remediationsUsed < CONFIG.MAX_REMEDIATIONS) {
       this.recoveryPrompt = true;
       const showTip = !hasSeenRecoveryTip();
       this.ui.showRecovery(true, showTip, () => {
@@ -1667,7 +2314,7 @@ export class Game {
         );
       }
     } else if (t === "BOOST_TOKEN") {
-      if (this.player.carType === "hippo") {
+      if (this._isCheater()) {
         const now = performance.now();
         const stacking = now < this.boostUntil;
         const base = stacking ? this.boostUntil : now;
@@ -1675,9 +2322,13 @@ export class Game {
         this.boostUntil = base + CONFIG.BOOST_DURATION * 1500;
         this._runBoostCount += 1;
         play(SFX.BOOST_WHOOSH, 0.85);
-        this.ui.showHippoCrush("🦛 HIPPO TURBO 🦛");
         this.score += 50000;
         this.ui.showPickupPopup("+50,000");
+      } else if (performance.now() < this.boostUntil) {
+        this.boostUntil += CONFIG.BOOST_EXTEND_ON_PICKUP * 1000;
+        play(SFX.BOOST_WHOOSH, 0.6);
+        this.ui.showPickupPopup(this._t("Boost Extended!"));
+        this.ui.setStatus(this._isScaloneta ? "¡Turbo extendido!" : "Boost extended!", CONFIG.STATUS_MESSAGE_MS);
       } else if (this.quizEnabled) {
         this._openBoostQuiz();
       } else {
@@ -1702,7 +2353,7 @@ export class Game {
   }
 
   _applyPickupSpeedUp(type, count) {
-    this.pickupSpeedMult += 0.15;
+    this.pickupSpeedMult = Math.min(this.pickupSpeedMult + 0.15, CONFIG.MAX_PICKUP_SPEED_MULT);
     const pct = Math.round((this.pickupSpeedMult - 1) * 100);
     this.ui.setStatus(
       this._isScaloneta

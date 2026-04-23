@@ -114,6 +114,15 @@ export class UI {
       lcRankBanner: document.getElementById("lc-rank-banner"),
       lcLbBody: document.getElementById("lc-lb-body"),
       lcLbScroll: document.getElementById("lc-lb-scroll"),
+
+      godzillaHud: document.getElementById("godzilla-hud"),
+      gzTime: document.getElementById("gz-time"),
+      gzScore: document.getElementById("gz-score"),
+      gzCrushed: document.getElementById("gz-crushed"),
+      godzillaScore: document.getElementById("godzilla-score"),
+      gzFinalScore: document.getElementById("gz-final-score"),
+      gzFinalCrushed: document.getElementById("gz-final-crushed"),
+      gzFinalPct: document.getElementById("gz-final-pct"),
     };
 
     this._selectedDriver = "anshul";
@@ -223,9 +232,16 @@ export class UI {
 
     on("btn-touch-pause", () => this.onTouchPause && this.onTouchPause());
 
+    on("btn-hud-info", () => this.onHudInfoOpen && this.onHudInfoOpen());
+    on("btn-hud-close", () => this.onHudInfoClose && this.onHudInfoClose());
+    on("btn-hud-resume", () => this.onHudInfoClose && this.onHudInfoClose());
+    on("btn-mobile-secret", () => this.onMobileSecret && this.onMobileSecret());
+    on("btn-gz-back", () => { this.hideGodzillaScore(); if (this.onMenu) this.onMenu(); });
+
     on("btn-quiz-skip", () => this.onQuizSkip && this.onQuizSkip());
-    on("btn-choose-driver", () => this._showDriverSelect());
-    on("btn-driver-back", () => this._hideDriverSelect());
+    on("btn-choose-driver", () => this._openDriverSelect("main_menu"));
+    on("btn-choose-driver-pause", () => this._openDriverSelect("running"));
+    on("btn-driver-back", () => this._closeDriverSelect());
     on("btn-select-driver", () => this._confirmDriver());
 
     window.addEventListener("keydown", (e) => {
@@ -312,6 +328,9 @@ export class UI {
     this.onUnstick = h.onUnstick;
     this.onBillboardClose = h.onBillboardClose;
     this.onTouchPause = h.onTouchPause;
+    this.onHudInfoOpen = h.onHudInfoOpen;
+    this.onHudInfoClose = h.onHudInfoClose;
+    this.onMobileSecret = h.onMobileSecret;
     this.onLevelSelect = h.onLevelSelect;
     this.onQuizSkip = h.onQuizSkip;
     this.onDriverSelect = h.onDriverSelect;
@@ -695,6 +714,17 @@ export class UI {
 
   showHud(visible) {
     this.el.hud.classList.toggle("hidden", !visible);
+    if (!visible) this.closeMobileHud();
+  }
+
+  openMobileHud() {
+    const left = this.el.hud?.querySelector(".hud-left");
+    if (left) left.classList.add("mobile-open");
+  }
+
+  closeMobileHud() {
+    const left = this.el.hud?.querySelector(".hud-left");
+    if (left) left.classList.remove("mobile-open");
   }
 
   async updateMenuBest(localBest) {
@@ -925,6 +955,34 @@ export class UI {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "🇦🇷 ¡La Scaloneta llegó! 🇦🇷";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
           "¡Campeones del mundo no necesitan leaderboard! Pero qué lindo paseo, papá.";
+      } else if (cheaterType === "f16") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "✈️ Mission Complete, Maverick ✈️";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "You feel the need... the need for speed. But fighter jets can't be on the leaderboard.";
+      } else if (cheaterType === "trex") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🦖 Extinction-Level Finish! 🦖";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "Life found a way... but T-Rex arms can't reach the leaderboard. Those tiny arms!";
+      } else if (cheaterType === "cadillac") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🌟 And The Oscar Goes To... 🌟";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "Darling, you were fabulous! But Hollywood stars don't need leaderboards — they have fans.";
+      } else if (cheaterType === "ogre") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🧌 The Quest Is Complete! 🧌";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "The ogre has conquered the kingdom! But ogres don't do leaderboards — they do swamps.";
+      } else if (cheaterType === "crooner") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🎤 It's Simply Too Good! 🎤";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "You're driving with the Driving Crooner, baby! But I gotta figure out how to make money on this — not leaderboards.";
+      } else if (cheaterType === "timetrain") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🚂 Great Scott! 🚂";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "You made it to the future! But where we're going, we don't need leaderboards.";
+      } else if (cheaterType === "bicycle") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "🚲 Go Leafs Go! 🚲";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "Hicham pedaled his way to victory! The Architect of Clouds conquers on two wheels. No leaderboard though, eh?";
       } else {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "Nice Finish... Cheater";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
@@ -1163,10 +1221,12 @@ export class UI {
     this._toggleMenuButtons(true);
   }
 
-  _showDriverSelect() {
+  _openDriverSelect(returnTo) {
+    this._driverSelectReturnTo = returnTo;
     if (!this.el.driverSelect) return;
     this.el.mainMenu.classList.add("hidden");
     this.el.attractScores.classList.add("hidden");
+    if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
     this.el.driverSelect.classList.remove("hidden");
     this.el.driverDetail.classList.add("hidden");
     this.el.driverCards.classList.remove("compact");
@@ -1174,10 +1234,14 @@ export class UI {
     this._syncSummitDockVisibility();
   }
 
-  _hideDriverSelect() {
+  _closeDriverSelect() {
     this._stopCarPreview();
     if (this.el.driverSelect) this.el.driverSelect.classList.add("hidden");
-    this.el.mainMenu.classList.remove("hidden");
+    if (this._driverSelectReturnTo === "running") {
+      if (this.el.pauseMenu) this.el.pauseMenu.classList.remove("hidden");
+    } else {
+      this.el.mainMenu.classList.remove("hidden");
+    }
     this._syncSummitDockVisibility();
   }
 
@@ -1186,6 +1250,7 @@ export class UI {
     if (carType === "lightcycle") return "Lightcycle";
     if (carType === "delorean") return "DeLorean";
     if (carType === "semi_truck") return "18-Wheeler";
+    if (carType === "bicycle") return "Bicycle";
     return "F1 Racer";
   }
 
@@ -1292,7 +1357,7 @@ export class UI {
     if (!this._pendingDriver) return;
     this._selectedDriver = this._pendingDriver;
     if (this.onDriverSelect) this.onDriverSelect(this._selectedDriver);
-    this._hideDriverSelect();
+    this._closeDriverSelect();
   }
 
   showDriverSelect(visible) {
@@ -1721,5 +1786,48 @@ export class UI {
       ctx.fillStyle = "#0044aa";
       ctx.fillRect(W * 0.61, 20, 12, 3);
     }
+  }
+
+  hideAll() {
+    this.el.mainMenu.classList.add("hidden");
+    this.el.pauseMenu.classList.add("hidden");
+    this.el.gameOver.classList.add("hidden");
+    this.el.quiz.classList.add("hidden");
+    this.el.hud.classList.add("hidden");
+    this.el.levelSelect.classList.add("hidden");
+    this.el.driverSelect.classList.add("hidden");
+    if (this.el.levelComplete) this.el.levelComplete.classList.add("hidden");
+    if (this.el.billboardOverlay) this.el.billboardOverlay.classList.add("hidden");
+    if (this.el.recovery) this.el.recovery.classList.add("hidden");
+    if (this.el.attractScores) this.el.attractScores.classList.add("hidden");
+    this.closeMobileHud();
+  }
+
+  showGodzillaHud(visible) {
+    if (this.el.godzillaHud) this.el.godzillaHud.classList.toggle("hidden", !visible);
+  }
+
+  updateGodzillaHud(timeLeft, score, crushed) {
+    if (this.el.gzTime) this.el.gzTime.textContent = timeLeft < 0 ? "⚔" : Math.ceil(timeLeft);
+    if (this.el.gzScore) this.el.gzScore.textContent = score;
+    if (this.el.gzCrushed) this.el.gzCrushed.textContent = crushed;
+  }
+
+  showGodzillaScore(score, crushed, total, bossResult) {
+    const pct = total > 0 ? Math.round((crushed / total) * 100) : 0;
+    if (this.el.gzFinalScore) this.el.gzFinalScore.textContent = score;
+    if (this.el.gzFinalCrushed) this.el.gzFinalCrushed.textContent = crushed;
+    if (this.el.gzFinalPct) this.el.gzFinalPct.textContent = pct + "%";
+    const titleEl = this.el.godzillaScore?.querySelector(".gz-score-title");
+    if (titleEl) {
+      if (bossResult === "victory") titleEl.textContent = "🏆 MECHA DEFEATED! 🏆";
+      else if (bossResult === "defeat") titleEl.textContent = "💀 MECHA WINS... 💀";
+      else titleEl.textContent = "🦎 RAMPAGE OVER 🦎";
+    }
+    if (this.el.godzillaScore) this.el.godzillaScore.classList.remove("hidden");
+  }
+
+  hideGodzillaScore() {
+    if (this.el.godzillaScore) this.el.godzillaScore.classList.add("hidden");
   }
 }

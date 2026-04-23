@@ -179,9 +179,9 @@
     "id": 23,
     "category": "platform",
     "prompt": "You can install Red Hat Ansible Automation Platform on RHEL and what other platform?",
-    "options": ["Ubuntu", "OpenShift", "AWS Lambda", "Windows Server"],
+    "options": ["Ubuntu", "Red Hat OpenShift", "AWS Lambda", "Windows Server"],
     "answer": 1,
-    "explanation": "Ansible Automation Platform can be installed on RHEL or deployed on OpenShift."
+    "explanation": "Ansible Automation Platform can be installed on RHEL or deployed on Red Hat OpenShift."
   },
   {
     "id": 24,

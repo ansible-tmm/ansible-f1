@@ -39,13 +39,20 @@ Health starts at 100. Four unshielded hits ends the run. Race to the finish line
 
 ## Secret Modes
 
-Some drivers have hidden alternate vehicles that transform the gameplay. Type the secret word during a race while playing as the correct driver to unlock them.
+Some drivers have hidden alternate vehicles that transform the gameplay. Type the secret word during a race while playing as the correct driver to unlock them. A poof of smoke appears as the car transforms. Secret modes reset when you return to the main menu — each player has to unlock them on their own.
 
 | Driver | Secret Word | Unlocks | Effect |
 |--------|-------------|---------|--------|
 | Nuno Martins | `hippo` | 🦛 Hippo Mode | Indestructible hippo with a rider. Crushes everything for +50,000 pts each. Ridiculous smash messages. Scores don't count on the leaderboard. Horn plays hippo sound. Victory dance at the end. |
 | Andrius Benokraitis | `chunky` | 🚛 Chunky Mode | 18-wheeler semi truck. Indestructible. Plows through everything. Scores don't count on the leaderboard. Custom horn sound. |
 | Matthew Packer | `matt` | 🛹 Skate Mode | Skateboard rider with backwards cap and flannel. Click to jump — while airborne you're invincible and pass through obstacles. |
+| Leo Gallego | `scaloneta` | 🇦🇷 La Scaloneta | Argentina flag-themed Mercedes-Benz LO 1114 bus. Indestructible. Crushes everything for +50,000 pts with Argentine catchphrases. Entire UI flips to Spanish. Custom sound effect. Scores don't count on the leaderboard. |
+| Alex Walczyk | `topgun` | ✈️ Top Gun Mode | F-16 fighter jet that hovers above the track. Flies over all obstacles and cars. Click to drop bombs that explode on impact — anything caught in the blast radius is destroyed for +50,000 pts with Top Gun callouts. Scores don't count on the leaderboard. |
+| Anshul Behl | `leavemealone` | 🦖 T-Rex Mode | A T-Rex stomps down the road with animated legs, swaying tail, and snapping jaw. Indestructible — smashes everything for +50,000 pts with Jurassic Park-themed callouts. Scores don't count on the leaderboard. |
+| Aubrey Trotter | `hollywood` | 🌟 Hollywood Mode | Pink 1959 Cadillac Eldorado convertible with tail fins and whitewall tires. Road turns into a rainbow. Indestructible — smashes everything for +50,000 pts with Hollywood/movie-themed callouts. Scores don't count on the leaderboard. |
+| Remy Duplantis | `quest` | 🧌 Ogre Mode | A hulking green ogre with a spiked club, tusks, and loincloth — despite Remy's hatred of all things fantasy. Skyline transforms into a medieval castle. Indestructible — smashes everything for +50,000 pts with ogre/Shrek-themed callouts. Scores don't count on the leaderboard. |
+| Justin Braun | `crooner` | 🎤 Driving Crooner | A dark town-car sedan with the famous fedora & cigar window decals from *I Think You Should Leave*. The Driving Crooner figure sits inside wearing a fedora. Indestructible — smashes everything for +50,000 pts with ITYSL quotes ("I gotta make money on this!", "It's simply too good!"). Scores don't count on the leaderboard. |
+| Roger Lopez | `crossfit` | 🚂 Time Train Mode | The Jules Verne time-traveling locomotive from *Back to the Future Part III*. Hovers above the track with blue glow pads, flux capacitor on the smokebox, Mr. Fusion on the cab, time circuit displays, and a steam-puffing smokestack. Indestructible — smashes everything for +50,000 pts with BTTF quotes. Scores don't count on the leaderboard. |
 
 ## Special Vehicle Abilities
 
@@ -57,6 +64,13 @@ Some vehicles have unique abilities triggered by clicking (instead of honking):
 | **Skateboard** (Matt, after unlock) | Jump — launches into the air, invincible while airborne. |
 | **Hippo** (Nuno, after unlock) | Plays the hippo mode sound. |
 | **Semi Truck** (Andrius, after unlock) | Custom Andrius horn. |
+| **La Scaloneta** (Leo, after unlock) | Plays the scaloneta sound. |
+| **F-16** (Alex, after unlock) | Drop bomb — bomb falls to the ground and explodes, destroying anything in the blast radius. |
+| **T-Rex** (Anshul, after unlock) | Stomps everything — indestructible dino rampage. |
+| **Cadillac** (Aubrey, after unlock) | Cruises through everything — rainbow road, Hollywood smash hits. |
+| **Ogre** (Remy, after unlock) | Clubs everything — castle skyline, ogre smash hits. |
+| **Driving Crooner** (Justin, after unlock) | Plows through everything — ITYSL quotes on every smash. |
+| **Time Train** (Roger, after unlock) | Hover-train smashes everything — BTTF quotes, DeLorean SFX on every hit. |
 
 ## Nuno's Pickup Truck
 

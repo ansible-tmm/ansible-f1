@@ -7,11 +7,13 @@ export const CONFIG = {
   LANE_INDEX: { LEFT: 0, CENTER: 1, RIGHT: 2 },
 
   // Movement
-  BASE_SPEED: 31,
+  BASE_SPEED: 28.5,
   /** Units per second²-ish scaling for forward speed over time */
-  SPEED_RAMP: 0.161,
+  SPEED_RAMP: 0.145,
   /** Max multiplier on base speed from ramp + boosts */
   MAX_SPEED_MULT: 2.4,
+  /** Pickup speed stacking cap (1.75 = max +75%) */
+  MAX_PICKUP_SPEED_MULT: 1.75,
   LANE_LERP: 8,
 
   // Player hitbox (forgiving, slightly smaller than mesh)
@@ -93,7 +95,7 @@ export const CONFIG = {
   BUS_DAMAGE: 35,
 
   // Level completion
-  LEVEL_DURATION: 75,
+  LEVEL_DURATION: 60,
 
   // UI
   STATUS_MESSAGE_MS: 2200,

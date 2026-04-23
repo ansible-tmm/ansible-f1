@@ -44,7 +44,13 @@ export function play(url, volume = 1) {
   const c = getContext();
   if (c.state === "suspended") c.resume();
   const buf = buffers[url];
-  if (!buf) return;
+  if (!buf) {
+    const el = new Audio(url);
+    el.volume = volume;
+    el.play().catch(() => {});
+    loadBuffer(url).catch(() => {});
+    return;
+  }
   const src = c.createBufferSource();
   src.buffer = buf;
   const gain = c.createGain();
@@ -92,6 +98,14 @@ export function startBgm(url, volume = 0.1) {
   _bgmEl.loop = true;
   _bgmEl.volume = _musicMuted ? 0 : volume;
   _bgmEl.play().catch(() => {});
+}
+
+export function pauseBgm() {
+  if (_bgmEl && !_bgmEl.paused) _bgmEl.pause();
+}
+
+export function resumeBgm() {
+  if (_bgmEl && _bgmEl.paused && !_musicMuted) _bgmEl.play().catch(() => {});
 }
 
 // --- Mute toggles ---
