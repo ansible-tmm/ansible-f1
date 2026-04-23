@@ -675,12 +675,13 @@ export class Game {
 
     const pos = bb.position;
     const faceDir = pos.x < 0 ? 1 : -1;
+    const faceY = bb.userData.faceCenterY ?? 7.5;
     this._bbTargetPos.set(
-      pos.x + faceDir * 4,
-      pos.y + 8,
-      pos.z + 10
+      pos.x + faceDir * 5.5,
+      pos.y + faceY + 1.4,
+      pos.z + 11
     );
-    this._bbTargetLook.set(pos.x, pos.y + 7.5, pos.z);
+    this._bbTargetLook.set(pos.x, pos.y + faceY, pos.z);
     this._bbCurrentLook.set(
       this.camera.position.x * 0.2,
       1.2,

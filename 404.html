@@ -88,9 +88,7 @@
         <div class="hud-theme-strip" aria-label="Current track">
           <div id="hud-level-name" class="hud-theme-title">AIOps</div>
         </div>
-        <button type="button" id="btn-hud-info" class="hud-info-toggle" title="Show info">ℹ</button>
         <div class="hud-left">
-          <button type="button" id="btn-hud-close" class="hud-close-btn" title="Close">✕</button>
           <div class="hud-stats">
             <div class="hud-stat-block">
               <div class="hud-health-row">
@@ -190,7 +188,6 @@
         </div>
         <div id="hud-status" class="hud-status"></div>
         <button type="button" id="btn-touch-pause" class="touch-pause" title="Pause">&#10074;&#10074;</button>
-        <button type="button" id="btn-mobile-secret" class="mobile-secret-btn" title="Secret">★</button>
       </div>
 
       <div id="attract-scores" class="attract-scores hidden">
@@ -243,80 +240,6 @@
         </ul>
       </div>
 
-      <div id="tutorial-overlay" class="overlay tutorial-overlay hidden" aria-hidden="true">
-        <div class="tutorial-panel">
-          <p class="eyebrow">Before you start</p>
-          <h2 class="tutorial-title">How to play</h2>
-          <div class="tutorial-scroll">
-            <section class="tutorial-section">
-              <h3>Goal</h3>
-              <p>
-                Survive the run, keep <strong>Health</strong> above zero, and push your
-                <strong>Score</strong> as high as you can. Each level ends at the
-                <strong>finish line</strong>—get there in one piece to see
-                <em>Level complete</em> and save a run to the leaderboard.
-              </p>
-            </section>
-            <section class="tutorial-section">
-              <h3>Steering &amp; speed</h3>
-              <ul class="tutorial-list">
-                <li><strong>Keyboard:</strong> <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> to change lanes.</li>
-                <li><strong>Boost:</strong> <kbd>W</kbd> or <kbd>↑</kbd> for a burst (watch the cooldown bar).</li>
-                <li><strong>Brake:</strong> <kbd>S</kbd> or <kbd>↓</kbd> to slow down when you need room.</li>
-                <li>
-                  <strong>Touch:</strong> swipe left/right to lane-change; quick swipe up activates boost; tap
-                  left/right halves of the screen to move.
-                </li>
-              </ul>
-            </section>
-            <section class="tutorial-section">
-              <h3>Things on the road</h3>
-              <ul class="tutorial-list">
-                <li><strong>Outage</strong> &amp; <strong>rival cars</strong> — hazards; dodge them or lose health.</li>
-                <li><strong>Playbook</strong> — score pickup (+100).</li>
-                <li><strong>Collection</strong> — bigger score pickup (+150).</li>
-                <li><strong>Shield</strong> — absorbs the next hit.</li>
-                <li><strong>Boost token</strong> — triggers a speed quiz; answer to fuel your boost.</li>
-                <li>
-                  <strong>Automation Flow</strong> — three correct quiz answers in a row unlocks a window of bonus
-                  score and pickup magnet (see the HUD “Flow” pips).
-                </li>
-              </ul>
-            </section>
-            <section class="tutorial-section">
-              <h3>Billboards = arcade side quests</h3>
-              <p>
-                Each track has <strong>three billboards</strong> along the sides. When your cursor shows you can
-                interact, <strong>click</strong> to open an embedded demo (or a “coming soon” card). The first time you
-                visit each billboard in a run you earn <strong>+500 Interactive Experience</strong> points—great for your
-                score and for exploring partner demos.
-              </p>
-            </section>
-            <section class="tutorial-section">
-              <h3>Quizzes &amp; recovery</h3>
-              <p>
-                Wrong answers and hard hits can trigger <strong>remediation</strong> prompts—answer to restore a bit of
-                health. Use the HUD <strong>Quiz mode</strong> toggle if you want quiz-driven boosts on or off for a
-                calmer ride.
-              </p>
-            </section>
-            <section class="tutorial-section tutorial-spoiler">
-              <h3>Hidden extras</h3>
-              <p>
-                Certain <strong>drivers</strong> react to secret keywords typed while you race (alternate vehicles and
-                surprises). The <strong>DeLorean</strong> can fire the <strong>Flux Capacitor</strong> when you
-                <strong>click your car</strong>—after cooldown—for a cinematic speed burst. Part of the fun is
-                discovering the rest.
-              </p>
-            </section>
-          </div>
-          <div class="tutorial-actions">
-            <button type="button" id="btn-tutorial-back" class="btn">Back</button>
-            <button type="button" id="btn-tutorial-start" class="btn primary">Let's go!</button>
-          </div>
-        </div>
-      </div>
-
       <div id="driver-select" class="overlay panel hidden">
         <h2 class="driver-select-title">Choose Your Driver</h2>
         <p class="driver-select-hint">← → to browse · Enter to select</p>
@@ -342,7 +265,6 @@
         <h2>Paused</h2>
         <button type="button" id="btn-resume" class="btn primary">Resume</button>
         <button type="button" id="btn-restart-pause" class="btn">Restart Run</button>
-        <button type="button" id="btn-choose-driver-pause" class="btn">Choose Driver</button>
         <button type="button" id="btn-choose-level-pause" class="btn">Choose Level</button>
         <button type="button" id="btn-menu-pause" class="btn">Main Menu</button>
         <p class="hint">Esc to resume</p>
@@ -532,28 +454,6 @@
           </button>
         </div>
         <button type="button" id="btn-level-back" class="btn" style="margin-top:1rem">Back</button>
-      </div>
-
-      <!-- Godzilla Mode HUD -->
-      <div id="godzilla-hud" class="godzilla-hud hidden" aria-hidden="true">
-        <div class="gz-title">🦎 GODZILLA MODE 🦎</div>
-        <div class="gz-stats">
-          <div class="gz-stat"><span class="gz-label">TIME</span><span id="gz-time" class="gz-value">60</span></div>
-          <div class="gz-stat"><span class="gz-label">SCORE</span><span id="gz-score" class="gz-value">0</span></div>
-          <div class="gz-stat"><span class="gz-label">CRUSHED</span><span id="gz-crushed" class="gz-value">0</span></div>
-        </div>
-        <div class="gz-hint">WASD to move &bull; Drag to look &bull; Click to breathe fire!</div>
-      </div>
-
-      <!-- Godzilla Score Summary -->
-      <div id="godzilla-score" class="overlay panel hidden">
-        <h2 class="gz-score-title">🦎 RAMPAGE OVER 🦎</h2>
-        <div class="gz-score-grid">
-          <div class="gz-score-row"><span>Score</span><strong id="gz-final-score">0</strong></div>
-          <div class="gz-score-row"><span>Buildings Crushed</span><strong id="gz-final-crushed">0</strong></div>
-          <div class="gz-score-row"><span>Destruction</span><strong id="gz-final-pct">0%</strong></div>
-        </div>
-        <button type="button" id="btn-gz-back" class="btn" style="margin-top:1.5rem">Back to Menu</button>
       </div>
 
       <div id="debug-panel" class="debug-panel">

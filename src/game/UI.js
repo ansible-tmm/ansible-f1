@@ -1,7 +1,7 @@
 import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS } from "../utils/storage.js";
 import { fetchGlobalLeaderboard } from "../utils/firebase.js";
 import * as THREE from "three";
-import { LEVELS, DRIVERS } from "../data/config.js";
+import { LEVELS, DRIVERS, getSummitBoothThemeUrl } from "../data/config.js";
 import { Player } from "./Player.js";
 
 /**
@@ -98,6 +98,8 @@ export class UI {
       driverDetailOrigin: document.getElementById("driver-detail-origin"),
       driverDetailBio: document.getElementById("driver-detail-bio"),
 
+      tutorialOverlay: document.getElementById("tutorial-overlay"),
+
       levelComplete: document.getElementById("level-complete"),
       lcTitle: document.getElementById("lc-title"),
       lcMessage: document.getElementById("lc-message"),
@@ -130,9 +132,25 @@ export class UI {
     this._quizCountdownId = null;
     this._quizAutoTimer = null;
     this._levelSelectReturnTo = "main_menu";
+    this._summitLinkLevelId = "A";
+    this._scaloniHud = false;
     this._populateCountrySelect();
     this._bindButtons();
+    this._syncLevelCardLabels();
     this._drawLevelPreviews();
+    this._syncSummitDockVisibility();
+  }
+
+  _syncLevelCardLabels() {
+    document.querySelectorAll(".level-card").forEach((card) => {
+      const id = card.dataset.level;
+      const lvl = LEVELS[id];
+      if (!lvl) return;
+      const label = card.querySelector(".level-card-label");
+      const sub = card.querySelector(".level-card-sub");
+      if (label) label.textContent = lvl.name;
+      if (sub) sub.textContent = lvl.subtitle;
+    });
   }
 
   _populateCountrySelect() {
@@ -161,7 +179,9 @@ export class UI {
       const b = document.getElementById(id);
       if (b) b.addEventListener("click", fn);
     };
-    on("btn-start", () => this.onStart && this.onStart());
+    on("btn-start", () => this._openTutorial());
+    on("btn-tutorial-back", () => this._closeTutorialToMenu());
+    on("btn-tutorial-start", () => this._startFromTutorial());
     on("btn-highscores", () => this._showMenuLeaderboard());
     on("btn-lb-back", () => this._hideMenuLeaderboard());
     on("btn-achievements", () => this._showMenuAchievements());
@@ -195,6 +215,13 @@ export class UI {
     }
 
     document.addEventListener("keydown", (e) => {
+      if (e.code === "Escape" && this.el.tutorialOverlay &&
+          !this.el.tutorialOverlay.classList.contains("hidden")) {
+        e.preventDefault();
+        e.stopPropagation();
+        this._closeTutorialToMenu();
+        return;
+      }
       if (e.code === "Escape" && this.el.billboardOverlay &&
           !this.el.billboardOverlay.classList.contains("hidden")) {
         e.preventDefault();
@@ -316,13 +343,54 @@ export class UI {
       this._menuIdx = 0;
       this._updateMenuFocus();
     }
+    this._syncSummitDockVisibility();
+  }
+
+  _openTutorial() {
+    if (!this.el.tutorialOverlay || !this.el.mainMenu) return;
+    this.el.mainMenu.classList.add("hidden");
+    this.el.tutorialOverlay.classList.remove("hidden");
+    this.el.tutorialOverlay.setAttribute("aria-hidden", "false");
+    this._syncSummitDockVisibility();
+    const startBtn = document.getElementById("btn-tutorial-start");
+    if (startBtn) startBtn.focus();
+  }
+
+  _closeTutorialToMenu() {
+    if (!this.el.tutorialOverlay || !this.el.mainMenu) return;
+    this.el.tutorialOverlay.classList.add("hidden");
+    this.el.tutorialOverlay.setAttribute("aria-hidden", "true");
+    this.el.mainMenu.classList.remove("hidden");
+    this._menuIdx = 0;
+    this._updateMenuFocus();
+    const start = document.getElementById("btn-start");
+    if (start) start.focus();
+    this._syncSummitDockVisibility();
+  }
+
+  _startFromTutorial() {
+    if (!this.el.tutorialOverlay) return;
+    this.el.tutorialOverlay.classList.add("hidden");
+    this.el.tutorialOverlay.setAttribute("aria-hidden", "true");
+    if (this.onStart) this.onStart();
+  }
+
+  /**
+   * Bottom-center Summit booth button: same “menu” state as keyboard nav (_isMainMenuActive).
+   */
+  _syncSummitDockVisibility() {
+    const dock = document.getElementById("summit-booth-back-wrap");
+    if (!dock) return;
+    const show = this._isMainMenuActive();
+    dock.classList.toggle("hidden", !show);
   }
 
   _isMainMenuActive() {
+    if (!this.el.mainMenu) return false;
     const lb = document.getElementById("menu-leaderboard");
     return !this.el.mainMenu.classList.contains("hidden")
-      && this.el.driverSelect.classList.contains("hidden")
-      && this.el.levelSelect.classList.contains("hidden")
+      && (!this.el.driverSelect || this.el.driverSelect.classList.contains("hidden"))
+      && (!this.el.levelSelect || this.el.levelSelect.classList.contains("hidden"))
       && (!lb || lb.classList.contains("hidden"))
       && (!this.el.menuAchievements || this.el.menuAchievements.classList.contains("hidden"));
   }
@@ -369,6 +437,7 @@ export class UI {
       this.el.mainMenu.classList.remove("hidden");
       this.el.attractScores.classList.add("hidden");
     }
+    this._syncSummitDockVisibility();
   }
 
   showPause(visible) {
@@ -1162,6 +1231,7 @@ export class UI {
     this.el.driverDetail.classList.add("hidden");
     this.el.driverCards.classList.remove("compact");
     this._renderDriverCards();
+    this._syncSummitDockVisibility();
   }
 
   _closeDriverSelect() {
@@ -1172,6 +1242,7 @@ export class UI {
     } else {
       this.el.mainMenu.classList.remove("hidden");
     }
+    this._syncSummitDockVisibility();
   }
 
   _carLabel(carType) {
@@ -1305,11 +1376,18 @@ export class UI {
   }
 
   _toggleMenuButtons(visible) {
-    const ids = ["btn-start", "btn-choose-driver", "btn-choose-level-menu", "btn-highscores", "btn-achievements"];
+    const ids = [
+      "btn-start",
+      "btn-choose-driver",
+      "btn-choose-level-menu",
+      "btn-highscores",
+      "btn-achievements",
+    ];
     for (const id of ids) {
       const el = document.getElementById(id);
       if (el) el.classList.toggle("hidden", !visible);
     }
+    this._syncSummitDockVisibility();
   }
 
   // --- Level select ---
@@ -1321,6 +1399,7 @@ export class UI {
   }
 
   setScalonetaHud(on) {
+    this._scaloniHud = on;
     const _swap = (sel, en, es) => {
       const el = document.querySelector(sel);
       if (el) el.textContent = on ? es : en;
@@ -1497,6 +1576,7 @@ export class UI {
     _swap("#btn-choose-level-lc", "Choose Level", "Elegir nivel");
     _swap("#btn-menu-go", "Back to Menu", "Volver al men\u00fa");
     _swap("#btn-menu-lc", "Back to Menu", "Volver al men\u00fa");
+    this._refreshSummitBoothLink();
   }
 
   setActiveLevel(levelId) {
@@ -1507,6 +1587,26 @@ export class UI {
       const lvl = LEVELS[levelId];
       this.el.hudLevelName.textContent = lvl && lvl.name ? lvl.name : `Level ${levelId}`;
     }
+    this._summitLinkLevelId = levelId;
+    this._refreshSummitBoothLink();
+  }
+
+  _refreshSummitBoothLink() {
+    const link = document.getElementById("summit-booth-back");
+    const wrap = document.getElementById("summit-booth-back-wrap");
+    const lead = document.getElementById("summit-booth-lead");
+    if (!link || !wrap || !lead) return;
+    const id = this._summitLinkLevelId;
+    const lvl = LEVELS[id];
+    const url = getSummitBoothThemeUrl(id);
+    if (!url || !lvl) return;
+    link.href = url;
+    lead.textContent = this._scaloniHud
+      ? "Ver este tema en el sitio de Summit booth."
+      : "View this theme on the Summit booth site.";
+    link.textContent = this._scaloniHud
+      ? `Stand Summit — ${lvl.name}`
+      : `Summit booth — ${lvl.name}`;
   }
 
   _openLevelSelect(returnTo) {
@@ -1516,6 +1616,7 @@ export class UI {
     if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
     if (this.el.levelComplete) this.el.levelComplete.classList.add("hidden");
     this.showLevelSelect(true);
+    this._syncSummitDockVisibility();
   }
 
   _closeLevelSelect() {
@@ -1529,6 +1630,7 @@ export class UI {
     } else if (this._levelSelectReturnTo === "running") {
       if (this.el.pauseMenu) this.el.pauseMenu.classList.remove("hidden");
     }
+    this._syncSummitDockVisibility();
   }
 
   _drawLevelPreviews() {

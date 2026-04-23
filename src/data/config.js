@@ -226,6 +226,8 @@ export const PICKUP_TYPES = [
 export const LEVELS = {
   A: {
     id: "A",
+    /** URL segment for GitHub Pages (must match index.html & themePath slugs) */
+    pathSegment: "AIOps",
     name: "AIOps",
     subtitle: "Tame the Alert Storm",
     road:     0x2a2c38,
@@ -268,8 +270,9 @@ export const LEVELS = {
   },
   B: {
     id: "B",
-    name: "Level B",
-    subtitle: "Alpine Rally",
+    pathSegment: "Workflows",
+    name: "Workflow orchestration",
+    subtitle: "Automation & orchestration",
     road:     0x555960,
     roadEmissive: 0x0a0a0c,
     edge:     0x446633,
@@ -290,8 +293,9 @@ export const LEVELS = {
   },
   C: {
     id: "C",
-    name: "Level C",
-    subtitle: "Desert Run",
+    pathSegment: "Developer-Experience",
+    name: "Developer experience",
+    subtitle: "Ship automation faster",
     road:     0x8b7355,
     roadEmissive: 0x1a1208,
     edge:     0xc4a84a,
@@ -312,8 +316,9 @@ export const LEVELS = {
   },
   D: {
     id: "D",
-    name: "Level D",
-    subtitle: "Bayou Swamp",
+    pathSegment: "Policy-and-governance",
+    name: "Governance & compliance",
+    subtitle: "Compliance at speed",
     road:     0x3a3828,
     roadEmissive: 0x0a0a04,
     edge:     0x4a5530,
@@ -334,8 +339,9 @@ export const LEVELS = {
   },
   E: {
     id: "E",
-    name: "Level E",
-    subtitle: "Arctic Freeze",
+    pathSegment: "Infrastructure-and-network",
+    name: "Network & infrastructure",
+    subtitle: "Day 2 at machine speed",
     road:     0x667788,
     roadEmissive: 0x0a0c10,
     edge:     0x8899aa,
@@ -356,8 +362,9 @@ export const LEVELS = {
   },
   F: {
     id: "F",
-    name: "Level F",
-    subtitle: "Ocean Drive",
+    pathSegment: "AAP-on-cloud",
+    name: "Cloud automation",
+    subtitle: "Automate across clouds",
     road:     0x445566,
     roadEmissive: 0x060810,
     edge:     0x3388aa,
@@ -378,8 +385,9 @@ export const LEVELS = {
   },
   G: {
     id: "G",
-    name: "Level G",
-    subtitle: "Pacific Coast",
+    pathSegment: "Metrics-and-telemetry",
+    name: "Automation ROI",
+    subtitle: "Visibility for operators",
     road:     0x555555,
     roadEmissive: 0x080808,
     edge:     0xcc8844,
@@ -394,15 +402,22 @@ export const LEVELS = {
     music: "./assets/audio/bgm-coast.m4a",
     curve: { amplitude: 5, frequency: 0.018 },
     billboards: [
-      { id: "demo19", label: "Demo 19", accent: 0xff8822 },
+      {
+        id: "demo19",
+        label: "Ansible Automation Dashboard Installation",
+        accent: 0xff8822,
+        embed: "https://interact.redhat.com/share/rRlctHhxxxojPuls1oui",
+        embedTitle: "Ansible Automation Dashboard Installation",
+      },
       { id: "demo20", label: "Demo 20", accent: 0xffcc44 },
       { id: "demo21", label: "Demo 21", accent: 0x44aacc },
     ],
   },
   H: {
     id: "H",
-    name: "Level H",
-    subtitle: "Durham, NC",
+    pathSegment: "AAP-101",
+    name: "Red Hat Ansible 101",
+    subtitle: "Operator / ops quickstart",
     road:     0x2a2a30,
     roadEmissive: 0x040408,
     edge:     0x1a1a2e,
@@ -422,3 +437,11 @@ export const LEVELS = {
     ],
   },
 };
+
+/** Summit Booth Themes site (paired booth pages — keep in sync with summit-booth-themes repo) */
+export const SUMMIT_BOOTH_BASE = "https://abwalczyk.github.io/summit-booth-themes";
+
+export function getSummitBoothThemeUrl(levelId) {
+  const seg = LEVELS[levelId]?.pathSegment;
+  return seg ? `${SUMMIT_BOOTH_BASE}/${seg}/` : null;
+}
