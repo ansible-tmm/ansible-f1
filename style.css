@@ -857,6 +857,112 @@ body {
   display: none;
 }
 
+.tutorial-overlay {
+  z-index: 7;
+}
+
+.tutorial-panel {
+  width: min(38rem, 94vw);
+  max-height: min(88vh, 760px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  padding: 0.5rem 0 0;
+}
+
+.tutorial-title {
+  font-family: "Press Start 2P", monospace;
+  font-size: clamp(0.75rem, 2.2vw, 0.95rem);
+  line-height: 1.45;
+  margin: 0 0 0.75rem;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(0, 255, 204, 0.4);
+  text-align: center;
+}
+
+.tutorial-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 0.25rem 0.75rem 0;
+  margin-right: -0.25rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.tutorial-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.tutorial-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 204, 0.25);
+  border-radius: 4px;
+}
+
+.tutorial-section {
+  margin-bottom: 1rem;
+}
+
+.tutorial-section:last-child {
+  margin-bottom: 0.35rem;
+}
+
+.tutorial-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--neon);
+  font-weight: 700;
+}
+
+.tutorial-section p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tutorial-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.tutorial-list li {
+  margin-bottom: 0.35rem;
+}
+
+.tutorial-list li:last-child {
+  margin-bottom: 0;
+}
+
+.tutorial-scroll kbd {
+  display: inline-block;
+  padding: 0.1em 0.35em;
+  font-size: 0.72em;
+  font-family: inherit;
+  border: 1px solid rgba(0, 255, 204, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 20, 40, 0.6);
+  color: var(--neon);
+}
+
+.tutorial-spoiler {
+  border-left: 3px solid rgba(255, 0, 170, 0.55);
+  padding-left: 0.65rem;
+}
+
+.tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+  padding: 0.85rem 0 0.25rem;
+  border-top: 1px solid rgba(0, 255, 204, 0.12);
+  flex-shrink: 0;
+}
+
 .panel {
   text-align: center;
   max-width: 520px;
@@ -893,6 +999,63 @@ body {
   margin-bottom: 1.25rem;
   font-size: 0.95rem;
   color: #ffd54a;
+}
+
+/* Summit booth link — fixed bottom center; body-level so it paints above #game-root overlays */
+.summit-booth-dock {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(0.75rem, 3.5vh, 2rem);
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(92vw, 36rem);
+  pointer-events: auto;
+  text-align: center;
+}
+
+.summit-booth-dock.hidden {
+  display: none;
+}
+
+.summit-booth-dock-lead {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(0.8rem, 2.2vw, 0.95rem);
+  color: rgba(232, 247, 255, 0.88);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+}
+
+.summit-booth-dock-btn {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+  line-height: 1.35;
+  color: #fff;
+  background: #ee0000;
+  text-decoration: none;
+  text-align: center;
+  padding: 14px 22px;
+  border-radius: 9px;
+  border: 1px solid #c00;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.summit-booth-dock-btn:hover {
+  background: #cc0000;
+  color: #fff;
+}
+
+.summit-booth-dock-btn:focus-visible {
+  outline: 2px solid #06c;
+  outline-offset: 3px;
 }
 
 .help {
@@ -1831,14 +1994,33 @@ body {
   font-style: italic;
 }
 
-/* HUD level name + choose level button */
-.hud-level-name {
+/* Current theme — top center, prominent during play */
+.hud-theme-strip {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  text-align: center;
+  max-width: min(94vw, 620px);
+  padding: 0 0.5rem;
+  pointer-events: none;
+}
+
+.hud-theme-title {
   font-family: "Orbitron", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: rgba(0, 255, 204, 0.8);
-  margin-top: 0.6rem;
-  letter-spacing: 0.05em;
+  font-size: clamp(0.88rem, 3.8vw, 1.55rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  color: #f0f8ff;
+  text-shadow:
+    0 0 20px rgba(0, 255, 204, 0.5),
+    0 0 40px rgba(0, 255, 204, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.85);
+  margin: 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid rgba(0, 255, 204, 0.45);
 }
 
 /* Quiz countdown */
