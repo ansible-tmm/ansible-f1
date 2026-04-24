@@ -19,7 +19,8 @@ THEMES=(
 
 for d in "${THEMES[@]}"; do
   mkdir -p "$d"
-  cp -f index.html "$d/index.html"
+  rm -f "$d/index.html"
+  cp index.html "$d/index.html"
 done
 
 cp -f index.html 404.html
