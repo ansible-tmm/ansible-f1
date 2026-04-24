@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CONFIG, LEVELS, DRIVERS } from "../data/config.js";
+import { CONFIG, LEVELS, DRIVERS, TUTORIAL_STEPS, TUTORIAL_SPAWN_Z, TUTORIAL_TIP_Z, TUTORIAL_QUIZ_QUESTION } from "../data/config.js";
 import { Player } from "./Player.js";
 import { Track } from "./Track.js";
 import { Spawner } from "./Spawner.js";
@@ -61,6 +61,7 @@ const SFX = {
   CROONER_3: "./assets/audio/driving_crooner.m4a",
   CROONER_4: "./assets/audio/make_money.m4a",
   CROONER_5: "./assets/audio/right_next_to_me.m4a",
+  COUNTDOWN: "./assets/audio/countdown.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -185,6 +186,14 @@ export class Game {
 
     // Near-miss tracking
     this._nearMissChecked = new Set();
+
+    // Interactive tutorial
+    this.tutorialMode = false;
+    this._tutorialStep = 0;
+    this._tutorialPaused = false;
+    this._tutorialEntity = null;
+    this._tutorialSpawned = false;
+    this._tutorialBannerShown = false;
 
     // Quiz toggle
     this.quizEnabled = true;
@@ -720,6 +729,20 @@ export class Game {
     this._stopAttractMode();
     clearTimeout(this._gameOverTimer);
     this.resetRun();
+    this.tutorialMode = true;
+    this._tutorialStep = 0;
+    this._tutorialPaused = false;
+    this._tutorialEntity = null;
+    this._tutorialSpawned = false;
+    this._tutorialBannerShown = false;
+    this._tutorialSpawnDelay = 0;
+    this._tutorialTipShown = false;
+    this._tutorialQuizActive = false;
+    this._tutorialWaitingForBrake = false;
+    this._tutorialEntityWasHit = false;
+    this._tutorialHitPending = false;
+    this._tutorialPickupCollected = false;
+    this.spawner.scriptedMode = true;
     this.state = "running";
     this.ui.showMainMenu(false);
     this.ui.showGameOver(false);
@@ -727,7 +750,10 @@ export class Game {
     this.ui.showPause(false);
     this.ui.showHud(true);
     this.ui.setScalonetaHud(this._isScaloneta);
-    this.ui.setStatus(this._t("Go!"), 1500);
+    this.ui.showSkipTutorial(true);
+    this.ui.showTutorialBanner();
+    this.ui.buildTutorialChecklist(TUTORIAL_STEPS);
+    this.ui.showTutorialChecklist(true);
     play(SFX.START_RUN, 0.75);
     startLoop(ENGINE_LOOP, 0.2);
   }
@@ -795,10 +821,167 @@ export class Game {
     this.startFromMenu();
   }
 
+  // ─── Interactive tutorial ───
+
+  _tutorialUpdate(now) {
+    if (!this.tutorialMode || this._tutorialPaused) return;
+
+    const step = TUTORIAL_STEPS[this._tutorialStep];
+    if (!step) { this._endTutorial(); return; }
+
+    // Wait for the banner to finish before spawning the first entity
+    if (!this._tutorialBannerShown) {
+      this._tutorialBannerShown = true;
+      this._tutorialSpawnDelay = now + 2500;
+      return;
+    }
+    if (now < this._tutorialSpawnDelay) return;
+
+    if (step.kind === "lesson") {
+      if (!this._tutorialWaitingForBrake) {
+        this._showTutorialTipOnPlayer(step.tip);
+      } else if (this.braking) {
+        this.ui.setStatus("Nice braking!", 1500);
+        this._advanceTutorialStep();
+      }
+      return;
+    }
+
+    if (!this._tutorialSpawned) {
+      this._tutorialSpawned = true;
+      const lane = step.lane;
+      const z = TUTORIAL_SPAWN_Z;
+      if (step.kind === "pickup") {
+        this._tutorialEntity = this.spawner.forceSpawnPickup(step.type, lane, z);
+      } else if (step.kind === "obstacle") {
+        this._tutorialEntity = this.spawner.forceSpawnObstacle(step.type, lane, z);
+      }
+    }
+
+    if (this._tutorialEntity && this._tutorialEntity.active) {
+      const ez = this._tutorialEntity.mesh.position.z;
+      if (ez > TUTORIAL_TIP_Z && !this._tutorialTipShown) {
+        this._tutorialTipShown = true;
+        this._tutorialPaused = true;
+        const pos = this._entityScreenPos(this._tutorialEntity);
+        this.ui.showTutorialTip(pos.x, pos.y - 20, step.tip);
+      }
+    } else if (this._tutorialEntity && !this._tutorialEntity.active) {
+      if (step.kind === "pickup" && !this._tutorialPickupCollected) {
+        play(SFX.WRONG, 0.7);
+        this.ui.setStatus("You missed it! Try again — steer into it.", 2000);
+        this._tutorialSpawned = false;
+        this._tutorialEntity = null;
+        this._tutorialTipShown = false;
+        this._tutorialSpawnDelay = performance.now() + 1200;
+        return;
+      }
+      if (step.kind === "obstacle" && step.mustHit && !this._tutorialEntityWasHit) {
+        play(SFX.WRONG, 0.7);
+        this.ui.setStatus("You dodged it! Hit the Outage to use your Shield.", 2200);
+        this._tutorialSpawned = false;
+        this._tutorialEntity = null;
+        this._tutorialTipShown = false;
+        this._tutorialSpawnDelay = performance.now() + 1200;
+        return;
+      }
+      if (step.kind === "obstacle" && !step.mustHit && !this._tutorialEntityWasHit) {
+        this.ui.setStatus("Great dodge! You avoided the Outage!", 1800);
+      }
+      this._tutorialEntityWasHit = false;
+      this._tutorialPickupCollected = false;
+      this._advanceTutorialStep();
+    }
+  }
+
+  _showTutorialTipOnPlayer(text) {
+    this._tutorialPaused = true;
+    const pos = this._entityScreenPos({ mesh: this.player.mesh });
+    this.ui.showTutorialTip(pos.x, pos.y - 40, text);
+  }
+
+  _entityScreenPos(entity) {
+    const v = new THREE.Vector3();
+    entity.mesh.getWorldPosition(v);
+    v.project(this.camera);
+    const hw = this.renderer.domElement.clientWidth / 2;
+    const hh = this.renderer.domElement.clientHeight / 2;
+    return { x: (v.x * hw) + hw, y: -(v.y * hh) + hh };
+  }
+
+  _advanceTutorialStep(sfx = SFX.CORRECT) {
+    this._tutorialStep += 1;
+    this._tutorialSpawned = false;
+    this._tutorialEntity = null;
+    this._tutorialPickupCollected = false;
+    this._tutorialPaused = false;
+    this._tutorialTipShown = false;
+    this._tutorialWaitingForBrake = false;
+    this.ui.hideTutorialTip();
+    if (sfx) play(sfx, 0.6);
+    this.ui.tutorialCheckStep(this._tutorialStep, TUTORIAL_STEPS.length);
+    if (this._tutorialStep >= TUTORIAL_STEPS.length) {
+      this._endTutorial();
+    } else {
+      this._tutorialSpawnDelay = performance.now() + 600;
+    }
+  }
+
+  tutorialGotIt() {
+    if (!this.tutorialMode || !this._tutorialPaused) return;
+    this.ui.hideTutorialTip();
+
+    if (this._tutorialHitPending) {
+      this._tutorialHitPending = false;
+      this._advanceTutorialStep(null);
+      return;
+    }
+
+    const step = TUTORIAL_STEPS[this._tutorialStep];
+    if (step && step.type === "BRAKE") {
+      this._tutorialPaused = false;
+      this._tutorialWaitingForBrake = true;
+      this.ui.setStatus("Press S or ↓ now!", 30000);
+      return;
+    }
+
+    this._tutorialPaused = false;
+  }
+
+  skipTutorial() {
+    if (!this.tutorialMode) return;
+    this._endTutorial();
+  }
+
+  _endTutorial() {
+    this.tutorialMode = false;
+    this._tutorialPaused = true;
+    this.spawner.scriptedMode = false;
+    this.score = 0;
+    this.playbookCount = 0;
+    this.playbookPts = 0;
+    this.collectionCount = 0;
+    this.collectionPts = 0;
+    this.pickupsCollected = 0;
+    this.obstaclesHit = 0;
+    this.shield = false;
+    this.player.setShieldActive(false);
+    this.ui.hideAllTutorialUI();
+    play(SFX.COUNTDOWN, 0.8);
+    this.ui.showTutorialCountdown(() => {
+      this._tutorialPaused = false;
+      this.ui.setStatus(this._t("Go!"), 1500);
+    });
+  }
+
   backToMenu() {
     this.state = "main_menu";
     this.recoveryPrompt = false;
     this.timeScale = 1;
+    this.tutorialMode = false;
+    this._tutorialPaused = false;
+    this.spawner.scriptedMode = false;
+    this.ui.hideAllTutorialUI();
     this._activeBillboard = null;
     clearTimeout(this._gameOverTimer);
     this._cleanupCelebration();
@@ -996,6 +1179,17 @@ export class Game {
     this.quizMode = null;
     this.currentQuestion = null;
     this.timeScale = 1;
+
+    if (this._tutorialQuizActive) {
+      this._tutorialQuizActive = false;
+      this.ui.showTutorialChecklist(true);
+      if (correct) {
+        play(SFX.BOOST_WHOOSH, 0.85);
+        this.ui.setStatus("Nice! That's how boost quizzes work.", 2000);
+      }
+      this._advanceTutorialStep();
+      return;
+    }
 
     if (mode === "boost") {
       if (correct) {
@@ -1280,6 +1474,21 @@ export class Game {
     this._startQuizSafetyTimer();
   }
 
+  _openTutorialBoostQuiz() {
+    this._resetQuizFlags();
+    this.currentQuestion = { ...TUTORIAL_QUIZ_QUESTION };
+    this.quizMode = "boost";
+    this._tutorialQuizActive = true;
+    this.state = "quiz";
+    this._quizPhase = "question";
+    this.ui.renderQuizQuestion(this.currentQuestion);
+    this.ui.showQuiz(true);
+    this.ui.showTutorialChecklist(false);
+    this.ui.setStatus("Practice quiz — pick the right answer!", CONFIG.STATUS_HIT_MS);
+    this.ui.startQuizCountdown(() => this.skipQuiz());
+    this._startQuizSafetyTimer();
+  }
+
   devSkipToFinish() {
     if (this.state !== "running") return;
     const dur = CONFIG.LEVEL_DURATION;
@@ -1297,6 +1506,12 @@ export class Game {
     this.currentQuestion = null;
     this.timeScale = 1;
     this._resetQuizFlags();
+    if (this._tutorialQuizActive) {
+      this._tutorialQuizActive = false;
+      this.ui.showTutorialChecklist(true);
+      this._advanceTutorialStep();
+      return;
+    }
     this.ui.setStatus(
       this._isScaloneta
         ? "Prueba saltada — sin turbo, sin penalidad."
@@ -1381,10 +1596,11 @@ export class Game {
       return;
     }
 
-    const ts = this.recoveryPrompt ? 0 : 1;
+    const ts = (this.recoveryPrompt || this._tutorialPaused) ? 0 : 1;
     const effDt = dt * ts;
 
     if (this.state === "running") {
+      this._tutorialUpdate(now);
       this._updateRun(effDt, now, dt, ts);
     }
 
@@ -1429,7 +1645,7 @@ export class Game {
   }
 
   _updateRun(effDt, now, rawDt, spawnScale) {
-    this.runTime += effDt;
+    if (!this.tutorialMode) this.runTime += effDt;
 
     const dur = CONFIG.LEVEL_DURATION;
     const warnTime = dur - 10;
@@ -1500,9 +1716,11 @@ export class Game {
     this.player.setAutomationFlowActive(flowActive);
 
     const fm = flowActive ? CONFIG.FLOW_SCORE_MULT : 1;
-    this.score +=
-      (CONFIG.SCORE_PER_SECOND * fm + CONFIG.SCORE_PER_UNIT_DISTANCE * ws * fm) *
-      effDt;
+    if (!this.tutorialMode) {
+      this.score +=
+        (CONFIG.SCORE_PER_SECOND * fm + CONFIG.SCORE_PER_UNIT_DISTANCE * ws * fm) *
+        effDt;
+    }
 
     // Strip curve offsets before game logic so collision uses straight positions
     this._stripCurve();
@@ -1946,6 +2164,32 @@ export class Game {
   }
 
   _onHitObstacle(e) {
+    if (this.tutorialMode) {
+      this.spawner.explodeObstacle(e);
+      this._tutorialEntityWasHit = true;
+      if (this.shield) {
+        this.shield = false;
+        this.player.setShieldActive(false);
+        play(SFX.SHIELD_HIT, 0.7);
+        this.ui.setStatus("Shield blocked it! No damage taken.", 1800);
+        this._advanceTutorialStep();
+      } else {
+        play(SFX.OBSTACLE_HIT, 0.9);
+        this.ui.shake();
+        this.shakeUntil = performance.now() + 200;
+        this.ui.showDamagePopup(15);
+        this._tutorialPaused = true;
+        setTimeout(() => {
+          this.ui.showTutorialTip(
+            this.renderer.domElement.clientWidth / 2,
+            this.renderer.domElement.clientHeight * 0.4,
+            "Hitting obstacles costs health! Dodge them to survive."
+          );
+          this._tutorialHitPending = true;
+        }, 600);
+      }
+      return;
+    }
     if (this.player.carType === "f16") return;
     if (this.player.isAirborne) {
       this.spawner.explodeObstacle(e);
@@ -2232,6 +2476,33 @@ export class Game {
 
   _onPickup(e) {
     const t = e.subtype;
+
+    if (this.tutorialMode) {
+      this.spawner.removeEntity(e);
+      this._tutorialPickupCollected = true;
+      if (t === "POLICY_SHIELD") {
+        this.shield = true;
+        this.player.setShieldActive(true);
+        play(SFX.SHIELD_ON, 0.75);
+        this.ui.showPickupPopup("Shield activated!");
+      } else if (t === "BOOST_TOKEN") {
+        play(SFX.PICKUP, 0.6);
+        this.ui.showPickupPopup("Boost Token!");
+        this._openTutorialBoostQuiz();
+        return;
+      } else if (t === "PLAYBOOK") {
+        play(SFX.PICKUP, 0.6);
+        this.ui.showPickupPopup("Playbook +100");
+      } else if (t === "CERTIFIED_COLLECTION") {
+        play(SFX.PICKUP, 0.6);
+        this.ui.showPickupPopup("Collection +150");
+      } else {
+        play(SFX.PICKUP, 0.6);
+      }
+      this._advanceTutorialStep();
+      return;
+    }
+
     this.spawner.removeEntity(e);
     this.pickupsCollected += 1;
 

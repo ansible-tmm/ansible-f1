@@ -99,6 +99,15 @@ export class UI {
       driverDetailBio: document.getElementById("driver-detail-bio"),
 
       tutorialOverlay: document.getElementById("tutorial-overlay"),
+      tutorialTip: document.getElementById("tutorial-tip"),
+      tutorialTipText: document.getElementById("tutorial-tip-text"),
+      skipTutorialBtn: document.getElementById("btn-skip-tutorial"),
+      tutorialBanner: document.getElementById("tutorial-banner"),
+      tutorialChecklist: document.getElementById("tutorial-checklist"),
+      tutorialChecklistItems: document.getElementById("tutorial-checklist-items"),
+      tutorialCountdown: document.getElementById("tutorial-countdown"),
+      tutorialCountdownNum: document.getElementById("tutorial-countdown-num"),
+      hudLegend: document.querySelector(".hud-legend"),
 
       levelComplete: document.getElementById("level-complete"),
       lcTitle: document.getElementById("lc-title"),
@@ -179,9 +188,11 @@ export class UI {
       const b = document.getElementById(id);
       if (b) b.addEventListener("click", fn);
     };
-    on("btn-start", () => this._openTutorial());
+    on("btn-start", () => { if (this.onStart) this.onStart(); });
+    on("btn-how-to-play", () => this._openTutorial());
     on("btn-tutorial-back", () => this._closeTutorialToMenu());
-    on("btn-tutorial-start", () => this._startFromTutorial());
+    on("btn-tutorial-got-it", () => { if (this.onTutorialGotIt) this.onTutorialGotIt(); });
+    on("btn-skip-tutorial", () => { if (this.onSkipTutorial) this.onSkipTutorial(); });
     on("btn-highscores", () => this._showMenuLeaderboard());
     on("btn-lb-back", () => this._hideMenuLeaderboard());
     on("btn-achievements", () => this._showMenuAchievements());
@@ -265,6 +276,7 @@ export class UI {
       document.getElementById("btn-start"),
       document.getElementById("btn-choose-driver"),
       document.getElementById("btn-choose-level-menu"),
+      document.getElementById("btn-how-to-play"),
       document.getElementById("btn-highscores"),
       document.getElementById("btn-achievements"),
     ].filter(Boolean);
@@ -335,9 +347,12 @@ export class UI {
     this.onQuizSkip = h.onQuizSkip;
     this.onDriverSelect = h.onDriverSelect;
     this.onSaveScoreLc = h.onSaveScoreLc;
+    this.onSkipTutorial = h.onSkipTutorial;
+    this.onTutorialGotIt = h.onTutorialGotIt;
   }
 
   showMainMenu(visible) {
+    this._shouldShowMainMenu = visible;
     this.el.mainMenu.classList.toggle("hidden", !visible);
     if (visible) {
       this._menuIdx = 0;
@@ -372,7 +387,131 @@ export class UI {
     if (!this.el.tutorialOverlay) return;
     this.el.tutorialOverlay.classList.add("hidden");
     this.el.tutorialOverlay.setAttribute("aria-hidden", "true");
-    if (this.onStart) this.onStart();
+  }
+
+  // ─── Interactive tutorial tips ───
+
+  showTutorialBanner() {
+    if (this.el.tutorialBanner) {
+      this.el.tutorialBanner.classList.remove("hidden");
+      this._bannerTimer = setTimeout(() => this.hideTutorialBanner(), 3500);
+    }
+  }
+
+  hideTutorialBanner() {
+    clearTimeout(this._bannerTimer);
+    if (this.el.tutorialBanner) this.el.tutorialBanner.classList.add("hidden");
+  }
+
+  showSkipTutorial(visible) {
+    if (this.el.skipTutorialBtn) this.el.skipTutorialBtn.classList.toggle("visible", visible);
+  }
+
+  showTutorialTip(screenX, screenY, text) {
+    const tip = this.el.tutorialTip;
+    if (!tip) return;
+    this.el.tutorialTipText.textContent = text;
+    tip.classList.remove("hidden");
+    tip.setAttribute("aria-hidden", "false");
+    tip.style.left = `${screenX}px`;
+    tip.style.top = `${screenY}px`;
+    tip.style.transform = "translate(-50%, -100%)";
+  }
+
+  hideTutorialTip() {
+    const tip = this.el.tutorialTip;
+    if (!tip) return;
+    tip.classList.add("hidden");
+    tip.setAttribute("aria-hidden", "true");
+  }
+
+  buildTutorialChecklist(steps) {
+    const ul = this.el.tutorialChecklistItems;
+    if (!ul) return;
+    ul.innerHTML = "";
+    steps.forEach((step, i) => {
+      const li = document.createElement("li");
+      li.className = "tutorial-checklist-item" + (i === 0 ? " active" : "");
+      li.dataset.step = i;
+      li.innerHTML = `<span class="check-box"></span><span class="check-label">${step.label}</span>`;
+      ul.appendChild(li);
+    });
+  }
+
+  showTutorialChecklist(visible) {
+    const cl = this.el.tutorialChecklist;
+    if (!cl) return;
+    cl.classList.toggle("hidden", !visible);
+    const left = this.el.hud?.querySelector(".hud-left");
+    if (left) left.classList.toggle("hidden", visible);
+  }
+
+  tutorialCheckStep(stepIndex, totalSteps) {
+    const ul = this.el.tutorialChecklistItems;
+    if (!ul) return;
+    const items = ul.querySelectorAll(".tutorial-checklist-item");
+    items.forEach((li, i) => {
+      li.classList.remove("active", "just-completed");
+      if (i < stepIndex) {
+        li.classList.add("done");
+      } else if (i === stepIndex) {
+        li.classList.add("active");
+      }
+    });
+    if (stepIndex > 0) {
+      const prev = items[stepIndex - 1];
+      if (prev) {
+        prev.classList.add("just-completed");
+      }
+    }
+    if (stepIndex >= totalSteps) {
+      items.forEach(li => {
+        li.classList.add("done");
+        li.classList.remove("active");
+      });
+      const last = items[items.length - 1];
+      if (last) last.classList.add("just-completed");
+    }
+  }
+
+  showTutorialCountdown(onDone) {
+    const el = this.el.tutorialCountdown;
+    const num = this.el.tutorialCountdownNum;
+    if (!el || !num) { onDone(); return; }
+
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+
+    const sequence = ["3", "2", "1", "GO!"];
+    let i = 0;
+
+    const tick = () => {
+      if (i >= sequence.length) {
+        el.classList.add("hidden");
+        el.setAttribute("aria-hidden", "true");
+        onDone();
+        return;
+      }
+      num.textContent = sequence[i];
+      num.className = "tutorial-countdown-num" + (sequence[i] === "GO!" ? " go" : "");
+      void num.offsetWidth;
+      num.style.animation = "none";
+      void num.offsetWidth;
+      num.style.animation = "";
+      i++;
+      setTimeout(tick, sequence[i - 1] === "GO!" ? 900 : 1000);
+    };
+    tick();
+  }
+
+  hideAllTutorialUI() {
+    this.hideTutorialBanner();
+    this.hideTutorialTip();
+    this.showSkipTutorial(false);
+    this.showTutorialChecklist(false);
+    if (this.el.tutorialCountdown) this.el.tutorialCountdown.classList.add("hidden");
+    const left = this.el.hud?.querySelector(".hud-left");
+    if (left) left.classList.remove("hidden");
   }
 
   /**
@@ -434,8 +573,8 @@ export class UI {
         });
       }
     } else {
-      this.el.mainMenu.classList.remove("hidden");
       this.el.attractScores.classList.add("hidden");
+      if (this._shouldShowMainMenu) this.el.mainMenu.classList.remove("hidden");
     }
     this._syncSummitDockVisibility();
   }

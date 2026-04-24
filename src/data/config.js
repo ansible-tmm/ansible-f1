@@ -223,6 +223,31 @@ export const PICKUP_TYPES = [
   "BOOST_TOKEN",
 ];
 
+export const TUTORIAL_STEPS = [
+  { type: "PLAYBOOK",              kind: "pickup",   lane: 1, tip: "Collect Playbooks for +100 points!",               label: "Collect a Playbook" },
+  { type: "CERTIFIED_COLLECTION",  kind: "pickup",   lane: 1, tip: "Collections are worth +150 points!",               label: "Grab a Collection" },
+  { type: "OUTAGE",                kind: "obstacle",  lane: 1, tip: "Dodge Outages — they drain your health!",          label: "Dodge an Outage" },
+  { type: "BRAKE",                 kind: "lesson",    lane: -1, tip: "Hold S or ↓ to brake and slow down.",             label: "Learn to Brake" },
+  { type: "POLICY_SHIELD",         kind: "pickup",   lane: 1, tip: "The purple pickup is a Shield — grab it!",         label: "Pick up a Shield" },
+  { type: "OUTAGE",                kind: "obstacle",  lane: 1, tip: "Shield active! Hit this Outage to test it.",        label: "Test the Shield", mustHit: true },
+  { type: "BOOST_TOKEN",           kind: "pickup",   lane: 1, tip: "Boost Tokens pause for a quiz — answer for speed!",  label: "Ace a Boost Quiz" },
+];
+
+export const TUTORIAL_QUIZ_QUESTION = {
+  question: "According to the Q4 2024 Forrester Wave report, who is the leader in infrastructure automation?",
+  options: [
+    "Red Hat Ansible Automation Platform",
+    "Coyote Automation Suite",
+    "ACME Bloatware Enterprise",
+    "Duct-Tape-as-a-Service",
+  ],
+  answer: 0,
+  explanation: "Red Hat Ansible Automation Platform was named a Leader by Forrester.",
+};
+
+export const TUTORIAL_SPAWN_Z = -60;
+export const TUTORIAL_TIP_Z = -18;
+
 export const LEVELS = {
   A: {
     id: "A",

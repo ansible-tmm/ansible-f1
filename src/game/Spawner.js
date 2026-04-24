@@ -39,6 +39,7 @@ export class Spawner {
     this.gatorTimer = 0;
     this._nextRivalColorIdx = 0;
     this.levelId = "A";
+    this.scriptedMode = false;
   }
 
   reset() {
@@ -93,6 +94,17 @@ export class Spawner {
     } else {
       this.obstacleTimer += dt * timeScale;
       this.pickupTimer += dt * timeScale;
+    }
+
+    if (this.scriptedMode) {
+      const dz = worldSpeed * dt * timeScale;
+      this._advanceEntities(this.obstacles, dz);
+      this._advanceEntities(this.pickups, dz);
+      this._animateObstacles(dt);
+      this._animatePickups(dt);
+      for (const e of this.obstacles) { if (e.active) this._syncBox(e); }
+      for (const e of this.pickups) { if (e.active) this._syncBox(e); }
+      return;
     }
 
     if (this.obstacleTimer >= obstacleInterval) {
@@ -1152,6 +1164,16 @@ export class Spawner {
     bodyMat.dispose(); trimMat.dispose(); windowMat.dispose();
     rubber.dispose(); bumperMat.dispose();
     return g;
+  }
+
+  forceSpawnPickup(type, lane, z) {
+    this._addPickup(type, lane, z);
+    return this.pickups[this.pickups.length - 1];
+  }
+
+  forceSpawnObstacle(type, lane, z) {
+    this._addObstacle(type, lane, z);
+    return this.obstacles[this.obstacles.length - 1];
   }
 
   /**

@@ -75,6 +75,8 @@ ui.setHandlers({
   },
   onDriverSelect: (driverId) => game.selectDriver(driverId),
   onSaveScoreLc: () => game.saveLcScore(),
+  onSkipTutorial: () => game.skipTutorial(),
+  onTutorialGotIt: () => game.tutorialGotIt(),
 });
 
 ui.setActiveDriver(getLastDriver());
