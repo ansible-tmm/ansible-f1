@@ -2795,6 +2795,8 @@ export class Game {
   }
 
   _updateAttract(dt, now) {
+    this._stripCurve();
+
     this.track.update(dt, this._attractSpeed);
     this.spawner.update(dt, this._attractSpeed, 15, 1);
 
@@ -2852,6 +2854,8 @@ export class Game {
         }
       }
     }
+
+    this._applyCurve();
   }
 
   _updateOrbitCamera(dt, now) {
