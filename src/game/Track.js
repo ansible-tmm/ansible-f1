@@ -607,16 +607,16 @@ export class Track {
 
   _billboards() {
     /** Bigger faces + closer to play (higher Z) = easier to read & click */
-    const BB_Z = -40;
+    const BB_Z = -50;
     const defs = this.theme.billboards.map((b, i) => ({
       ...b,
-      x: i === 0 ? -14 : i === 1 ? 14 : 28,
+      x: i === 0 ? -16 : i === 1 ? 16 : 32,
       z: BB_Z,
     }));
 
-    const boardW = 11;
-    const boardH = 6.75;
-    const poleH = 6;
+    const boardW = 9.5;
+    const boardH = 5.75;
+    const poleH = 7;
     const canvasW = 768;
     const canvasH = 480;
 
@@ -736,8 +736,8 @@ export class Track {
 
       g.position.set(def.x, 0, def.z);
       /* Face the roadway a bit more so the canvas reads from the car */
-      if (def.x < 0) g.rotation.y = -0.34;
-      else g.rotation.y = 0.34;
+      if (def.x < 0) g.rotation.y = -0.25;
+      else g.rotation.y = 0.25;
 
       this.billboards[def.id] = g;
       this.group.add(g);
