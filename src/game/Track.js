@@ -736,8 +736,8 @@ export class Track {
 
       g.position.set(def.x, 0, def.z);
       /* Face the roadway a bit more so the canvas reads from the car */
-      if (def.x < 0) g.rotation.y = -0.25;
-      else g.rotation.y = 0.25;
+      if (def.x < 0) g.rotation.y = 0.25;
+      else g.rotation.y = -0.25;
 
       this.billboards[def.id] = g;
       this.group.add(g);
