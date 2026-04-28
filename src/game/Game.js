@@ -1013,7 +1013,6 @@ export class Game {
     this.ui.updateMenuBest(getBestScore());
     this._startAttractMode();
 
-    const theme = LEVELS[this.currentLevel];
     if (theme && theme.billboards) {
       this.ui.preloadBillboardEmbeds(theme.billboards);
     }
