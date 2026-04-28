@@ -1012,6 +1012,11 @@ export class Game {
     this.ui.showMainMenu(true);
     this.ui.updateMenuBest(getBestScore());
     this._startAttractMode();
+
+    const theme = LEVELS[this.currentLevel];
+    if (theme && theme.billboards) {
+      this.ui.preloadBillboardEmbeds(theme.billboards);
+    }
   }
 
   switchLevel(levelId, returnTo = "main_menu") {

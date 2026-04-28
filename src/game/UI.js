@@ -1185,6 +1185,28 @@ export class UI {
     }
   }
 
+  preloadBillboardEmbeds(billboards) {
+    if (this._preloadedIframes) {
+      for (const iframe of Object.values(this._preloadedIframes)) {
+        iframe.remove();
+      }
+    }
+    this._preloadedIframes = {};
+    if (!billboards) return;
+
+    for (const bb of billboards) {
+      if (!bb.embed) continue;
+      const iframe = document.createElement("iframe");
+      iframe.title = bb.embedTitle || bb.label || "";
+      iframe.allow = "clipboard-write";
+      iframe.allowFullscreen = true;
+      iframe.src = bb.embed;
+      iframe.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:none;";
+      document.body.appendChild(iframe);
+      this._preloadedIframes[bb.embed] = iframe;
+    }
+  }
+
   showBillboard(visible, { label = "", embed = null, embedTitle = "", logo = null, showBonus = false } = {}) {
     if (visible) {
       if (this.el.status) this.el.status.textContent = "";
@@ -1207,25 +1229,38 @@ export class UI {
     if (!this.el.billboardContent) return;
 
     if (!visible) {
+      const iframe = this.el.billboardContent.querySelector("iframe");
+      if (iframe && iframe._preloadedSrc && this._preloadedIframes) {
+        iframe.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:none;";
+        document.body.appendChild(iframe);
+      }
       this.el.billboardContent.innerHTML = "";
       return;
     }
 
     if (embed) {
-      this.el.billboardContent.innerHTML =
-        `<div class="billboard-loading"><div class="billboard-loading-spinner"></div><p>Loading demo...</p></div>`;
-      requestAnimationFrame(() => {
-        const iframe = document.createElement("iframe");
-        iframe.title = embedTitle || label;
-        iframe.allow = "clipboard-write";
-        iframe.allowFullscreen = true;
-        iframe.onload = () => {
-          const spinner = this.el.billboardContent.querySelector(".billboard-loading");
-          if (spinner) spinner.remove();
-        };
-        iframe.src = embed;
-        this.el.billboardContent.appendChild(iframe);
-      });
+      const preloaded = this._preloadedIframes && this._preloadedIframes[embed];
+      if (preloaded) {
+        preloaded.style.cssText = "";
+        preloaded._preloadedSrc = embed;
+        this.el.billboardContent.innerHTML = "";
+        this.el.billboardContent.appendChild(preloaded);
+      } else {
+        this.el.billboardContent.innerHTML =
+          `<div class="billboard-loading"><div class="billboard-loading-spinner"></div><p>Loading demo...</p></div>`;
+        requestAnimationFrame(() => {
+          const iframe = document.createElement("iframe");
+          iframe.title = embedTitle || label;
+          iframe.allow = "clipboard-write";
+          iframe.allowFullscreen = true;
+          iframe.onload = () => {
+            const spinner = this.el.billboardContent.querySelector(".billboard-loading");
+            if (spinner) spinner.remove();
+          };
+          iframe.src = embed;
+          this.el.billboardContent.appendChild(iframe);
+        });
+      }
     } else {
       const logoHtml = logo
         ? `<img class="billboard-placeholder-logo" src="${logo}" alt="${label}" />`
