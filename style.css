@@ -5,6 +5,11 @@
   --panel: rgba(8, 12, 28, 0.92);
   --text: #e8f7ff;
   --muted: rgba(200, 230, 255, 0.65);
+  /**
+   * Start menu occupies this fraction of the viewport width; the 3D game shows on the remainder.
+   * Summit booth dock is centered in the game strip only (not the full window).
+   */
+  --start-menu-width-fraction: 33.333333%;
 }
 
 * {
@@ -1001,10 +1006,13 @@ body {
   color: #ffd54a;
 }
 
-/* Summit booth link — fixed bottom center; body-level so it paints above #game-root overlays */
+/* Summit booth link — fixed bottom; centered on the game viewport (right of start menu), not full window */
 .summit-booth-dock {
   position: fixed;
-  left: 50%;
+  left: calc(
+    var(--start-menu-width-fraction) +
+      (100% - var(--start-menu-width-fraction)) / 2
+  );
   bottom: clamp(0.75rem, 3.5vh, 2rem);
   transform: translateX(-50%);
   z-index: 200;
@@ -1013,8 +1021,16 @@ body {
   align-items: center;
   gap: 0.45rem;
   width: min(92vw, 36rem);
+  max-width: calc(100% - var(--start-menu-width-fraction) - 1.5rem);
   pointer-events: auto;
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .summit-booth-dock {
+    left: 50%;
+    max-width: min(92vw, 36rem);
+  }
 }
 
 .summit-booth-dock.hidden {
