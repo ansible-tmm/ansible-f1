@@ -84,11 +84,41 @@
       <div id="combo-display" class="combo-display hidden" aria-hidden="true"></div>
       <div id="achievement-popup" class="achievement-popup hidden" aria-hidden="true"></div>
 
+      <!-- Interactive tutorial tip (floats over 3D entities) -->
+      <div id="tutorial-tip" class="tutorial-tip hidden" aria-hidden="true">
+        <div class="tutorial-tip-card">
+          <p id="tutorial-tip-text" class="tutorial-tip-text"></p>
+          <button type="button" id="btn-tutorial-got-it" class="btn primary btn-small">Got it!</button>
+        </div>
+        <div class="tutorial-tip-arrow"></div>
+      </div>
+      <!-- skip button moved inside tutorial-checklist below -->
+      <div id="tutorial-banner" class="tutorial-banner hidden" aria-hidden="true">
+        <p class="tutorial-banner-text">Win the race. Collect points. Don't die!</p>
+        <p class="tutorial-banner-sub">Use <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> to steer</p>
+      </div>
+
+      <!-- Tutorial-to-race countdown -->
+      <div id="tutorial-countdown" class="tutorial-countdown hidden" aria-hidden="true">
+        <span id="tutorial-countdown-num" class="tutorial-countdown-num"></span>
+      </div>
+
+      <!-- Tutorial progress checklist -->
+      <div id="tutorial-checklist" class="tutorial-checklist hidden" aria-label="Tutorial progress">
+        <div class="tutorial-checklist-header">Tutorial</div>
+        <ul id="tutorial-checklist-items" class="tutorial-checklist-items">
+          <!-- populated dynamically from TUTORIAL_STEPS -->
+        </ul>
+        <button type="button" id="btn-skip-tutorial" class="btn-skip-tutorial">Skip Tutorial</button>
+      </div>
+
       <div id="hud" class="hud hidden">
         <div class="hud-theme-strip" aria-label="Current track">
           <div id="hud-level-name" class="hud-theme-title">AIOps</div>
         </div>
+        <button type="button" id="btn-hud-info" class="hud-info-toggle" title="Show info">ℹ</button>
         <div class="hud-left">
+          <button type="button" id="btn-hud-close" class="hud-close-btn" title="Close">✕</button>
           <div class="hud-stats">
             <div class="hud-stat-block">
               <div class="hud-health-row">
@@ -188,6 +218,7 @@
         </div>
         <div id="hud-status" class="hud-status"></div>
         <button type="button" id="btn-touch-pause" class="touch-pause" title="Pause">&#10074;&#10074;</button>
+        <button type="button" id="btn-mobile-secret" class="mobile-secret-btn" title="Secret">★</button>
       </div>
 
       <div id="attract-scores" class="attract-scores hidden">
@@ -204,8 +235,9 @@
           Best Score <span id="menu-best">0</span>
         </div>
         <button type="button" id="btn-start" class="btn primary">Start Run</button>
-        <button type="button" id="btn-choose-driver" class="btn">Choose Your Driver</button>
         <button type="button" id="btn-choose-level-menu" class="btn">Choose Level</button>
+        <button type="button" id="btn-choose-driver" class="btn">Choose Your Driver</button>
+        <button type="button" id="btn-how-to-play" class="btn">How to Play</button>
         <button type="button" id="btn-highscores" class="btn">Global Scores</button>
         <button type="button" id="btn-achievements" class="btn">Achievements</button>
 
@@ -240,6 +272,50 @@
         </ul>
       </div>
 
+      <div id="tutorial-overlay" class="overlay tutorial-overlay hidden" aria-hidden="true">
+        <div class="tutorial-panel">
+          <p class="eyebrow">Reference guide</p>
+          <h2 class="tutorial-title">How to play</h2>
+          <div class="tutorial-scroll">
+            <section class="tutorial-section">
+              <h3>Goal</h3>
+              <p>Reach the <strong>finish line</strong> with <strong>Health</strong> above zero and the highest <strong>Score</strong> you can get.</p>
+            </section>
+            <section class="tutorial-section">
+              <h3>Controls</h3>
+              <ul class="tutorial-list">
+                <li><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> — change lanes</li>
+                <li><kbd>W</kbd> or <kbd>↑</kbd> — boost (cooldown bar)</li>
+                <li><kbd>S</kbd> or <kbd>↓</kbd> — brake</li>
+                <li><strong>Touch:</strong> swipe left/right to steer · swipe up for boost · tap screen halves to move</li>
+              </ul>
+            </section>
+            <section class="tutorial-section">
+              <h3>Road items</h3>
+              <ul class="tutorial-list">
+                <li><strong>Outage</strong> &amp; <strong>rival cars</strong> — hazards, dodge or lose health.</li>
+                <li><strong>Playbook</strong> +100 · <strong>Collection</strong> +150 — score pickups.</li>
+                <li><strong>Shield</strong> — absorbs one hit.</li>
+                <li><strong>Boost token</strong> — quiz for a speed burst.</li>
+                <li><strong>Automation Flow</strong> — 3 correct answers → 8s of 1.2× score &amp; pickup magnet.</li>
+                <li><strong>Remediation</strong> — answer after a hit to recover health.</li>
+              </ul>
+            </section>
+            <section class="tutorial-section">
+              <h3>Billboards</h3>
+              <p>Three per track — click to open partner demos. First visit earns <strong>+500 Interactive Experience</strong>.</p>
+            </section>
+            <section class="tutorial-section tutorial-spoiler">
+              <h3>Secrets</h3>
+              <p>Some drivers have secret keywords and hidden vehicle modes. The DeLorean’s <strong>Flux Capacitor</strong> fires on car-click. Discover the rest!</p>
+            </section>
+          </div>
+          <div class="tutorial-actions">
+            <button type="button" id="btn-tutorial-back" class="btn">Back</button>
+          </div>
+        </div>
+      </div>
+
       <div id="driver-select" class="overlay panel hidden">
         <h2 class="driver-select-title">Choose Your Driver</h2>
         <p class="driver-select-hint">← → to browse · Enter to select</p>
@@ -266,6 +342,7 @@
         <button type="button" id="btn-resume" class="btn primary">Resume</button>
         <button type="button" id="btn-restart-pause" class="btn">Restart Run</button>
         <button type="button" id="btn-choose-level-pause" class="btn">Choose Level</button>
+        <button type="button" id="btn-choose-driver-pause" class="btn">Choose Driver</button>
         <button type="button" id="btn-menu-pause" class="btn">Main Menu</button>
         <p class="hint">Esc to resume</p>
       </div>
@@ -454,6 +531,28 @@
           </button>
         </div>
         <button type="button" id="btn-level-back" class="btn" style="margin-top:1rem">Back</button>
+      </div>
+
+      <!-- Godzilla Mode HUD -->
+      <div id="godzilla-hud" class="godzilla-hud hidden" aria-hidden="true">
+        <div class="gz-title">🦎 GODZILLA MODE 🦎</div>
+        <div class="gz-stats">
+          <div class="gz-stat"><span class="gz-label">TIME</span><span id="gz-time" class="gz-value">60</span></div>
+          <div class="gz-stat"><span class="gz-label">SCORE</span><span id="gz-score" class="gz-value">0</span></div>
+          <div class="gz-stat"><span class="gz-label">CRUSHED</span><span id="gz-crushed" class="gz-value">0</span></div>
+        </div>
+        <div class="gz-hint">WASD to move &bull; Drag to look &bull; Click to breathe fire!</div>
+      </div>
+
+      <!-- Godzilla Score Summary -->
+      <div id="godzilla-score" class="overlay panel hidden">
+        <h2 class="gz-score-title">🦎 RAMPAGE OVER 🦎</h2>
+        <div class="gz-score-grid">
+          <div class="gz-score-row"><span>Score</span><strong id="gz-final-score">0</strong></div>
+          <div class="gz-score-row"><span>Buildings Crushed</span><strong id="gz-final-crushed">0</strong></div>
+          <div class="gz-score-row"><span>Destruction</span><strong id="gz-final-pct">0%</strong></div>
+        </div>
+        <button type="button" id="btn-gz-back" class="btn" style="margin-top:1.5rem">Back to Menu</button>
       </div>
 
       <div id="debug-panel" class="debug-panel">
