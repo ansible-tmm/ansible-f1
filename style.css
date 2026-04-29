@@ -862,6 +862,15 @@ body {
   display: none;
 }
 
+/* Let pointer events reach the WebGL canvas for billboard demos; menu controls stay clickable */
+#main-menu.overlay.panel {
+  pointer-events: none;
+}
+
+#main-menu.overlay.panel > * {
+  pointer-events: auto;
+}
+
 .tutorial-overlay {
   z-index: 7;
 }

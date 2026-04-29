@@ -225,6 +225,8 @@ export class Game {
     this._bbReturning = false;
     this._bbLabel = "";
     this._bbDef = null;
+    /** @type {"running"|"main_menu"} Where to return after closing a billboard demo */
+    this._bbReturnState = "running";
     this._demoCompleted = new Set();
 
     // Level completion
@@ -542,7 +544,10 @@ export class Game {
       this._checkBillboardHover();
     });
     c.addEventListener("pointerup", () => {
-      if (!this._dragMoved && this._hoveredBillboard && this.state === "running" && !this.recoveryPrompt) {
+      const canBillboard =
+        this.state === "running" ||
+        (this.state === "main_menu" && this.ui.isMainMenuBaseVisible());
+      if (!this._dragMoved && this._hoveredBillboard && canBillboard && !this.recoveryPrompt) {
         this._openBillboard(this._hoveredBillboard);
       }
       this._pointerDown = null;
@@ -655,7 +660,10 @@ export class Game {
   }
 
   _checkBillboardHover() {
-    if (this.state !== "running" || this.recoveryPrompt) {
+    const canHover =
+      this.state === "running" ||
+      (this.state === "main_menu" && this.ui.isMainMenuBaseVisible());
+    if (!canHover || this.recoveryPrompt) {
       this.renderer.domElement.style.cursor = "";
       this._hoveredBillboard = null;
       return;
@@ -673,6 +681,7 @@ export class Game {
   }
 
   _openBillboard(id) {
+    this._bbReturnState = this.state === "main_menu" ? "main_menu" : "running";
     this._activeBillboard = id;
     this.state = "billboard";
     this._bbZooming = true;
@@ -2732,7 +2741,7 @@ export class Game {
       this._activeBillboard = null;
       this._bbZooming = false;
       this._bbReturning = false;
-      this.state = "running";
+      this.state = this._bbReturnState;
       this.renderer.domElement.style.cursor = "";
     }
   }

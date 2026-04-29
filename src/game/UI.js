@@ -535,6 +535,11 @@ export class UI {
       && (!this.el.menuAchievements || this.el.menuAchievements.classList.contains("hidden"));
   }
 
+  /** Default main menu (not sub-panels / attract scores) — billboards use this for hit-testing. */
+  isMainMenuBaseVisible() {
+    return this._isMainMenuActive();
+  }
+
   _updateMenuFocus() {
     for (const btn of this._menuBtns) btn.classList.remove("menu-focus");
     if (this._menuBtns[this._menuIdx]) {
