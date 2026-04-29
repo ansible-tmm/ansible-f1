@@ -141,6 +141,7 @@ export class UI {
     this._quizCountdownId = null;
     this._quizAutoTimer = null;
     this._levelSelectReturnTo = "main_menu";
+    this._driverSelectReturnTo = "main_menu";
     this._summitLinkLevelId = "A";
     this._scaloniHud = false;
     this._populateCountrySelect();
@@ -1396,11 +1397,14 @@ export class UI {
   }
 
   _openDriverSelect(returnTo) {
-    this._driverSelectReturnTo = returnTo;
     if (!this.el.driverSelect) return;
-    this.el.mainMenu.classList.add("hidden");
-    this.el.attractScores.classList.add("hidden");
-    if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
+    this._driverSelectReturnTo = returnTo;
+    if (returnTo === "running") {
+      if (this.el.pauseMenu) this.el.pauseMenu.classList.add("hidden");
+    } else {
+      this.el.mainMenu.classList.add("hidden");
+      this.el.attractScores.classList.add("hidden");
+    }
     this.el.driverSelect.classList.remove("hidden");
     this.el.driverDetail.classList.add("hidden");
     this.el.driverCards.classList.remove("compact");
