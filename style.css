@@ -1048,8 +1048,11 @@ body {
 
 .summit-booth-dock-lead {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Red Hat Display", system-ui, sans-serif;
+  font-weight: 500;
   font-size: clamp(0.8rem, 2.2vw, 0.95rem);
+  letter-spacing: -0.02em;
+  line-height: 1.35;
   color: rgba(232, 247, 255, 0.88);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
 }
@@ -1059,8 +1062,9 @@ body {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Red Hat Display", system-ui, sans-serif;
   font-weight: 700;
+  letter-spacing: -0.02em;
   font-size: clamp(1rem, 2.8vw, 1.2rem);
   line-height: 1.35;
   color: #fff;
