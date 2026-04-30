@@ -429,13 +429,22 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo19",
-        label: "Ansible Automation Dashboard Installation",
+        label: "Ansible Automation Dashboard installation",
         accent: 0xff8822,
-        embed: "https://interact.redhat.com/share/rRlctHhxxxojPuls1oui",
-        embedTitle: "Ansible Automation Dashboard Installation",
+        logo: "./assets/dashboard_installation.jpg",
+        embed:
+          "https://demo.arcade.software/rRlctHhxxxojPuls1oui?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Ansible Automation Dashboard installation",
       },
-      { id: "demo20", label: "Demo 20", accent: 0xffcc44 },
-      { id: "demo21", label: "Demo 21", accent: 0x44aacc },
+      {
+        id: "demo20",
+        label: "Automation Dashboard",
+        accent: 0xffcc44,
+        logo: "./assets/Automation_dashboard.jpg",
+        embed:
+          "https://demo.arcade.software/G1lEX5P4rjLgAS3sjsC7?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Automation Dashboard",
+      },
     ],
   },
   H: {
@@ -456,9 +465,33 @@ export const LEVELS = {
     scenery: "durham",
     music: "./assets/audio/bgm-durham.m4a",
     billboards: [
-      { id: "demo22", label: "Demo 22", accent: 0xee1100 },
-      { id: "demo23", label: "Demo 23", accent: 0x00bbff },
-      { id: "demo24", label: "Demo 24", accent: 0xffaa22 },
+      {
+        id: "demo22",
+        label: "Deploy & remove apps on RHEL",
+        accent: 0xcc0000,
+        logo: "./assets/aap_deploy_remove_apps_rhel.png",
+        embed:
+          "https://demo.arcade.software/WLz8bjVZ1Tw1ie8KBv7f?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "AAP — deploy and remove apps on RHEL",
+      },
+      {
+        id: "demo23",
+        label: "Automation intelligent assistant",
+        accent: 0x0088cc,
+        logo: "./assets/automation_intelligent_assistant.png",
+        embed:
+          "https://demo.arcade.software/6104eaB6sLcy5LB1oAzi?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Automation intelligent assistant — Red Hat Ansible Automation Platform",
+      },
+      {
+        id: "demo24",
+        label: "Provision Ansible in Developer Sandbox",
+        accent: 0xff9900,
+        logo: "./assets/provision_ansible_dev_sandbox.png",
+        embed:
+          "https://demo.arcade.software/tE9tlgwEwnXUUqqUWxW5?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Provision Ansible in Developer Sandbox",
+      },
     ],
   },
 };
