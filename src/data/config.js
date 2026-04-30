@@ -269,27 +269,33 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo1",
-        label: "Instana",
+        label: "Automation for AIOps",
         accent: 0x00c8ea,
-        logo: "./assets/instana-logo.png",
-        embed: "https://demo.arcade.software/iv4MGA8BVPeEtdjNYmBM?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
-        embedTitle: "Unlock AIOps with IBM Instana and Ansible Automation Platform",
+        logo: "./assets/automation_for_aiops.png",
+        embed:
+          "https://demo.arcade.software/kCuEEAIeU2a8plQcDALz?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Automation for AIOps — Red Hat Ansible Automation Platform",
+        logoObjectFit: "cover",
       },
       {
         id: "demo2",
-        label: "ServiceNow",
-        accent: 0xff6644,
-        logo: "./assets/servicenow-logo.png",
-        embed: null,
-        embedTitle: "ServiceNow & Ansible Automation Platform",
+        label: "IBM Instana + AAP",
+        accent: 0x00c8ea,
+        logo: "./assets/unlock_aiops_instana_aap_arcade.png",
+        embed:
+          "https://demo.arcade.software/iv4MGA8BVPeEtdjNYmBM?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Unlock AIOps with IBM Instana and Ansible Automation Platform",
+        logoObjectFit: "cover",
       },
       {
         id: "demo3",
-        label: "Splunk",
-        accent: 0x66ffcc,
-        logo: "./assets/splunk-logo.png",
-        embed: "https://demo.arcade.software/7faQ6yWmyhzRFQxIn3ea?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
-        embedTitle: "Splunk AIOPs and Event-Driven Ansible",
+        label: "ServiceNow Leap + MCP",
+        accent: 0xff6644,
+        logo: "./assets/aiops_servicenow_leap_ansible_mcp.png",
+        embed:
+          "https://demo.arcade.software/UAt0jBV2NHwrV3rgaTQr?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Unlock AIOps with ServiceNow Leap and Ansible MCP server",
+        logoObjectFit: "cover",
       },
     ],
   },
@@ -311,9 +317,27 @@ export const LEVELS = {
     scenery: "forest",
     music: "./assets/audio/bgm-alpine.m4a",
     billboards: [
-      { id: "demo4", label: "Demo 4", accent: 0x44bb66 },
-      { id: "demo5", label: "Demo 5", accent: 0xddaa22 },
-      { id: "demo6", label: "Demo 6", accent: 0x8866dd },
+      {
+        id: "demo4",
+        label: "Workflow orchestration",
+        accent: 0x44bb66,
+        embed: null,
+        embedTitle: "Workflow orchestration — booth demos",
+      },
+      {
+        id: "demo5",
+        label: "Built to Automate track",
+        accent: 0xddaa22,
+        embed: null,
+        embedTitle: "Built to Automate track",
+      },
+      {
+        id: "demo6",
+        label: "Arcade links coming soon",
+        accent: 0x8866dd,
+        embed: null,
+        embedTitle: "Interactive arcade flows — publishing soon",
+      },
     ],
   },
   C: {
@@ -334,9 +358,34 @@ export const LEVELS = {
     scenery: "desert",
     music: "./assets/audio/bgm-desert.m4a",
     billboards: [
-      { id: "demo7", label: "Demo 7", accent: 0xff8844 },
-      { id: "demo8", label: "Demo 8", accent: 0xcc4466 },
-      { id: "demo9", label: "Demo 9", accent: 0x44ccaa },
+      {
+        id: "demo7",
+        label: "Ansible Dev Container in VS Code",
+        accent: 0xff8844,
+        logo: "./assets/installing_ansible_dev_container_in_vscode.png",
+        embed:
+          "https://demo.arcade.software/iKoPpilaNueRFTUzWnqL?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Installing Ansible Dev Container in VS Code",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo8",
+        label: "Cursor + MCP for AAP",
+        accent: 0xcc4466,
+        logo: "./assets/cursor_mcp_aap_youtube_thumbnail.png",
+        embed: "https://www.youtube.com/embed/EidwVmZQkGM?rel=0",
+        embedTitle: "How to set up Cursor with MCP for Ansible Automation Platform",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo9",
+        label: "Copilot Studio + MCP",
+        accent: 0x44ccaa,
+        logo: "./assets/copilot_studio_mcp_aap_youtube_thumbnail.png",
+        embed: "https://www.youtube.com/embed/ok_ID1Ldgds?rel=0",
+        embedTitle: "Talk to your Ansible Automation Platform with AI — Copilot Studio + MCP",
+        logoObjectFit: "cover",
+      },
     ],
   },
   D: {
@@ -357,9 +406,31 @@ export const LEVELS = {
     scenery: "swamp",
     music: "./assets/audio/bgm-swamp.m4a",
     billboards: [
-      { id: "demo10", label: "Demo 10", accent: 0x66aa44 },
-      { id: "demo11", label: "Demo 11", accent: 0xaacc22 },
-      { id: "demo12", label: "Demo 12", accent: 0x44aa88 },
+      {
+        id: "demo10",
+        label: "Security automation with AAP",
+        accent: 0x66aa44,
+        embed: "https://interact.redhat.com/share/kS1DsZIb5aqO9s5rvw7T",
+        embedTitle: "Red Hat Ansible Automation Platform for security automation",
+      },
+      {
+        id: "demo11",
+        label: "Ansible secrets + Vault",
+        accent: 0xaacc22,
+        logo: "./assets/manage_ansible_secrets_with_hashicorp_vault.png",
+        embed:
+          "https://demo.arcade.software/8wSFxhB1CT2w7Z7OWsyz?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Manage Ansible secrets with HashiCorp Vault",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo12",
+        label: "Vault & Ansible integration",
+        accent: 0x44aa88,
+        embed:
+          "https://demo.arcade.software/WSh5uLpMzwN5Eb4ojTK7?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Vault & Ansible — Arcade flow",
+      },
     ],
   },
   E: {
@@ -380,9 +451,36 @@ export const LEVELS = {
     scenery: "water",
     music: "./assets/audio/bgm-ocean.m4a",
     billboards: [
-      { id: "demo13", label: "Demo 13", accent: 0x44aaff },
-      { id: "demo14", label: "Demo 14", accent: 0xaaddff },
-      { id: "demo15", label: "Demo 15", accent: 0x6688cc },
+      {
+        id: "demo13",
+        label: "Virtualization infrastructure",
+        accent: 0x44aaff,
+        logo: "./assets/virtualization_infrastructure_ansible_arcade.png",
+        embed:
+          "https://demo.arcade.software/KlhYhTinO6JIaYtLV6uk?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Virtualization infrastructure automation with Red Hat Ansible",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo14",
+        label: "RHEL automated management",
+        accent: 0xaaddff,
+        logo: "./assets/rhel_automated_management_arcade.png",
+        embed:
+          "https://demo.arcade.software/b4bwKoXtWj5DSaSuBjIX?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Red Hat Enterprise Linux automated management",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo15",
+        label: "Windows VM Day 2 ops",
+        accent: 0x6688cc,
+        logo: "./assets/automating_day_2_windows_vm_operations.png",
+        embed:
+          "https://demo.arcade.software/oBoXzgiggcwGdG5DzosF?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Automating Day 2 Windows VM operations",
+        logoObjectFit: "cover",
+      },
     ],
   },
   F: {
@@ -403,9 +501,36 @@ export const LEVELS = {
     scenery: "snow",
     music: "./assets/audio/bgm-snow.m4a",
     billboards: [
-      { id: "demo16", label: "Demo 16", accent: 0x22ccff },
-      { id: "demo17", label: "Demo 17", accent: 0x44ffcc },
-      { id: "demo18", label: "Demo 18", accent: 0x88aaff },
+      {
+        id: "demo16",
+        label: "Self-healing infrastructure",
+        accent: 0x22ccff,
+        logo: "./assets/aiops_self_healing_infrastructure_aap.png",
+        embed:
+          "https://demo.arcade.software/QIkx7TMuu22RDi0nUjRA?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "AIOps — self-healing infrastructure with AAP",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo17",
+        label: "Self-healing on AWS",
+        accent: 0x44ffcc,
+        logo: "./assets/aiops_self_healing_aws_infrastructure_aap.png",
+        embed:
+          "https://demo.arcade.software/qYeocEdiSCHFkKXytJMe?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "AIOps: Self-Healing AWS Infrastructure with AAP",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo18",
+        label: "Ansible Automation on AWS",
+        accent: 0x88aaff,
+        logo: "./assets/ansible_automation_on_aws.png",
+        embed:
+          "https://demo.arcade.software/g25qlmX59RI0r6OjRjL2?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Ansible Automation on AWS",
+        logoObjectFit: "cover",
+      },
     ],
   },
   G: {
@@ -435,6 +560,7 @@ export const LEVELS = {
         embed:
           "https://demo.arcade.software/rRlctHhxxxojPuls1oui?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
         embedTitle: "Ansible Automation Dashboard installation",
+        logoObjectFit: "cover",
       },
       {
         id: "demo20",
@@ -444,6 +570,7 @@ export const LEVELS = {
         embed:
           "https://demo.arcade.software/G1lEX5P4rjLgAS3sjsC7?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
         embedTitle: "Automation Dashboard",
+        logoObjectFit: "cover",
       },
     ],
   },
