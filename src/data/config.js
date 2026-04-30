@@ -473,6 +473,7 @@ export const LEVELS = {
         embed:
           "https://demo.arcade.software/WLz8bjVZ1Tw1ie8KBv7f?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
         embedTitle: "AAP — deploy and remove apps on RHEL",
+        logoObjectFit: "cover",
       },
       {
         id: "demo23",
@@ -482,6 +483,7 @@ export const LEVELS = {
         embed:
           "https://demo.arcade.software/6104eaB6sLcy5LB1oAzi?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
         embedTitle: "Automation intelligent assistant — Red Hat Ansible Automation Platform",
+        logoObjectFit: "cover",
       },
       {
         id: "demo24",
@@ -491,6 +493,7 @@ export const LEVELS = {
         embed:
           "https://demo.arcade.software/tE9tlgwEwnXUUqqUWxW5?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
         embedTitle: "Provision Ansible in Developer Sandbox",
+        logoObjectFit: "cover",
       },
     ],
   },
