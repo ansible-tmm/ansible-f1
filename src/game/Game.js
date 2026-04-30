@@ -194,6 +194,7 @@ export class Game {
     this._tutorialEntity = null;
     this._tutorialSpawned = false;
     this._tutorialBannerShown = false;
+    this._tutorialBillboardIntroShown = false;
 
     // Quiz toggle
     this.quizEnabled = true;
@@ -225,6 +226,8 @@ export class Game {
     this._bbReturning = false;
     this._bbLabel = "";
     this._bbDef = null;
+    /** @type {"running"|"main_menu"} Where to return after closing a billboard demo */
+    this._bbReturnState = "running";
     this._demoCompleted = new Set();
 
     // Level completion
@@ -542,8 +545,13 @@ export class Game {
       this._checkBillboardHover();
     });
     c.addEventListener("pointerup", () => {
-      if (!this._dragMoved && this._hoveredBillboard && this.state === "running" && !this.recoveryPrompt) {
-        this._openBillboard(this._hoveredBillboard);
+      const canBillboard =
+        this.state === "running" ||
+        (this.state === "main_menu" && this.ui.isMainMenuBaseVisible());
+      if (!this._dragMoved && this._hoveredBillboard && canBillboard && !this.recoveryPrompt) {
+        if (!(this.tutorialMode && this._tutorialPaused)) {
+          this._openBillboard(this._hoveredBillboard);
+        }
       }
       this._pointerDown = null;
     });
@@ -655,7 +663,10 @@ export class Game {
   }
 
   _checkBillboardHover() {
-    if (this.state !== "running" || this.recoveryPrompt) {
+    const canHover =
+      this.state === "running" ||
+      (this.state === "main_menu" && this.ui.isMainMenuBaseVisible());
+    if (!canHover || this.recoveryPrompt) {
       this.renderer.domElement.style.cursor = "";
       this._hoveredBillboard = null;
       return;
@@ -673,6 +684,7 @@ export class Game {
   }
 
   _openBillboard(id) {
+    this._bbReturnState = this.state === "main_menu" ? "main_menu" : "running";
     this._activeBillboard = id;
     this.state = "billboard";
     this._bbZooming = true;
@@ -707,12 +719,20 @@ export class Game {
     if (this._bbReturning) return;
 
     const demoId = this._activeBillboard;
+    const tutorialBillboardStep =
+      this.tutorialMode &&
+      TUTORIAL_STEPS[this._tutorialStep]?.kind === "billboard";
+
     if (demoId && !this._demoCompleted.has(demoId)) {
       this._demoCompleted.add(demoId);
       this.score += 500;
       this.ui.showPickupPopup("+500");
       this.ui.setStatus(this._t("⭐ +500 Interactive Experience"), 2500);
       play(SFX.CORRECT, 0.7);
+    }
+
+    if (tutorialBillboardStep) {
+      this._advanceTutorialStep(null);
     }
 
     this.ui.showBillboard(false);
@@ -742,6 +762,7 @@ export class Game {
     this._tutorialEntityWasHit = false;
     this._tutorialHitPending = false;
     this._tutorialPickupCollected = false;
+    this._tutorialBillboardIntroShown = false;
     this.spawner.scriptedMode = true;
     this.state = "running";
     this.ui.showMainMenu(false);
@@ -837,6 +858,17 @@ export class Game {
     }
     if (now < this._tutorialSpawnDelay) return;
 
+    if (step.kind === "billboard") {
+      if (!this._tutorialBillboardIntroShown) {
+        this._tutorialBillboardIntroShown = true;
+        this._tutorialPaused = true;
+        const cx = this.renderer.domElement.clientWidth / 2;
+        const cy = this.renderer.domElement.clientHeight * 0.36;
+        this.ui.showTutorialTip(cx, cy, step.tip);
+      }
+      return;
+    }
+
     if (step.kind === "lesson") {
       if (!this._tutorialWaitingForBrake) {
         this._showTutorialTipOnPlayer(step.tip);
@@ -917,6 +949,7 @@ export class Game {
     this._tutorialPaused = false;
     this._tutorialTipShown = false;
     this._tutorialWaitingForBrake = false;
+    this._tutorialBillboardIntroShown = false;
     this.ui.hideTutorialTip();
     if (sfx) play(sfx, 0.6);
     this.ui.tutorialCheckStep(this._tutorialStep, TUTORIAL_STEPS.length);
@@ -2732,7 +2765,7 @@ export class Game {
       this._activeBillboard = null;
       this._bbZooming = false;
       this._bbReturning = false;
-      this.state = "running";
+      this.state = this._bbReturnState;
       this.renderer.domElement.style.cursor = "";
     }
   }

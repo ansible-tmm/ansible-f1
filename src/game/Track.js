@@ -614,11 +614,12 @@ export class Track {
       z: BB_Z,
     }));
 
-    const boardW = 9.5;
-    const boardH = 5.75;
+    /** 16:9 face matches interactive demo thumbnails; world scale is ~+15% for readability */
+    const boardW = 11.2;
+    const boardH = 6.3;
     const poleH = 7;
-    const canvasW = 768;
-    const canvasH = 480;
+    const canvasW = 1280;
+    const canvasH = 720;
 
     for (const def of defs) {
       const g = new THREE.Group();
@@ -682,7 +683,7 @@ export class Track {
       tex.colorSpace = THREE.SRGBColorSpace;
       const labelMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
       const label = new THREE.Mesh(
-        new THREE.PlaneGeometry(boardW * 0.92, boardH * 0.92), labelMat
+        new THREE.PlaneGeometry(boardW * 0.99, boardH * 0.99), labelMat
       );
       label.position.y = poleH + boardH / 2;
       label.position.z = 0.18;
@@ -693,11 +694,12 @@ export class Track {
         ctx.fillRect(0, 0, canvasW, canvasH);
 
         if (logoImg) {
-          const pad = 28;
+          const pad = 6;
           const maxW = canvasW - pad * 2;
           const maxH = canvasH - pad * 2;
           let w = logoImg.width, h = logoImg.height;
-          const scale = Math.min(maxW / w, maxH / h);
+          const mode = def.logoObjectFit === "cover" ? Math.max : Math.min;
+          const scale = mode(maxW / w, maxH / h);
           w *= scale; h *= scale;
           ctx.drawImage(logoImg, canvasW / 2 - w / 2, canvasH / 2 - h / 2, w, h);
         } else {

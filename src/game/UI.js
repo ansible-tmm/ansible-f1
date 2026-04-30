@@ -275,8 +275,8 @@ export class UI {
 
     this._menuBtns = [
       document.getElementById("btn-start"),
-      document.getElementById("btn-choose-driver"),
       document.getElementById("btn-choose-level-menu"),
+      document.getElementById("btn-choose-driver"),
       document.getElementById("btn-how-to-play"),
       document.getElementById("btn-highscores"),
       document.getElementById("btn-achievements"),
@@ -533,6 +533,11 @@ export class UI {
       && (!this.el.levelSelect || this.el.levelSelect.classList.contains("hidden"))
       && (!lb || lb.classList.contains("hidden"))
       && (!this.el.menuAchievements || this.el.menuAchievements.classList.contains("hidden"));
+  }
+
+  /** Default main menu (not sub-panels / attract scores) — billboards use this for hit-testing. */
+  isMainMenuBaseVisible() {
+    return this._isMainMenuActive();
   }
 
   _updateMenuFocus() {
@@ -1556,8 +1561,8 @@ export class UI {
   _toggleMenuButtons(visible) {
     const ids = [
       "btn-start",
-      "btn-choose-driver",
       "btn-choose-level-menu",
+      "btn-choose-driver",
       "btn-highscores",
       "btn-achievements",
     ];
@@ -1818,8 +1823,8 @@ export class UI {
       { road: "#555960", edge: "#446633", lane: "#ffffff", side: "#2a5520", sky: "#6699bb", scenery: "forest" },
       { road: "#8b7355", edge: "#c4a84a", lane: "#ffeecc", side: "#d4b85a", sky: "#ccaa77", scenery: "desert" },
       { road: "#3a3828", edge: "#4a5530", lane: "#88cc66", side: "#2a3a1a", sky: "#556644", scenery: "swamp" },
-      { road: "#667788", edge: "#8899aa", lane: "#ccddff", side: "#dde8f0", sky: "#aabbcc", scenery: "snow" },
       { road: "#445566", edge: "#3388aa", lane: "#ffffff", side: "#2266aa", sky: "#4488bb", scenery: "water" },
+      { road: "#667788", edge: "#8899aa", lane: "#ccddff", side: "#dde8f0", sky: "#aabbcc", scenery: "snow" },
       { road: "#555555", edge: "#cc8844", lane: "#ffdd44", side: "#8a9a5a", sky: "#6699cc", scenery: "coast" },
       { road: "#2a2a30", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
     ];
