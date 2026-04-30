@@ -225,6 +225,12 @@ export const PICKUP_TYPES = [
 
 export const TUTORIAL_STEPS = [
   { type: "PLAYBOOK",              kind: "pickup",   lane: 1, tip: "Collect Playbooks for +100 points!",               label: "Collect a Playbook" },
+  {
+    kind: "billboard",
+    lane: -1,
+    tip: "Billboards line the track — click one to open an interactive demo and earn +500 points!",
+    label: "Open a billboard demo",
+  },
   { type: "CERTIFIED_COLLECTION",  kind: "pickup",   lane: 1, tip: "Collections are worth +150 points!",               label: "Grab a Collection" },
   { type: "OUTAGE",                kind: "obstacle",  lane: 1, tip: "Dodge Outages — they drain your health!",          label: "Dodge an Outage" },
   { type: "BRAKE",                 kind: "lesson",    lane: -1, tip: "Hold S or ↓ to brake and slow down.",             label: "Learn to Brake" },
