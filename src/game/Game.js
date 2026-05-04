@@ -286,6 +286,8 @@ export class Game {
     this._gameOverTimer = null;
     this._attractScoreFlashTimer = null;
     this._attractScoreShowing = false;
+    /** Virtual run time for menu attract spawns — capped so density matches early run, not post-warmup. */
+    this._attractSpawnElapsed = 0;
 
     this._lastTs = performance.now();
 
@@ -3135,6 +3137,7 @@ export class Game {
   _startAttractMode() {
     this._attractActive = true;
     this._attractDodgeTimer = 0;
+    this._attractSpawnElapsed = 0;
     this.spawner.levelId = this.currentLevel;
     this.spawner.reset();
     this.player.mesh.visible = true;
@@ -3163,6 +3166,7 @@ export class Game {
 
   _stopAttractMode() {
     this._attractActive = false;
+    this._attractSpawnElapsed = 0;
     this.spawner.reset();
     this.ui.showAttractScores(false);
     clearInterval(this._attractScoreFlashTimer);
@@ -3173,7 +3177,13 @@ export class Game {
     this._stripCurve();
 
     this.track.update(dt, this._attractSpeed);
-    this.spawner.update(dt, this._attractSpeed, 15, 1);
+    this._attractSpawnElapsed += dt;
+    /** Hardcoded `15` made `elapsed >= WARMUP` so attract skipped warmup and spammed spawns like late run. */
+    const attractElapsed = Math.min(
+      this._attractSpawnElapsed,
+      CONFIG.WARMUP_SECONDS * 0.85
+    );
+    this.spawner.update(dt, this._attractSpeed, attractElapsed, 1);
 
     // AI dodge logic — look ahead for obstacles and switch lanes
     this._attractDodgeTimer -= dt;

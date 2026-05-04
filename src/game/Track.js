@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import { LEVELS } from "../data/config.js";
 
+/** Trench `propsGroup` / wall scroll wrap period — deck greeble must tile at this Z period or the floor “flips” visibly. */
+const TRENCH_PROP_Z_PERIOD = 14;
+
 /**
  * Themed roadway, lane markers, side props, billboards, skyline, horizon, lights.
  * Accepts a level theme key ("A", "B", "C") to configure visuals.
@@ -208,6 +211,10 @@ export class Track {
       color: 0x42444c, roughness: 0.88, metalness: 0.38,
       emissive: 0x0a0a0e, emissiveIntensity: 0.05, flatShading: true,
     });
+    if (this._isDeathStar) {
+      this._addDeathStarPeriodicDeckGreeble(parent, seamMat, plateMat);
+      return;
+    }
     for (let i = 0; i < 55; i++) {
       const z = -198 + i * 7.2;
       const seam = new THREE.Mesh(
@@ -236,13 +243,52 @@ export class Track {
     }
   }
 
+  /**
+   * Death Star deck detail that repeats every `TRENCH_PROP_Z_PERIOD` units — matches
+   * `propsGroup` wrap so scrolling looks continuous, not flip-book jumps.
+   */
+  _addDeathStarPeriodicDeckGreeble(parent, seamMat, plateMat) {
+    const P = TRENCH_PROP_Z_PERIOD;
+    const zMin = -224;
+    const nCells = 34;
+    for (let i = 0; i <= nCells; i++) {
+      const z = zMin + i * P;
+      const seam = new THREE.Mesh(
+        new THREE.BoxGeometry(21.8, 0.035, 0.09),
+        seamMat
+      );
+      seam.position.set(0, 0.018, z);
+      parent.add(seam);
+    }
+    /** Same plate layout in every length-P cell (world Z + n·P looks identical). */
+    const cellPlates = [
+      { x: -2.95, z: 3.4, w: 0.92, h: 0.048, d: 2.15 },
+      { x: 2.95, z: 4.1, w: 0.88, h: 0.042, d: 1.95 },
+      { x: -3.2, z: 8.6, w: 1.05, h: 0.055, d: 2.45 },
+      { x: 3.05, z: 9.8, w: 0.78, h: 0.038, d: 1.65 },
+      { x: -1.15, z: 6.2, w: 0.7, h: 0.04, d: 1.55 },
+      { x: 1.2, z: 11.5, w: 0.82, h: 0.045, d: 1.85 },
+    ];
+    for (let gi = 0; gi < nCells; gi++) {
+      const z0 = zMin + gi * P;
+      for (const cp of cellPlates) {
+        const plate = new THREE.Mesh(
+          new THREE.BoxGeometry(cp.w, cp.h, cp.d),
+          plateMat
+        );
+        plate.position.set(cp.x, 0.02 + cp.h * 0.5, z0 + cp.z);
+        parent.add(plate);
+      }
+    }
+  }
+
   _sideProps() {
     this.propsGroup = new THREE.Group();
     this.group.add(this.propsGroup);
     if (this._roadDeck) {
       this.propsGroup.add(this._roadDeck);
     }
-    this._propSpacing = 14;
+    this._propSpacing = TRENCH_PROP_Z_PERIOD;
     this._propCount = 28;
     this._propSlots = [];
 
@@ -1533,8 +1579,14 @@ export class Track {
     for (let i = 0; i < nPts; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 260;
       if (this._isDeathStar) {
-        /** Keep stars in the upper vault — avoids a “milkway band” hugging the trench horizon. */
-        positions[i * 3 + 1] = 32 + Math.random() * 88;
+        /**
+         * Mix “upper vault” with a band closer to the trench opening so looking straight
+         * ahead is not an empty black wedge (no stars) vs. corners that read as “space”.
+         */
+        const hi = i < nPts * 0.52;
+        positions[i * 3 + 1] = hi
+          ? 34 + Math.random() * 90
+          : 5 + Math.random() * 44;
         positions[i * 3 + 2] = -55 - Math.random() * 240;
       } else {
         positions[i * 3 + 1] = 18 + Math.random() * 85;
@@ -1552,6 +1604,8 @@ export class Track {
         opacity: this._isDeathStar ? 0.95 : 0.75,
         depthWrite: false,
         sizeAttenuation: true,
+        /** DS: don’t dim stars with scene fog — avoids a “darker void” wedge vs. corners. */
+        fog: !this._isDeathStar,
       })
     );
     skylineGroup.add(starPts);
@@ -1909,16 +1963,7 @@ export class Track {
       this.group.add(grid);
     }
 
-    if (this._isDeathStar) {
-      const sky = new THREE.Mesh(
-        new THREE.PlaneGeometry(720, 260),
-        new THREE.MeshBasicMaterial({
-          color: 0x000000,
-        })
-      );
-      sky.position.set(0, 92, -220);
-      this.group.add(sky);
-    } else {
+    if (!this._isDeathStar) {
       const sky = new THREE.Mesh(
         new THREE.PlaneGeometry(600, 200),
         new THREE.MeshBasicMaterial({
@@ -1928,6 +1973,7 @@ export class Track {
       sky.position.set(0, 80, -200);
       this.group.add(sky);
     }
+    /** DS: no backdrop mesh — `scene.background` stays uniform black; a plane can fog/tone-map differently. */
   }
 
   _lights() {
@@ -2080,8 +2126,9 @@ export class Track {
       }
     } else if (this.propsGroup) {
       this.propsGroup.position.z += dz;
-      if (this.propsGroup.position.z > this._propSpacing) {
-        this.propsGroup.position.z -= this._propSpacing;
+      const sp = this._propSpacing;
+      while (this.propsGroup.position.z > sp) {
+        this.propsGroup.position.z -= sp;
       }
     }
 

@@ -15,6 +15,9 @@ function nextId() {
   return _id;
 }
 
+/** Death Star TIE rivals hover above the trench deck (not wheel height). */
+const DS_TIE_FLIGHT_Y = CONFIG.PLAYER_Y + 0.5;
+
 const RIVAL_COLORS = [
   { livery: 0xff4422, accent: 0xffaa00, emissive: 0x301000, glow: 0xff6600 },
   { livery: 0xeedd00, accent: 0x222222, emissive: 0x302800, glow: 0xffee44 },
@@ -599,7 +602,8 @@ export class Spawner {
     this._nextRivalColorIdx++;
     const mesh =
       this.levelId === "DS" ? this._makeTieMesh() : this._makeRivalMesh(colors);
-    mesh.position.set(CONFIG.LANES[lane], CONFIG.PLAYER_Y, z);
+    const y0 = this.levelId === "DS" ? DS_TIE_FLIGHT_Y : CONFIG.PLAYER_Y;
+    mesh.position.set(CONFIG.LANES[lane], y0, z);
     this.scene.add(mesh);
     const e = {
       id: nextId(),
@@ -611,7 +615,10 @@ export class Spawner {
       z,
       active: true,
       worldBox: new THREE.Box3(),
-      hit: { w: 0.7, h: 0.6, d: 2.0 },
+      hit:
+        this.levelId === "DS"
+          ? { w: 1.75, h: 1.05, d: 0.58 }
+          : { w: 0.7, h: 0.6, d: 2.0 },
       aiTimer: 0,
     };
     this._syncBox(e);
@@ -642,7 +649,12 @@ export class Spawner {
           r.aiTimer = 0.4 + Math.random() * 0.3;
           this._rivalDodge(r);
         }
-        r.mesh.position.y = CONFIG.PLAYER_Y + Math.sin(performance.now() * 0.003 + r.id) * 0.03;
+        const flyY =
+          this.levelId === "DS"
+            ? DS_TIE_FLIGHT_Y
+            : CONFIG.PLAYER_Y;
+        r.mesh.position.y =
+          flyY + Math.sin(performance.now() * 0.003 + r.id) * 0.04;
       } else {
         // Bus plows through obstacles in its lane
         this._busSmashObstacles(r);
@@ -928,51 +940,104 @@ export class Spawner {
 
   _makeTieMesh() {
     const g = new THREE.Group();
-    const hull = new THREE.MeshStandardMaterial({
-      color: 0x3a3c44, metalness: 0.55, roughness: 0.42,
-      emissive: 0x0a0a10, emissiveIntensity: 0.12, flatShading: true,
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x8599a6,
+      metalness: 0.5,
+      roughness: 0.52,
+      emissive: 0x455059,
+      emissiveIntensity: 0.07,
+      flatShading: true,
     });
-    const wing = new THREE.MeshStandardMaterial({
-      color: 0x1a1c22, metalness: 0.35, roughness: 0.55,
-      emissive: 0x050508, emissiveIntensity: 0.06, flatShading: true,
+    const solarMat = new THREE.MeshStandardMaterial({
+      color: 0x050608,
+      metalness: 0.22,
+      roughness: 0.88,
+      emissive: 0x020304,
+      emissiveIntensity: 0.04,
+      flatShading: true,
     });
-    const solar = new THREE.MeshStandardMaterial({
-      color: 0x222844, metalness: 0.25, roughness: 0.35,
-      emissive: 0x111833, emissiveIntensity: 0.2, flatShading: true,
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0xaeb6c4,
+      metalness: 0.48,
+      roughness: 0.44,
+      emissive: 0x5a6570,
+      emissiveIntensity: 0.06,
+      flatShading: true,
     });
-    const cockpit = new THREE.MeshStandardMaterial({
-      color: 0x080810, metalness: 0.6, roughness: 0.2,
-      emissive: 0x112211, emissiveIntensity: 0.15, flatShading: true,
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x040508,
+      metalness: 0.65,
+      roughness: 0.18,
+      emissive: 0x0c1814,
+      emissiveIntensity: 0.12,
+      flatShading: true,
+    });
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: 0x661010,
+      metalness: 0.45,
+      roughness: 0.55,
+      emissive: 0x441010,
+      emissiveIntensity: 0.35,
+      flatShading: true,
     });
 
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), hull);
-    body.scale.set(1, 0.85, 1.15);
-    body.position.set(0, 0.32, 0);
+    /** Ball cockpit — faces roughly −Z “forward” down the trench. */
+    const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.21, 1), hullMat);
+    body.scale.set(1, 1.02, 1.12);
+    body.position.set(0, 0, 0);
     g.add(body);
 
-    for (const side of [-1, 1]) {
-      const w = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.04, 0.55), wing);
-      w.position.set(side * 0.52, 0.32, 0.02);
-      g.add(w);
-      const p = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.045, 0.42), solar);
-      p.position.set(side * 0.52, 0.32, 0.02);
-      g.add(p);
-    }
-
-    const win = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 5), cockpit);
-    win.scale.set(1, 0.7, 1.1);
-    win.position.set(0, 0.36, -0.22);
+    const win = new THREE.Mesh(
+      new THREE.SphereGeometry(0.085, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.48),
+      glassMat
+    );
+    win.rotation.x = 0.42;
+    win.position.set(0, 0.04, -0.17);
     g.add(win);
 
-    const pylL = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.35, 5), hull);
-    pylL.rotation.x = Math.PI / 2;
-    pylL.position.set(-0.18, 0.28, 0.38);
-    g.add(pylL);
-    const pylR = pylL.clone();
-    pylR.position.x = 0.18;
-    g.add(pylR);
+    const port = new THREE.Mesh(new THREE.SphereGeometry(0.028, 5, 4), accentMat);
+    port.position.set(0.16, 0.08, -0.05);
+    g.add(port);
 
-    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    const RHex = 0.5;
+    const wingThick = 0.055;
+    const xWing = 0.78;
+    for (const side of [-1, 1]) {
+      const sx = side * xWing;
+      /** Vertical hex “solar” panel: cylinder axis X → hex profile in YZ (classic TIE silhouette). */
+      const panel = new THREE.Mesh(
+        new THREE.CylinderGeometry(RHex, RHex, wingThick, 6),
+        solarMat
+      );
+      panel.rotation.z = Math.PI / 2;
+      panel.position.set(sx, 0, 0.02);
+      g.add(panel);
+
+      /** Pylon from cockpit to wing root. */
+      const strut = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.1, 0.13),
+        frameMat
+      );
+      strut.position.set(side * 0.43, 0, 0.02);
+      g.add(strut);
+
+      /** Corner frame blocks on hex vertices (read as frame + greeble). */
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+        const vy = RHex * 0.9 * Math.cos(a);
+        const vz = RHex * 0.9 * Math.sin(a);
+        const bolt = new THREE.Mesh(
+          new THREE.BoxGeometry(0.065, 0.08, 0.08),
+          frameMat
+        );
+        bolt.position.set(sx + side * 0.034, vy, vz);
+        g.add(bolt);
+      }
+    }
+
+    g.traverse((o) => {
+      if (o.isMesh) o.castShadow = true;
+    });
     return g;
   }
 
