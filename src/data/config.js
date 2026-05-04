@@ -630,6 +630,29 @@ export const LEVELS = {
       },
     ],
   },
+  DS: {
+    id: "DS",
+    pathSegment: "Death-Star-Trench",
+    name: "Death Star Trench",
+    subtitle: "May the Fourth be with you",
+    road:     0x1a1a22,
+    roadEmissive: 0x050508,
+    edge:     0x3a3a48,
+    edgeEmissive: 0x151520,
+    laneMarker: 0xff3333,
+    side:     0x0d0d12,
+    sideEmissive: 0x080810,
+    fog:      0x050508,
+    sky:      0x020208,
+    sceneBg:  0x020206,
+    scenery: "trench",
+    music: "./assets/audio/bgm-durham.m4a",
+    billboards: [
+      { id: "ds1", label: "Thermal exhaust port", accent: 0xffcc00 },
+      { id: "ds2", label: "Stay on target", accent: 0xcc3333 },
+      { id: "ds3", label: "Use the automation", accent: 0x4488ff },
+    ],
+  },
 };
 
 /** Summit Booth Themes site (paired booth pages — keep in sync with summit-booth-themes repo) */

@@ -9,6 +9,7 @@ const KEYS = {
   LAST_LEVEL: "builtToAutomate_lastLevel",
   LAST_DRIVER: "builtToAutomate_lastDriver",
   ACHIEVEMENTS: "builtToAutomate_achievements",
+  DEATH_STAR_TRENCH: "builtToAutomate_deathStarTrenchUnlocked",
 };
 
 function readNumber(key, fallback = 0) {
@@ -159,6 +160,21 @@ export function getLastDriver() {
 export function setLastDriver(id) {
   try {
     localStorage.setItem(KEYS.LAST_DRIVER, id);
+  } catch { /* ignore */ }
+}
+
+export function getDeathStarTrenchUnlocked() {
+  try {
+    return localStorage.getItem(KEYS.DEATH_STAR_TRENCH) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setDeathStarTrenchUnlocked(on = true) {
+  try {
+    if (on) localStorage.setItem(KEYS.DEATH_STAR_TRENCH, "1");
+    else localStorage.removeItem(KEYS.DEATH_STAR_TRENCH);
   } catch { /* ignore */ }
 }
 

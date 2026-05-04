@@ -153,6 +153,7 @@ export class Track {
     else if (s === "snow") this._snowProps();
     else if (s === "water") this._waterProps();
     else if (s === "coast") this._coastProps();
+    else if (s === "trench") this._trenchProps();
 
     // Total wrap range for props
     this._propTotalRange = this._propSpacing * this._propCount;
@@ -773,6 +774,7 @@ export class Track {
     else if (s === "snow") this._snowMountainSkyline(this._skylineGroup);
     else if (s === "water") this._waterSkyline(this._skylineGroup);
     else if (s === "coast") this._coastSkyline(this._skylineGroup);
+    else if (s === "trench") this._trenchSkyline(this._skylineGroup);
 
     this._castleMode = false;
     this._savedSkyChildren = null;
@@ -1322,6 +1324,92 @@ export class Track {
     }
   }
 
+  _trenchProps() {
+    const wallMat = new THREE.MeshStandardMaterial({
+      color: 0x4a4a52, roughness: 0.88, metalness: 0.35,
+      emissive: 0x1a1a22, emissiveIntensity: 0.2,
+    });
+    const ribMat = new THREE.MeshStandardMaterial({
+      color: 0x3a3a44, roughness: 0.9, metalness: 0.5,
+      emissive: 0x101018, emissiveIntensity: 0.15,
+    });
+    const pipeMat = new THREE.MeshStandardMaterial({
+      color: 0x5a5a62, roughness: 0.75, metalness: 0.55,
+    });
+    for (let i = 0; i < this._propCount; i++) {
+      const z = -200 + i * this._propSpacing;
+      for (const side of [-1, 1]) {
+        const wx = side * 7.2;
+        const wall = new THREE.Mesh(
+          new THREE.BoxGeometry(1.4, 7.5, this._propSpacing * 0.92),
+          wallMat
+        );
+        wall.position.set(wx, 3.75, z);
+        this.propsGroup.add(wall);
+        for (let r = 0; r < 4; r++) {
+          const rib = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 6.8, 0.25),
+            ribMat
+          );
+          rib.position.set(
+            wx + side * 0.72,
+            3.4,
+            z - this._propSpacing * 0.35 + r * (this._propSpacing * 0.22)
+          );
+          this.propsGroup.add(rib);
+        }
+        if (Math.random() < 0.45) {
+          const pipe = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.15, 2.2, 6),
+            pipeMat
+          );
+          pipe.rotation.z = side * 0.4;
+          pipe.position.set(wx + side * 0.55, 2.5 + Math.random() * 2, z + (Math.random() - 0.5) * 4);
+          this.propsGroup.add(pipe);
+        }
+      }
+    }
+  }
+
+  _trenchSkyline(skylineGroup) {
+    const starMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.85,
+    });
+    for (let si = 0; si < 120; si++) {
+      const st = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04 + Math.random() * 0.05, 4, 4),
+        starMat
+      );
+      st.position.set(
+        (Math.random() - 0.5) * 180,
+        18 + Math.random() * 45,
+        -30 - Math.random() * 80
+      );
+      skylineGroup.add(st);
+    }
+    const dsMat = new THREE.MeshStandardMaterial({
+      color: 0x3a3a42, roughness: 0.95, metalness: 0.15,
+      emissive: 0x0a0a10, emissiveIntensity: 0.25,
+    });
+    const ds = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(22, 1),
+      dsMat
+    );
+    ds.position.set(0, 28, -95);
+    ds.scale.set(1.1, 0.35, 1);
+    skylineGroup.add(ds);
+    const dish = new THREE.Mesh(
+      new THREE.SphereGeometry(6, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5),
+      new THREE.MeshStandardMaterial({
+        color: 0x2a2a32, roughness: 0.85, metalness: 0.2,
+        emissive: 0x151520, emissiveIntensity: 0.2,
+      })
+    );
+    dish.rotation.x = Math.PI * 0.5;
+    dish.position.set(14, 22, -88);
+    skylineGroup.add(dish);
+  }
+
   _durhamSkyline(skylineGroup) {
     const bldgMat = (color, emissive = 0x000000) =>
       new THREE.MeshStandardMaterial({
@@ -1638,6 +1726,7 @@ export class Track {
       forest: [0x447744, 0x2a4a2a], desert: [0x998855, 0x665530],
       swamp: [0x3a5530, 0x1a2a14], snow: [0x7788aa, 0x445566],
       water: [0x2255aa, 0x0a1840], coast: [0x557755, 0x2a3a2a],
+      trench: [0x2a2a38, 0x101018],
     };
     const [gc1, gc2] = gridColors[t.scenery] || [0x888888, 0x444444];
     const grid = new THREE.GridHelper(400, 80, gc1, gc2);
@@ -1658,36 +1747,41 @@ export class Track {
 
   _lights() {
     const isCity = this.theme.scenery === "city" || this.theme.scenery === "durham";
+    const isTrench = this.theme.scenery === "trench";
 
     const amb = new THREE.AmbientLight(
-      isCity ? 0xb8c8e0 : 0xdde8f0,
-      isCity ? 0.72 : 0.9
+      isTrench ? 0x445566 : isCity ? 0xb8c8e0 : 0xdde8f0,
+      isTrench ? 0.35 : isCity ? 0.72 : 0.9
     );
     this.group.add(amb);
 
     const hemi = new THREE.HemisphereLight(
-      isCity ? 0x8899bb : 0xaabbcc,
-      isCity ? 0x1a1520 : 0x443322,
-      isCity ? 0.55 : 0.65
+      isTrench ? 0x223344 : isCity ? 0x8899bb : 0xaabbcc,
+      isTrench ? 0x080810 : isCity ? 0x1a1520 : 0x443322,
+      isTrench ? 0.4 : isCity ? 0.55 : 0.65
     );
     hemi.position.set(0, 80, 0);
     this.group.add(hemi);
 
     const key = new THREE.DirectionalLight(
-      isCity ? 0xd8e8ff : 0xfff8e8,
-      isCity ? 0.95 : 1.1
+      isTrench ? 0xaabbcc : isCity ? 0xd8e8ff : 0xfff8e8,
+      isTrench ? 0.55 : isCity ? 0.95 : 1.1
     );
     key.position.set(-6, 32, 28);
     this.group.add(key);
 
     const rim = new THREE.DirectionalLight(
-      isCity ? 0xaaccff : 0xddccaa,
-      isCity ? 0.45 : 0.55
+      isTrench ? 0x6688aa : isCity ? 0xaaccff : 0xddccaa,
+      isTrench ? 0.25 : isCity ? 0.45 : 0.55
     );
     rim.position.set(0, 14, 42);
     this.group.add(rim);
 
-    if (isCity) {
+    if (isTrench) {
+      const trenchFill = new THREE.PointLight(0xff4422, 0.4, 80, 2);
+      trenchFill.position.set(0, 3, -40);
+      this.group.add(trenchFill);
+    } else if (isCity) {
       const fillL = new THREE.PointLight(0x55ddff, 1.15, 55, 1.8);
       fillL.position.set(-10, 4.5, 8);
       this.group.add(fillL);
@@ -1815,6 +1909,57 @@ export class Track {
     const g = new THREE.Group();
     const distance = Math.max(150, Math.min(500, worldSpeed * timeLeft));
     const z = playerZ - distance;
+
+    if (this.theme.scenery === "trench") {
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x3a3a44, roughness: 0.85, metalness: 0.4,
+        emissive: 0x221100, emissiveIntensity: 0.15,
+      });
+      const glowMat = new THREE.MeshStandardMaterial({
+        color: 0xff3311, emissive: 0xff6600, emissiveIntensity: 1.2,
+      });
+      const span = 12;
+      for (const side of [-1, 1]) {
+        const pillar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, 5.5, 0.45),
+          frameMat
+        );
+        pillar.position.set(side * span * 0.42, 2.75, z);
+        g.add(pillar);
+      }
+      const lintel = new THREE.Mesh(
+        new THREE.BoxGeometry(span + 0.6, 0.35, 0.35),
+        frameMat
+      );
+      lintel.position.set(0, 5.4, z);
+      g.add(lintel);
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1.15, 0.12, 10, 24),
+        glowMat
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(0, 3.2, z + 0.1);
+      g.add(ring);
+      const port = new THREE.Mesh(
+        new THREE.CircleGeometry(0.85, 20),
+        new THREE.MeshBasicMaterial({
+          color: 0xff4400, transparent: true, opacity: 0.75,
+        })
+      );
+      port.rotation.x = -Math.PI / 2;
+      port.position.set(0, 3.2, z + 0.18);
+      g.add(port);
+      const beamL = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.12, span * 0.85),
+        new THREE.MeshBasicMaterial({ color: 0xffaa44 })
+      );
+      beamL.position.set(0, 3.2, z);
+      g.add(beamL);
+      this.group.add(g);
+      this._finishLine = g;
+      this._finishZ = z;
+      return;
+    }
 
     const white = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x333333, emissiveIntensity: 0.3 });
     const black = new THREE.MeshStandardMaterial({ color: 0x111111 });

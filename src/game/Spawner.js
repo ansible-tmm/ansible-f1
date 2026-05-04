@@ -272,7 +272,8 @@ export class Spawner {
   }
 
   _addObstacle(type, lane, z) {
-    const mesh = this._makeObstacleMesh();
+    const mesh =
+      this.levelId === "DS" ? this._makeTrenchObstacleMesh() : this._makeObstacleMesh();
     const x = CONFIG.LANES[lane];
     mesh.position.set(x, 0.0, z);
     this.scene.add(mesh);
@@ -378,6 +379,55 @@ export class Spawner {
     warn.position.set(0, wallH + 0.14, wallD / 2 + 0.04);
     g.add(warn);
 
+    return g;
+  }
+
+  /** Imperial trench greeble — same footprint as brick wall for collisions. */
+  _makeTrenchObstacleMesh() {
+    const g = new THREE.Group();
+    const wallW = 1.8, wallH = 1.3, wallD = 0.55;
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x4a4c56, roughness: 0.82, metalness: 0.45,
+      emissive: 0x101418, emissiveIntensity: 0.2,
+    });
+    const darkMat = new THREE.MeshStandardMaterial({
+      color: 0x35363e, roughness: 0.88, metalness: 0.5,
+      emissive: 0x080a0c, emissiveIntensity: 0.15,
+    });
+    const back = new THREE.Mesh(
+      new THREE.BoxGeometry(wallW * 0.98, wallH * 0.95, wallD * 0.35),
+      panelMat
+    );
+    back.position.set(0, wallH / 2, -wallD * 0.12);
+    g.add(back);
+    const cols = 5;
+    const rows = 4;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const px = (col - (cols - 1) / 2) * (wallW / cols);
+        const py = 0.22 + row * (wallH / rows);
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(wallW / cols - 0.06, wallH / rows - 0.05, wallD * 0.55),
+          Math.random() < 0.35 ? darkMat : panelMat
+        );
+        panel.position.set(px, py, wallD * 0.08);
+        g.add(panel);
+      }
+    }
+    for (let i = 0; i < 3; i++) {
+      const rib = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, wallH * 0.88, wallD * 0.9),
+        darkMat
+      );
+      rib.position.set(-wallW * 0.35 + i * wallW * 0.35, wallH / 2, 0);
+      g.add(rib);
+    }
+    const warn = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 0.16, 0.06),
+      new THREE.MeshBasicMaterial({ color: 0xffcc00 })
+    );
+    warn.position.set(0, wallH + 0.14, wallD / 2 + 0.04);
+    g.add(warn);
     return g;
   }
 

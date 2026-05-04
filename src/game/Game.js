@@ -20,6 +20,8 @@ import {
   setLastLevel,
   getLastDriver,
   setLastDriver,
+  getDeathStarTrenchUnlocked,
+  setDeathStarTrenchUnlocked,
   loadAchievements,
   unlockAchievement,
   ACHIEVEMENT_DEFS,
@@ -27,6 +29,7 @@ import {
 import { preload, play, startLoop, stopLoop, startBgm } from "../utils/audio.js";
 import { submitGlobalScore } from "../utils/firebase.js";
 import { GodzillaMode } from "./GodzillaMode.js";
+import { syncThemeUrl } from "../utils/themePath.js";
 
 const SFX = {
   SHIELD_HIT: "./assets/audio/shield-hit.wav",
@@ -237,6 +240,13 @@ export class Game {
     this._orbitStartTime = 0;
     this._orbitCenter = new THREE.Vector3();
     this._lcOverlayShown = false;
+    this._lcOverlayDelayMs = 3000;
+    /** @type {THREE.Group|null} */
+    this._dsFinaleGroup = null;
+    /** @type {THREE.Mesh|null} */
+    this._dsFinaleBoom = null;
+    /** @type {THREE.Points|null} */
+    this._dsFinaleParticles = null;
     this._celebCrowd = [];
     this._celebConfetti = [];
     this._secretBuffer = "";
@@ -264,6 +274,22 @@ export class Game {
     this._quizPhase = "question";
   }
 
+  _tryUnlockDeathStarTrench() {
+    setDeathStarTrenchUnlocked(true);
+    this.ui.syncDeathStarTrenchCardVisibility();
+    this.ui.refreshLevelSelectPreviews();
+    this.ui.showHippoCrush("DEATH STAR TRENCH UNLOCKED");
+    play(SFX.BOOST_WHOOSH, 0.85);
+    this.switchLevel("DS", "main_menu");
+    syncThemeUrl("DS", "push");
+  }
+
+  _applyDeathStarRunVehicle() {
+    if (this.currentLevel === "DS") {
+      this.player.swapCar("xwing");
+    }
+  }
+
   _bindKeys() {
     window.addEventListener("keydown", (e) => {
       if (this.state === "godzilla") {
@@ -279,6 +305,16 @@ export class Game {
         if (this._globalSecretBuffer.endsWith("godzilla")) {
           this._globalSecretBuffer = "";
           this._enterGodzilla();
+          return;
+        }
+        if (this._globalSecretBuffer.endsWith("starwars")) {
+          this._globalSecretBuffer = "";
+          if (!getDeathStarTrenchUnlocked()) {
+            this._tryUnlockDeathStarTrench();
+          } else if (this.currentLevel !== "DS") {
+            this.switchLevel("DS", "main_menu");
+            syncThemeUrl("DS", "push");
+          }
           return;
         }
       }
@@ -749,6 +785,7 @@ export class Game {
     this._stopAttractMode();
     clearTimeout(this._gameOverTimer);
     this.resetRun();
+    this._applyDeathStarRunVehicle();
     this.tutorialMode = true;
     this._tutorialStep = 0;
     this._tutorialPaused = false;
@@ -780,6 +817,7 @@ export class Game {
   }
 
   resetRun() {
+    this._cleanupDeathStarFinale();
     incrementTotalRuns();
     this._resetQuizFlags();
     this.quizMode = null;
@@ -1017,6 +1055,7 @@ export class Game {
     this.ui.hideAllTutorialUI();
     this._activeBillboard = null;
     clearTimeout(this._gameOverTimer);
+    this._cleanupDeathStarFinale();
     this._cleanupCelebration();
     this.player.resetCelebrationPose();
     stopLoop();
@@ -1053,6 +1092,7 @@ export class Game {
 
   switchLevel(levelId, returnTo = "main_menu") {
     if (!LEVELS[levelId]) return;
+    if (levelId === "DS" && !getDeathStarTrenchUnlocked()) return;
     this.currentLevel = levelId;
     setLastLevel(levelId);
 
@@ -1365,7 +1405,9 @@ export class Game {
     this.player.setAutomationFlowActive(false);
     stopLoop();
     play(SFX.CORRECT, 0.9);
-    play(SFX.CROWD_CHEERS, 0.7);
+    if (this.currentLevel !== "DS") {
+      play(SFX.CROWD_CHEERS, 0.7);
+    }
     if (this.player.carType === "timetrain") play(SFX.TRAIN_FINALE, 0.85);
 
     const finishBonus = 5000;
@@ -1374,10 +1416,36 @@ export class Game {
 
     this._orbitStartTime = performance.now();
     this._orbitCenter = this.player.mesh.position.clone();
-    this._spawnCelebration(this._orbitCenter);
+    if (this.currentLevel === "DS") {
+      this._lcOverlayDelayMs = 5200;
+      this._spawnDeathStarFinale();
+    } else {
+      this._lcOverlayDelayMs = 3000;
+      this._spawnCelebration(this._orbitCenter);
+    }
 
     const isCheater = this._isCheater();
-    const cheaterType = this.player.carType === "hippo" ? "hippo" : this.player.carType === "scaloneta" ? "scaloneta" : this.player.carType === "f16" ? "f16" : this.player.carType === "trex" ? "trex" : this.player.carType === "cadillac" ? "cadillac" : this.player.carType === "ogre" ? "ogre" : this.player.carType === "crooner" ? "crooner" : this.player.carType === "timetrain" ? "timetrain" : this.player.carType === "bicycle" ? "bicycle" : isCheater ? "semi" : null;
+    const cheaterType = this.currentLevel === "DS"
+      ? "deathstar"
+      : this.player.carType === "hippo"
+        ? "hippo"
+        : this.player.carType === "scaloneta"
+          ? "scaloneta"
+          : this.player.carType === "f16"
+            ? "f16"
+            : this.player.carType === "trex"
+              ? "trex"
+              : this.player.carType === "cadillac"
+                ? "cadillac"
+                : this.player.carType === "ogre"
+                  ? "ogre"
+                  : this.player.carType === "crooner"
+                    ? "crooner"
+                    : this.player.carType === "timetrain"
+                      ? "timetrain"
+                      : this.player.carType === "bicycle"
+                        ? "bicycle"
+                        : isCheater ? "semi" : null;
     this.ui.setLevelCompleteStats({
       score: this.score,
       hits: this.obstaclesHit,
@@ -1396,7 +1464,9 @@ export class Game {
 
   async saveLcScore() {
     if (this._isCheater()) {
-      const msg = this.player.carType === "hippo"
+      const msg = this.currentLevel === "DS"
+        ? "Trench run — leaderboards are not the Jedi way."
+        : this.player.carType === "hippo"
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
         : this.player.carType === "scaloneta"
         ? "¡La Scaloneta no necesita leaderboard, campeón!"
@@ -1429,7 +1499,9 @@ export class Game {
 
   async saveScore() {
     if (this._isCheater()) {
-      const msg = this.player.carType === "hippo"
+      const msg = this.currentLevel === "DS"
+        ? "Trench run — leaderboards are not the Jedi way."
+        : this.player.carType === "hippo"
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
         : this.player.carType === "scaloneta"
         ? "¡La Scaloneta no necesita leaderboard, campeón!"
@@ -1611,7 +1683,7 @@ export class Game {
     if (this.state === "level_complete") {
       this._updateOrbitCamera(dt, now);
       this._updateCelebration(dt, now);
-      if (!this._lcOverlayShown && now - this._orbitStartTime > 3000) {
+      if (!this._lcOverlayShown && now - this._orbitStartTime > this._lcOverlayDelayMs) {
         this._lcOverlayShown = true;
         this.ui.showLevelComplete(true);
       }
@@ -1857,7 +1929,7 @@ export class Game {
   }
 
   _isCheater() {
-    return this._isSemiTruck() || this.player.carType === "hippo" || this.player.carType === "scaloneta" || this.player.carType === "f16" || this.player.carType === "trex" || this.player.carType === "cadillac" || this.player.carType === "ogre" || this.player.carType === "crooner" || this.player.carType === "timetrain" || this.player.carType === "bicycle";
+    return this.currentLevel === "DS" || this._isSemiTruck() || this.player.carType === "hippo" || this.player.carType === "scaloneta" || this.player.carType === "f16" || this.player.carType === "trex" || this.player.carType === "cadillac" || this.player.carType === "ogre" || this.player.carType === "crooner" || this.player.carType === "timetrain" || this.player.carType === "bicycle";
   }
 
   _croonerSmashLines = [
@@ -2895,8 +2967,120 @@ export class Game {
     this._applyCurve();
   }
 
+  _spawnDeathStarFinale() {
+    this._cleanupDeathStarFinale();
+    const g = new THREE.Group();
+    this._dsFinaleGroup = g;
+    this.scene.add(g);
+
+    const dsMat = new THREE.MeshStandardMaterial({
+      color: 0x4a4a55, roughness: 0.92, metalness: 0.15,
+      emissive: 0x101018, emissiveIntensity: 0.4,
+    });
+    const dsMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(13, 1), dsMat);
+    dsMesh.position.set(1.5, 7, -46);
+    dsMesh.scale.set(1.15, 0.38, 1);
+    g.add(dsMesh);
+
+    const boomMat = new THREE.MeshStandardMaterial({
+      color: 0xff6622, emissive: 0xff4400, emissiveIntensity: 2.2,
+      transparent: true, opacity: 0.95,
+    });
+    const boom = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 16), boomMat);
+    boom.position.set(7, 6, -42);
+    g.add(boom);
+    this._dsFinaleBoom = boom;
+
+    const n = 200;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(n * 3);
+    const vel = [];
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = boom.position.x + (Math.random() - 0.5) * 0.6;
+      pos[i * 3 + 1] = boom.position.y + (Math.random() - 0.5) * 0.6;
+      pos[i * 3 + 2] = boom.position.z + (Math.random() - 0.5) * 0.6;
+      vel.push({
+        vx: (Math.random() - 0.5) * 10,
+        vy: (Math.random() - 0.5) * 10,
+        vz: (Math.random() - 0.5) * 10,
+      });
+    }
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pMat = new THREE.PointsMaterial({
+      color: 0xffcc66,
+      size: 0.15,
+      transparent: true,
+      opacity: 0.92,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const pts = new THREE.Points(geo, pMat);
+    g.add(pts);
+    this._dsFinaleParticles = pts;
+    pts.userData.vel = vel;
+  }
+
+  _cleanupDeathStarFinale() {
+    if (this._dsFinaleGroup) {
+      this.scene.remove(this._dsFinaleGroup);
+      this._dsFinaleGroup.traverse((c) => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) {
+          const m = c.material;
+          if (Array.isArray(m)) m.forEach((x) => x.dispose());
+          else m.dispose();
+        }
+      });
+      this._dsFinaleGroup = null;
+    }
+    this._dsFinaleBoom = null;
+    this._dsFinaleParticles = null;
+  }
+
+  _updateDeathStarFinale(dt, now) {
+    const t = (now - this._orbitStartTime) / 1000;
+    if (this._dsFinaleBoom) {
+      const s = 1 + Math.min(22, t * t * 11);
+      this._dsFinaleBoom.scale.setScalar(s);
+      const mat = /** @type {THREE.MeshStandardMaterial} */ (this._dsFinaleBoom.material);
+      if (mat && mat.emissiveIntensity !== undefined) {
+        mat.emissiveIntensity = Math.max(0.15, 3.8 - t * 0.95);
+      }
+    }
+    if (this._dsFinaleParticles && this._dsFinaleParticles.userData.vel) {
+      const posAttr = this._dsFinaleParticles.geometry.attributes.position;
+      const arr = /** @type {Float32Array} */ (posAttr.array);
+      const vel = this._dsFinaleParticles.userData.vel;
+      for (let i = 0; i < vel.length; i++) {
+        arr[i * 3] += vel[i].vx * dt;
+        arr[i * 3 + 1] += vel[i].vy * dt;
+        arr[i * 3 + 2] += vel[i].vz * dt;
+        vel[i].vy -= 2.2 * dt;
+      }
+      posAttr.needsUpdate = true;
+    }
+    const p = this.player.mesh.position;
+    if (this._dsFinaleGroup) {
+      this._dsFinaleGroup.position.set(p.x, p.y, p.z);
+    }
+  }
+
   _updateOrbitCamera(dt, now) {
     const elapsed = (now - this._orbitStartTime) / 1000;
+    if (this.currentLevel === "DS") {
+      this._updateDeathStarFinale(dt, now);
+      const angle = elapsed * 0.45;
+      const radius = 15;
+      const height = 5.5 + Math.sin(elapsed * 0.28) * 0.65;
+      const center = this.player.mesh.position;
+      this.camera.position.set(
+        center.x + Math.sin(angle) * radius,
+        center.y + height,
+        center.z + Math.cos(angle) * radius
+      );
+      this.camera.lookAt(center.x, center.y + 0.5, center.z);
+      return;
+    }
     const angle = elapsed * 0.5;
     const radius = 8;
     const height = 4;

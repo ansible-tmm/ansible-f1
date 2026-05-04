@@ -54,6 +54,8 @@ Some drivers have hidden alternate vehicles that transform the gameplay. Type th
 | Justin Braun | `crooner` | 🎤 Driving Crooner | A dark town-car sedan with the famous fedora & cigar window decals from *I Think You Should Leave*. The Driving Crooner figure sits inside wearing a fedora. Indestructible — smashes everything for +50,000 pts with ITYSL quotes ("I gotta make money on this!", "It's simply too good!"). Scores don't count on the leaderboard. |
 | Roger Lopez | `crossfit` | 🚂 Time Train Mode | The Jules Verne time-traveling locomotive from *Back to the Future Part III*. Hovers above the track with blue glow pads, flux capacitor on the smokebox, Mr. Fusion on the cab, time circuit displays, and a steam-puffing smokestack. Indestructible — smashes everything for +50,000 pts with BTTF quotes. Scores don't count on the leaderboard. |
 
+**Global unlock (keyboard):** Type `starwars` anywhere the rolling secret buffer applies (same pattern as `godzilla` — including from the main menu). This permanently unlocks the hidden **Death Star Trench** level in *Choose Track*, switches the active theme to it, and saves the unlock in local storage. Every driver flies an X-wing there; obstacles and finish line match the trench aesthetic; clearing the run plays a short space finale instead of the usual crowd celebration. Scores do not count on the leaderboard.
+
 ## Special Vehicle Abilities
 
 Some vehicles have unique abilities triggered by clicking (instead of honking):

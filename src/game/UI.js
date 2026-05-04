@@ -1,4 +1,4 @@
-import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS } from "../utils/storage.js";
+import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS, getDeathStarTrenchUnlocked } from "../utils/storage.js";
 import { fetchGlobalLeaderboard } from "../utils/firebase.js";
 import * as THREE from "three";
 import { LEVELS, DRIVERS, getSummitBoothThemeUrl } from "../data/config.js";
@@ -147,8 +147,21 @@ export class UI {
     this._populateCountrySelect();
     this._bindButtons();
     this._syncLevelCardLabels();
+    this.syncDeathStarTrenchCardVisibility();
     this._drawLevelPreviews();
     this._syncSummitDockVisibility();
+  }
+
+  syncDeathStarTrenchCardVisibility() {
+    const card = document.querySelector(".level-card-ds");
+    if (!card) return;
+    const on = getDeathStarTrenchUnlocked();
+    card.classList.toggle("hidden", !on);
+    card.setAttribute("aria-hidden", on ? "false" : "true");
+  }
+
+  refreshLevelSelectPreviews() {
+    this._drawLevelPreviews();
   }
 
   _syncLevelCardLabels() {
@@ -522,7 +535,8 @@ export class UI {
     const dock = document.getElementById("summit-booth-back-wrap");
     if (!dock) return;
     const show = this._isMainMenuActive();
-    dock.classList.toggle("hidden", !show);
+    const isDs = this._summitLinkLevelId === "DS";
+    dock.classList.toggle("hidden", !show || isDs);
   }
 
   _isMainMenuActive() {
@@ -1092,7 +1106,11 @@ export class UI {
     if (this.el.lcPickups) this.el.lcPickups.textContent = String(stats.pickups);
     if (this.el.lcCorrect) this.el.lcCorrect.textContent = String(stats.correct);
     if (isCheater) {
-      if (cheaterType === "hippo") {
+      if (cheaterType === "deathstar") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "Trench run complete";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "The Force was with you — but trench runs stay off the leaderboard. Use the automation, Luke.";
+      } else if (cheaterType === "hippo") {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "🦛 Hippo Mode Complete!";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
           "Sorry, hippo mode can't be on the leaderboard. Stop cheating!";
@@ -1772,6 +1790,7 @@ export class UI {
     }
     this._summitLinkLevelId = levelId;
     this._refreshSummitBoothLink();
+    this._syncSummitDockVisibility();
   }
 
   _refreshSummitBoothLink() {
@@ -1780,6 +1799,7 @@ export class UI {
     const lead = document.getElementById("summit-booth-lead");
     if (!link || !wrap || !lead) return;
     const id = this._summitLinkLevelId;
+    if (id === "DS") return;
     const lvl = LEVELS[id];
     const url = getSummitBoothThemeUrl(id);
     if (!url || !lvl) return;
@@ -1827,6 +1847,7 @@ export class UI {
       { road: "#667788", edge: "#8899aa", lane: "#ccddff", side: "#dde8f0", sky: "#aabbcc", scenery: "snow" },
       { road: "#555555", edge: "#cc8844", lane: "#ffdd44", side: "#8a9a5a", sky: "#6699cc", scenery: "coast" },
       { road: "#2a2a30", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
+      { road: "#1a1a22", edge: "#3a3a48", lane: "#ff3333", side: "#0d0d12", sky: "#020208", scenery: "trench" },
     ];
 
     const W = 148, H = 100;
@@ -1968,6 +1989,23 @@ export class UI {
       ctx.fillRect(W * 0.6, 22, 14, 10);
       ctx.fillStyle = "#0044aa";
       ctx.fillRect(W * 0.61, 20, 12, 3);
+    } else if (s === "trench") {
+      ctx.fillStyle = "#3a3a44";
+      ctx.fillRect(2, midY - 8, 5, 36);
+      ctx.fillRect(W - 7, midY - 8, 5, 36);
+      ctx.fillStyle = "#555560";
+      for (let z = 0; z < 4; z++) {
+        ctx.fillRect(8 + z * 6, midY + z * 4, 2, 14);
+        ctx.fillRect(W - 14 - z * 6, midY + z * 4, 2, 14);
+      }
+      ctx.fillStyle = "#2a2a32";
+      ctx.beginPath();
+      ctx.arc(W * 0.5, 10, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff6622";
+      ctx.beginPath();
+      ctx.arc(W * 0.72, 16, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 

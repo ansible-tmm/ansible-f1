@@ -1,6 +1,6 @@
 import { LEVELS } from "../data/config.js";
 
-const ORDER = ["A", "B", "C", "D", "E", "F", "G", "H"];
+const ORDER = ["A", "B", "C", "D", "E", "F", "G", "H", "DS"];
 
 function segmentToLevelId(segment) {
   for (const id of ORDER) {

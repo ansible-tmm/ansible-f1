@@ -59,6 +59,7 @@ export class Player {
     if (type === "semi_truck") return this._buildSemiTruckMesh();
     if (type === "scaloneta") return this._buildScalonetaMesh();
     if (type === "f16") return this._buildF16Mesh();
+    if (type === "xwing") return this._buildXWingMesh();
     if (type === "trex") return this._buildTrexMesh();
     if (type === "cadillac") return this._buildCadillacMesh();
     if (type === "ogre") return this._buildOgreMesh();
@@ -1635,6 +1636,71 @@ export class Player {
 
     grey.dispose(); darkGrey.dispose(); cockpitGlass.dispose();
     accentRed.dispose(); exhaust.dispose();
+
+    return g;
+  }
+
+  _buildXWingMesh() {
+    const g = new THREE.Group();
+    const hull = new THREE.MeshStandardMaterial({
+      color: 0xc8c8c8, metalness: 0.55, roughness: 0.38,
+      emissive: 0x303038, emissiveIntensity: 0.12,
+    });
+    const dark = new THREE.MeshStandardMaterial({
+      color: 0x4a4a52, metalness: 0.6, roughness: 0.45,
+      emissive: 0x101014, emissiveIntensity: 0.1,
+    });
+    const red = new THREE.MeshStandardMaterial({
+      color: 0xcc2222, metalness: 0.4, roughness: 0.45,
+      emissive: 0x440000, emissiveIntensity: 0.35,
+    });
+    const glass = new THREE.MeshStandardMaterial({
+      color: 0x88ccff, metalness: 0.75, roughness: 0.12,
+      transparent: true, opacity: 0.72,
+    });
+    const engineMat = new THREE.MeshStandardMaterial({
+      color: 0x333338, metalness: 0.7, roughness: 0.35,
+    });
+
+    const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.35, 1.35), hull);
+    fuselage.position.set(0, 0.32, 0);
+    g.add(fuselage);
+
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 6), hull);
+    nose.rotation.x = -Math.PI / 2;
+    nose.position.set(0, 0.32, -0.95);
+    g.add(nose);
+
+    const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), glass);
+    canopy.scale.set(1, 0.85, 1.2);
+    canopy.position.set(0, 0.48, -0.15);
+    g.add(canopy);
+
+    for (const side of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.06, 0.55), hull);
+      wing.position.set(side * 0.62, 0.28, 0.05);
+      g.add(wing);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.52), red);
+      stripe.position.set(side * 1.12, 0.28, 0.05);
+      g.add(stripe);
+      const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 8), engineMat);
+      eng.rotation.x = Math.PI / 2;
+      eng.position.set(side * 0.95, 0.28, 0.55);
+      g.add(eng);
+      const glow = new THREE.Mesh(
+        new THREE.CircleGeometry(0.06, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff8833, transparent: true, opacity: 0.9 })
+      );
+      glow.rotation.x = -Math.PI / 2;
+      glow.position.set(side * 0.95, 0.28, 0.7);
+      g.add(glow);
+    }
+
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.2), dark);
+    tail.position.set(0, 0.55, 0.62);
+    g.add(tail);
+
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 
     return g;
   }
@@ -3782,6 +3848,15 @@ export class Player {
   }
 
   updateCelebration(dt, elapsed) {
+    if (this.carType === "xwing") {
+      const rise = Math.min(1, elapsed / 5.5);
+      const ease = rise * rise * (3 - 2 * rise);
+      this.mesh.position.y = CONFIG.PLAYER_Y + ease * 14;
+      this.mesh.position.z = ease * 2.2;
+      this.mesh.rotation.x = -ease * 0.35;
+      this.mesh.rotation.z = Math.sin(elapsed * 0.9) * 0.12 * ease;
+      return;
+    }
     if (this.carType !== "hippo") return;
 
     const t = elapsed * 1000;
@@ -3817,6 +3892,14 @@ export class Player {
   }
 
   resetCelebrationPose() {
+    if (this.carType === "xwing") {
+      this.mesh.position.y = CONFIG.PLAYER_Y;
+      this.mesh.position.z = 0;
+      this.mesh.rotation.x = 0;
+      this.mesh.rotation.z = 0;
+      this.mesh.rotation.y = 0;
+      return;
+    }
     if (this.carType !== "hippo") return;
 
     this.mesh.position.y = CONFIG.PLAYER_Y;
