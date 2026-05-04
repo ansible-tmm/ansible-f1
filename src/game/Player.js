@@ -1643,74 +1643,128 @@ export class Player {
   _buildXWingMesh() {
     const g = new THREE.Group();
     const hull = new THREE.MeshStandardMaterial({
-      color: 0xb8b8c0, metalness: 0.5, roughness: 0.42,
-      emissive: 0x252528, emissiveIntensity: 0.1, flatShading: true,
+      color: 0xc4cad4, metalness: 0.55, roughness: 0.36,
+      emissive: 0x2a3038, emissiveIntensity: 0.09, flatShading: true,
     });
     const dark = new THREE.MeshStandardMaterial({
       color: 0x454850, metalness: 0.55, roughness: 0.48,
       emissive: 0x0c0c10, emissiveIntensity: 0.08, flatShading: true,
     });
     const red = new THREE.MeshStandardMaterial({
-      color: 0xbb2222, metalness: 0.42, roughness: 0.48,
-      emissive: 0x550808, emissiveIntensity: 0.28, flatShading: true,
+      color: 0xc42020, metalness: 0.45, roughness: 0.42,
+      emissive: 0x501010, emissiveIntensity: 0.24, flatShading: true,
     });
     const glass = new THREE.MeshStandardMaterial({
-      color: 0x77b8dd, metalness: 0.7, roughness: 0.15,
-      transparent: true, opacity: 0.7, flatShading: true,
+      color: 0x77a8cc, metalness: 0.65, roughness: 0.18,
+      transparent: true, opacity: 0.74, flatShading: true,
     });
     const engineMat = new THREE.MeshStandardMaterial({
-      color: 0x2a2a30, metalness: 0.72, roughness: 0.4, flatShading: true,
+      color: 0x2a2a30, metalness: 0.75, roughness: 0.38, flatShading: true,
+    });
+    const chrome = new THREE.MeshStandardMaterial({
+      color: 0xaab0b8, metalness: 0.85, roughness: 0.24, flatShading: true,
+    });
+    const r2Mat = new THREE.MeshStandardMaterial({
+      color: 0x2244aa, metalness: 0.42, roughness: 0.5,
+      emissive: 0x102044, emissiveIntensity: 0.12, flatShading: true,
     });
 
-    const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.35, 1.35), hull);
-    fuselage.position.set(0, 0.32, 0);
+    const bodyC = new THREE.Vector3(0, 0.32, 0.02);
+    const wingLen = 1.06;
+    const wingT = 0.042;
+    const wingW = 0.33;
+
+    const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.32, 0.98), hull);
+    fuselage.position.copy(bodyC);
     g.add(fuselage);
 
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), hull);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.58, 6), hull);
     nose.rotation.x = -Math.PI / 2;
-    nose.position.set(0, 0.32, -0.95);
+    nose.position.set(0, bodyC.y, -0.76);
     g.add(nose);
 
-    const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), glass);
-    canopy.scale.set(1, 0.85, 1.2);
-    canopy.position.set(0, 0.48, -0.15);
+    const canopy = new THREE.Mesh(
+      new THREE.SphereGeometry(0.13, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.52),
+      glass
+    );
+    canopy.scale.set(1, 0.82, 1.12);
+    canopy.position.set(0, 0.46, -0.1);
     g.add(canopy);
 
-    for (const side of [-1, 1]) {
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.06, 0.55), hull);
-      wing.position.set(side * 0.62, 0.28, 0.05);
+    const r2 = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5), r2Mat);
+    r2.scale.set(1, 0.52, 1);
+    r2.position.set(0, 0.51, 0.12);
+    g.add(r2);
+
+    const sfoilDirs = [
+      new THREE.Vector3(-0.62, 0.54, -0.08),
+      new THREE.Vector3(0.62, 0.54, -0.08),
+      new THREE.Vector3(-0.62, -0.48, -0.08),
+      new THREE.Vector3(0.62, -0.48, -0.08),
+    ];
+
+    for (const raw of sfoilDirs) {
+      const d = raw.clone().normalize();
+      const wing = new THREE.Mesh(
+        new THREE.BoxGeometry(wingLen, wingT, wingW),
+        hull
+      );
+      wing.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d);
+      const centerDist = 0.22 + wingLen * 0.5;
+      wing.position.copy(bodyC).add(d.clone().multiplyScalar(centerDist));
       g.add(wing);
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.52), red);
-      stripe.position.set(side * 1.12, 0.28, 0.05);
+
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(wingLen * 0.2, wingT + 0.01, 0.1),
+        red
+      );
+      stripe.quaternion.copy(wing.quaternion);
+      stripe.position.copy(wing.position).add(d.clone().multiplyScalar(wingLen * 0.26));
+      stripe.position.y += 0.016;
       g.add(stripe);
+
+      const cannon = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.026, 0.021, 0.28, 6),
+        chrome
+      );
+      cannon.rotation.x = Math.PI / 2;
+      const tipD = 0.22 + wingLen * 0.94;
+      const tip = bodyC.clone().add(d.clone().multiplyScalar(tipD));
+      tip.y -= 0.018;
+      cannon.position.copy(tip);
+      g.add(cannon);
     }
 
     const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xff4418, transparent: true, opacity: 0.95,
+      color: 0xff3318, transparent: true, opacity: 0.94,
     });
-    /** Four nozzles in a 2×2 “rectangle” (not one row): upper pair slightly tighter X like studio X-wings. */
-    const engineSlots = [
-      { x: -0.11, y: 0.37, z: 0.63 },
-      { x: 0.11, y: 0.37, z: 0.63 },
-      { x: -0.16, y: 0.19, z: 0.61 },
-      { x: 0.16, y: 0.19, z: 0.61 },
-    ];
-    for (const slot of engineSlots) {
+    const honey = new THREE.MeshBasicMaterial({
+      color: 0xff5522, transparent: true, opacity: 0.82,
+    });
+    for (const raw of sfoilDirs) {
+      const d = raw.clone().normalize();
+      const pos = bodyC.clone()
+        .add(d.clone().multiplyScalar(0.2))
+        .add(new THREE.Vector3(0, 0, 0.5));
       const eng = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.072, 0.085, 0.22, 8),
+        new THREE.CylinderGeometry(0.068, 0.082, 0.2, 8),
         engineMat
       );
       eng.rotation.x = Math.PI / 2;
-      eng.position.set(slot.x, slot.y, slot.z);
+      eng.position.copy(pos);
       g.add(eng);
-      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.062, 6), glowMat);
+      const grid = new THREE.Mesh(new THREE.RingGeometry(0.028, 0.054, 10), honey);
+      grid.rotation.x = -Math.PI / 2;
+      grid.position.copy(pos).add(new THREE.Vector3(0, 0, 0.108));
+      g.add(grid);
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.056, 8), glowMat);
       glow.rotation.x = -Math.PI / 2;
-      glow.position.set(slot.x, slot.y, slot.z + 0.14);
+      glow.position.copy(pos).add(new THREE.Vector3(0, 0, 0.118));
       g.add(glow);
     }
 
-    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.2), dark);
-    tail.position.set(0, 0.55, 0.62);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.44, 0.14), dark);
+    tail.position.set(0, 0.52, 0.58);
     g.add(tail);
 
     g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -1912,16 +1966,22 @@ export class Player {
   }
 
   _buildShieldRing() {
+    const isXwing = this.carType === "xwing";
+    const major = isXwing ? 1.05 : 1.6;
+    const tube = isXwing ? 0.04 : 0.055;
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.6, 0.055, 8, 32),
+      new THREE.TorusGeometry(major, tube, 8, 32),
       new THREE.MeshBasicMaterial({
         color: 0xaa55ff,
         transparent: true,
         opacity: 0,
+        depthWrite: false,
+        depthTest: true,
       })
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.3;
+    ring.position.y = isXwing ? 0.38 : 0.3;
+    ring.renderOrder = 2;
     this.mesh.add(ring);
     this.shieldRing = ring;
   }

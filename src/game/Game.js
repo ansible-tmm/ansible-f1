@@ -66,7 +66,7 @@ const SFX = {
   CROONER_5: "./assets/audio/right_next_to_me.m4a",
   COUNTDOWN: "./assets/audio/countdown.m4a",
   XWING_TAKEOFF: "./assets/audio/starwars-ship-takeoff.m4a",
-  XWING_LASER: "./assets/audio/laser-sound.m4a",
+  XWING_LASER: "./assets/audio/xwing_blast.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -216,6 +216,8 @@ export class Game {
     /** @type {{ mesh: THREE.Mesh, until: number }[]} */
     this._xwingLaserBolts = [];
     this._xwingFireCooldownUntil = 0;
+    /** Next S-foil cannon (0–3) for alternating single shots. */
+    this._xwingCannonIndex = 0;
 
     // Quiz toggle
     this.quizEnabled = true;
@@ -265,11 +267,15 @@ export class Game {
     this._dsFinaleBoom = null;
     /** @type {THREE.Points|null} */
     this._dsFinaleParticles = null;
-    /** Death Star level-complete camera / look-at (wide shot of battle station). */
-    this._dsCamFrom = new THREE.Vector3();
-    this._dsCamTo = new THREE.Vector3();
-    this._dsLookFrom = new THREE.Vector3();
-    this._dsLookAt = new THREE.Vector3();
+    /** @type {THREE.Object3D|null} */
+    this._dsFinaleDsMesh = null;
+    /** Trench / entities hidden during DS finale; restored in cleanup. */
+    this._dsFinalePrevVis = null;
+    /** @type {THREE.Color|THREE.Texture|null} */
+    this._dsSceneBgRestore = null;
+    /** Camera easing into the static “escape” shot. */
+    this._dsFinaleCamFrom = new THREE.Vector3();
+    this._dsFinaleLookFrom = new THREE.Vector3();
     /** @type {{ near: number, far: number }|null} */
     this._dsFogRestore = null;
     this._celebCrowd = [];
@@ -631,6 +637,7 @@ export class Game {
       }
     }
     this._xwingLaserBolts.length = 0;
+    this._xwingCannonIndex = 0;
   }
 
   _updateXwingLaserBolts(effDt) {
@@ -691,24 +698,24 @@ export class Game {
     const hw = this.player.mesh;
     const boltLen = 5.2;
     const half = boltLen * 0.5;
-    /** Four wing/fuselage exits in model space; nose is −Z. */
+    /** Four cannon tips on S-foils in model space; nose is −Z (see Player._buildXWingMesh). */
     const localPts = [
-      new THREE.Vector3(-1.06, 0.26, -0.36),
-      new THREE.Vector3(1.06, 0.26, -0.36),
-      new THREE.Vector3(-0.5, 0.3, -0.5),
-      new THREE.Vector3(0.5, 0.3, -0.5),
+      new THREE.Vector3(-0.91, 1.09, -0.12),
+      new THREE.Vector3(0.91, 1.09, -0.12),
+      new THREE.Vector3(-0.96, -0.44, -0.12),
+      new THREE.Vector3(0.96, -0.44, -0.12),
     ];
-    for (const lv of localPts) {
-      const w = lv.clone();
-      hw.localToWorld(w);
-      const bolt = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 0.08, boltLen),
-        mat.clone(),
-      );
-      bolt.position.set(w.x, w.y, w.z - half);
-      this.scene.add(bolt);
-      this._xwingLaserBolts.push({ mesh: bolt, until });
-    }
+    const idx = this._xwingCannonIndex % localPts.length;
+    this._xwingCannonIndex = (this._xwingCannonIndex + 1) % localPts.length;
+    const w = localPts[idx].clone();
+    hw.localToWorld(w);
+    const bolt = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.08, boltLen),
+      mat.clone(),
+    );
+    bolt.position.set(w.x, w.y, w.z - half);
+    this.scene.add(bolt);
+    this._xwingLaserBolts.push({ mesh: bolt, until });
   }
 
   _fireXwingBlasters() {
@@ -1681,7 +1688,7 @@ export class Game {
     this._orbitStartTime = performance.now();
     this._orbitCenter = this.player.mesh.position.clone();
     if (this.currentLevel === "DS") {
-      this._lcOverlayDelayMs = 5200;
+      this._lcOverlayDelayMs = 7200;
       this._spawnDeathStarFinale();
     } else {
       this._lcOverlayDelayMs = 3000;
@@ -2937,7 +2944,9 @@ export class Game {
         );
       }
     } else if (t === "POLICY_SHIELD") {
-      if (this._isCheater()) {
+      /** DS is “cheater” for leaderboards only — still use a real shield + SFX in the trench. */
+      const jokeShieldCheater = this._isCheater() && this.currentLevel !== "DS";
+      if (jokeShieldCheater) {
         this.score += 50;
         this.ui.showPickupPopup("+50");
         const msg = this.player.carType === "hippo"
@@ -3243,81 +3252,254 @@ export class Game {
     this._applyCurve();
   }
 
+  /** Low-poly X-wing (engines toward +Z) for the escape finale; nose is −Z. */
+  _buildFinaleMiniXWing() {
+    const g = new THREE.Group();
+    const hull = new THREE.MeshStandardMaterial({
+      color: 0xc0c8d4, metalness: 0.5, roughness: 0.4, flatShading: true,
+    });
+    const red = new THREE.MeshStandardMaterial({
+      color: 0xb82222, metalness: 0.4, roughness: 0.45, flatShading: true,
+    });
+    const bodyC = new THREE.Vector3(0, 0.26, 0);
+    const wingLen = 0.82;
+    const wingT = 0.034;
+    const wingW = 0.25;
+    const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.24, 0.72), hull);
+    fuselage.position.copy(bodyC);
+    g.add(fuselage);
+    const dirs = [
+      new THREE.Vector3(-0.58, 0.48, -0.06),
+      new THREE.Vector3(0.58, 0.48, -0.06),
+      new THREE.Vector3(-0.58, -0.42, -0.06),
+      new THREE.Vector3(0.58, -0.42, -0.06),
+    ];
+    for (const raw of dirs) {
+      const d = raw.clone().normalize();
+      const w = new THREE.Mesh(new THREE.BoxGeometry(wingLen, wingT, wingW), hull);
+      w.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d);
+      w.position.copy(bodyC).add(d.clone().multiplyScalar(0.18 + wingLen * 0.5));
+      g.add(w);
+      const st = new THREE.Mesh(new THREE.BoxGeometry(wingLen * 0.18, wingT + 0.008, 0.07), red);
+      st.quaternion.copy(w.quaternion);
+      st.position.copy(w.position).add(d.clone().multiplyScalar(wingLen * 0.22));
+      st.position.y += 0.012;
+      g.add(st);
+    }
+    const eng = new THREE.MeshStandardMaterial({
+      color: 0x1a1c22, metalness: 0.75, roughness: 0.35, flatShading: true,
+    });
+    const glow = new THREE.MeshBasicMaterial({ color: 0x662211, transparent: true, opacity: 0.85 });
+    for (const raw of dirs) {
+      const d = raw.clone().normalize();
+      const p = bodyC.clone().add(d.clone().multiplyScalar(0.14)).add(new THREE.Vector3(0, 0, 0.34));
+      const e = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.14, 6), eng);
+      e.rotation.x = Math.PI / 2;
+      e.position.copy(p);
+      g.add(e);
+      const gl = new THREE.Mesh(new THREE.CircleGeometry(0.048, 6), glow);
+      gl.rotation.x = -Math.PI / 2;
+      gl.position.copy(p).add(new THREE.Vector3(0, 0, 0.09));
+      g.add(gl);
+    }
+    g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    return g;
+  }
+
+  /** Low-poly Y-wing (rear toward +Z) for the escape finale. */
+  _buildFinaleMiniYWing() {
+    const g = new THREE.Group();
+    const body = new THREE.MeshStandardMaterial({
+      color: 0x9a9888, metalness: 0.45, roughness: 0.48, flatShading: true,
+    });
+    const nacelle = new THREE.MeshStandardMaterial({
+      color: 0x777064, metalness: 0.5, roughness: 0.4, flatShading: true,
+    });
+    const accent = new THREE.MeshStandardMaterial({
+      color: 0xcc7722, metalness: 0.35, roughness: 0.45, flatShading: true,
+    });
+    const core = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.95), body);
+    core.position.set(0, 0.22, 0.05);
+    g.add(core);
+    for (const side of [-1, 1]) {
+      const n = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.72, 8), nacelle);
+      n.rotation.x = Math.PI / 2;
+      n.position.set(side * 1.05, 0.18, 0.12);
+      g.add(n);
+      const str = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.55), accent);
+      str.position.set(side * 0.52, 0.19, 0.1);
+      g.add(str);
+    }
+    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.35, 6), body);
+    nose.rotation.x = Math.PI / 2;
+    nose.position.set(0, 0.22, -0.62);
+    g.add(nose);
+    g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
+    return g;
+  }
+
+  _addFinaleStarfield(parent, count = 720) {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const u = Math.random() * Math.PI * 2;
+      const c = 2 * Math.random() - 1;
+      const s = Math.sqrt(Math.max(0, 1 - c * c));
+      const rr = 380 + Math.random() * 520;
+      pos[i * 3] = rr * s * Math.cos(u);
+      pos[i * 3 + 1] = rr * s * Math.sin(u) * 0.55 + (Math.random() - 0.5) * 140;
+      pos[i * 3 + 2] = -160 - Math.random() * 480;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(
+      geo,
+      new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.35,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+        sizeAttenuation: true,
+      }),
+    );
+    parent.add(pts);
+  }
+
   _spawnDeathStarFinale() {
     this._cleanupDeathStarFinale();
 
-    this._dsCamFrom.copy(this.camera.position);
-    const p = this.player.mesh.position;
-    this._dsLookFrom.set(p.x * 0.12, CONFIG.PLAYER_Y + 1.05, -2);
-    this._dsCamTo.set(3, 54, 125);
-    this._dsLookAt.set(0, 10, -252);
+    this._dsFinaleCamFrom.copy(this.camera.position);
+    const lookDir = new THREE.Vector3();
+    this.camera.getWorldDirection(lookDir);
+    this._dsFinaleLookFrom.copy(this.camera.position).addScaledVector(lookDir, 70);
+
+    this._dsFinalePrevVis = [];
+    const hide = (o) => {
+      if (!o) return;
+      this._dsFinalePrevVis.push({ o, v: o.visible });
+      o.visible = false;
+    };
+    hide(this.track?.group);
+    hide(this.player.mesh);
+    for (const e of this.spawner.obstacles) hide(e.mesh);
+    for (const e of this.spawner.pickups) hide(e.mesh);
+    for (const e of this.spawner.rivals) hide(e.mesh);
+
+    if (this.scene.background && typeof this.scene.background.clone === "function") {
+      this._dsSceneBgRestore = this.scene.background.clone();
+    } else {
+      this._dsSceneBgRestore = null;
+    }
+    this.scene.background = new THREE.Color(0x000205);
+
+    if (this.scene.fog instanceof THREE.Fog) {
+      this._dsFogRestore = { near: this.scene.fog.near, far: this.scene.fog.far };
+      this.scene.fog.near = 48;
+      this.scene.fog.far = 780;
+    }
 
     const g = new THREE.Group();
     this._dsFinaleGroup = g;
     this.scene.add(g);
 
+    this._addFinaleStarfield(g);
+
     const dsMat = new THREE.MeshStandardMaterial({
-      color: 0x4c4e5a,
-      roughness: 0.9,
-      metalness: 0.2,
-      emissive: 0x121620,
-      emissiveIntensity: 0.42,
+      color: 0x6a6d78,
+      roughness: 0.88,
+      metalness: 0.18,
+      emissive: 0x0a0c12,
+      emissiveIntensity: 0.38,
       flatShading: true,
     });
-    const dsMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(36, 1), dsMat);
-    dsMesh.position.set(0, 11, -270);
-    dsMesh.scale.set(1, 0.3, 1);
-    g.add(dsMesh);
+    const trenchMat = new THREE.MeshStandardMaterial({
+      color: 0x1c2028,
+      roughness: 0.95,
+      metalness: 0.12,
+      flatShading: true,
+    });
+
+    const dsGrp = new THREE.Group();
+    dsGrp.position.set(-108, 50, -582);
+    dsGrp.add(new THREE.Mesh(new THREE.SphereGeometry(38, 18, 14), dsMat));
+    const band = new THREE.Mesh(new THREE.TorusGeometry(39.2, 0.65, 5, 40), trenchMat);
+    band.rotation.x = Math.PI / 2;
+    band.scale.set(1, 0.14, 1);
+    dsGrp.add(band);
+    g.add(dsGrp);
+    this._dsFinaleDsMesh = dsGrp;
 
     const boomMat = new THREE.MeshStandardMaterial({
       color: 0xff5520,
       emissive: 0xff3300,
-      emissiveIntensity: 1.2,
+      emissiveIntensity: 1.45,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.92,
     });
-    const boom = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 16), boomMat);
-    boom.position.set(7, 7.5, -234);
+    const boom = new THREE.Mesh(new THREE.SphereGeometry(2.4, 16, 16), boomMat);
+    boom.position.copy(dsGrp.position);
+    boom.visible = false;
+    boom.scale.setScalar(0.06);
     g.add(boom);
     this._dsFinaleBoom = boom;
 
-    const n = 360;
+    const n = 340;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(n * 3);
     const vel = [];
     for (let i = 0; i < n; i++) {
-      pos[i * 3] = boom.position.x + (Math.random() - 0.5) * 0.5;
-      pos[i * 3 + 1] = boom.position.y + (Math.random() - 0.5) * 0.5;
-      pos[i * 3 + 2] = boom.position.z + (Math.random() - 0.5) * 0.5;
-      vel.push({
-        vx: (Math.random() - 0.5) * 28,
-        vy: (Math.random() - 0.5) * 22 + 8,
-        vz: (Math.random() - 0.5) * 28 + 42,
-      });
+      pos[i * 3] = boom.position.x;
+      pos[i * 3 + 1] = boom.position.y;
+      pos[i * 3 + 2] = boom.position.z;
+      vel.push({ vx: 0, vy: 0, vz: 0 });
     }
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     const pMat = new THREE.PointsMaterial({
       color: 0xffcc88,
-      size: 0.22,
+      size: 0.34,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true,
     });
     const pts = new THREE.Points(geo, pMat);
+    pts.userData.vel = vel;
     g.add(pts);
     this._dsFinaleParticles = pts;
-    pts.userData.vel = vel;
 
-    if (this.scene.fog instanceof THREE.Fog) {
-      this._dsFogRestore = { near: this.scene.fog.near, far: this.scene.fog.far };
-      this.scene.fog.near = 72;
-      this.scene.fog.far = 620;
-    }
+    const xL = this._buildFinaleMiniXWing();
+    xL.scale.setScalar(1.65);
+    xL.position.set(9.2, 6.2, -242);
+    g.add(xL);
+    const xC = this._buildFinaleMiniXWing();
+    xC.scale.setScalar(1.72);
+    xC.position.set(0, 6.5, -222);
+    g.add(xC);
+    const yW = this._buildFinaleMiniYWing();
+    yW.scale.setScalar(1.55);
+    yW.position.set(-9.5, 5.9, -238);
+    g.add(yW);
+
+    g.userData.finaleShips = [
+      { grp: xL, vz: 18 },
+      { grp: xC, vz: 20 },
+      { grp: yW, vz: 17 },
+    ];
+    g.userData.dsPos = dsGrp.position.clone();
+    g.userData.explosionPrimed = false;
   }
 
   _cleanupDeathStarFinale() {
+    if (this._dsFinalePrevVis) {
+      for (const { o, v } of this._dsFinalePrevVis) o.visible = v;
+      this._dsFinalePrevVis = null;
+    }
+    if (this._dsSceneBgRestore != null) {
+      this.scene.background = this._dsSceneBgRestore;
+      this._dsSceneBgRestore = null;
+    }
+    this._dsFinaleDsMesh = null;
     if (this._dsFogRestore && this.scene.fog instanceof THREE.Fog) {
       this.scene.fog.near = this._dsFogRestore.near;
       this.scene.fog.far = this._dsFogRestore.far;
@@ -3340,18 +3522,69 @@ export class Game {
   }
 
   _updateDeathStarFinale(dt, now) {
+    const g = this._dsFinaleGroup;
     const t = (now - this._orbitStartTime) / 1000;
-    const tb = Math.max(0, t - 2.35);
-    if (this._dsFinaleBoom) {
-      const s = 1 + Math.min(8, tb * tb * 5.5 + tb * 1.2);
-      this._dsFinaleBoom.scale.setScalar(s);
-      const mat = /** @type {THREE.MeshStandardMaterial} */ (this._dsFinaleBoom.material);
-      if (mat && mat.emissiveIntensity !== undefined) {
-        mat.emissiveIntensity = Math.max(0.1, 1.25 - tb * 0.42);
-        mat.opacity = Math.max(0, 0.88 - tb * 0.18);
+    const explodeAt = 3.35;
+
+    if (this._dsFinaleDsMesh && this._dsFinaleDsMesh.visible) {
+      this._dsFinaleDsMesh.rotation.y += 0.045 * dt;
+    }
+
+    if (g?.userData.finaleShips) {
+      for (const s of g.userData.finaleShips) {
+        s.grp.position.z += s.vz * dt;
+        s.grp.rotation.z = Math.sin(t * 1.05 + s.grp.position.x * 0.06) * 0.045;
       }
     }
-    if (this._dsFinaleParticles && this._dsFinaleParticles.userData.vel) {
+
+    if (
+      g &&
+      this._dsFinaleDsMesh &&
+      t >= explodeAt &&
+      this._dsFinaleDsMesh.visible &&
+      !g.userData.explosionPrimed
+    ) {
+      g.userData.explosionPrimed = true;
+      this._dsFinaleDsMesh.visible = false;
+      if (this._dsFinaleBoom) this._dsFinaleBoom.visible = true;
+      const pMat = /** @type {THREE.PointsMaterial|null} */ (
+        this._dsFinaleParticles && this._dsFinaleParticles.material
+      );
+      if (pMat) pMat.opacity = 0.78;
+      const vel = this._dsFinaleParticles?.userData.vel;
+      const bp = g.userData.dsPos;
+      if (vel && bp && this._dsFinaleParticles) {
+        const posAttr = this._dsFinaleParticles.geometry.attributes.position;
+        const arr = /** @type {Float32Array} */ (posAttr.array);
+        for (let i = 0; i < vel.length; i++) {
+          arr[i * 3] = bp.x + (Math.random() - 0.5) * 3;
+          arr[i * 3 + 1] = bp.y + (Math.random() - 0.5) * 3;
+          arr[i * 3 + 2] = bp.z + (Math.random() - 0.5) * 3;
+          vel[i] = {
+            vx: (Math.random() - 0.5) * 78,
+            vy: (Math.random() - 0.5) * 68 + 22,
+            vz: 42 + Math.random() * 58,
+          };
+        }
+        posAttr.needsUpdate = true;
+      }
+    }
+
+    const tb = Math.max(0, t - explodeAt);
+    if (this._dsFinaleBoom && this._dsFinaleBoom.visible) {
+      const s = 0.06 + Math.min(16, tb * tb * 3.8 + tb * 2.8);
+      this._dsFinaleBoom.scale.setScalar(s);
+      const mat = /** @type {THREE.MeshStandardMaterial} */ (this._dsFinaleBoom.material);
+      if (mat?.emissiveIntensity !== undefined) {
+        mat.emissiveIntensity = Math.max(0.12, 1.85 - tb * 0.36);
+        mat.opacity = Math.max(0, 0.92 - tb * 0.12);
+      }
+    }
+    if (
+      this._dsFinaleParticles &&
+      this._dsFinaleParticles.userData.vel &&
+      t >= explodeAt
+    ) {
       const posAttr = this._dsFinaleParticles.geometry.attributes.position;
       const arr = /** @type {Float32Array} */ (posAttr.array);
       const vel = this._dsFinaleParticles.userData.vel;
@@ -3359,9 +3592,9 @@ export class Game {
         arr[i * 3] += vel[i].vx * dt;
         arr[i * 3 + 1] += vel[i].vy * dt;
         arr[i * 3 + 2] += vel[i].vz * dt;
-        vel[i].vy -= 3.5 * dt;
-        vel[i].vx *= 0.985;
-        vel[i].vz *= 0.988;
+        vel[i].vy -= 10 * dt;
+        vel[i].vx *= 0.991;
+        vel[i].vz *= 0.993;
       }
       posAttr.needsUpdate = true;
     }
@@ -3371,13 +3604,21 @@ export class Game {
     const elapsed = (now - this._orbitStartTime) / 1000;
     if (this.currentLevel === "DS") {
       this._updateDeathStarFinale(dt, now);
-      const pull = Math.min(1, elapsed / 3.35);
-      const ease = 1 - (1 - pull) ** 2.1;
-      this.camera.position.lerpVectors(this._dsCamFrom, this._dsCamTo, ease);
-      const lx = THREE.MathUtils.lerp(this._dsLookFrom.x, this._dsLookAt.x, ease);
-      const ly = THREE.MathUtils.lerp(this._dsLookFrom.y, this._dsLookAt.y, ease);
-      const lz = THREE.MathUtils.lerp(this._dsLookFrom.z, this._dsLookAt.z, ease);
-      this.camera.lookAt(lx, ly, lz);
+      const settle = Math.min(1, elapsed / 1.05);
+      const ease = 1 - (1 - settle) ** 2.2;
+      const camTx = 0;
+      const camTy = 15;
+      const camTz = 108;
+      this.camera.position.set(
+        THREE.MathUtils.lerp(this._dsFinaleCamFrom.x, camTx, ease),
+        THREE.MathUtils.lerp(this._dsFinaleCamFrom.y, camTy, ease),
+        THREE.MathUtils.lerp(this._dsFinaleCamFrom.z, camTz, ease),
+      );
+      const lx0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.x, -8, ease);
+      const ly0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.y, 6.2, ease);
+      const lz0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.z, -228, ease);
+      const w = Math.sin(elapsed * 0.28) * 0.4;
+      this.camera.lookAt(lx0 + w * 0.35, ly0 + w * 0.12, lz0 + w * 0.5);
       return;
     }
     const angle = elapsed * 0.5;
@@ -3491,6 +3732,7 @@ export class Game {
   }
 
   _updateCelebration(dt, now) {
+    if (this.currentLevel === "DS") return;
     const elapsed = (now - this._orbitStartTime) / 1000;
     const fadeIn = Math.min(1, elapsed / 1.5);
 
