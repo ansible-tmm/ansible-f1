@@ -401,12 +401,12 @@ export class Spawner {
     const g = new THREE.Group();
     const wallW = 1.8, wallH = 1.3, wallD = 0.55;
     const panelMat = new THREE.MeshStandardMaterial({
-      color: 0x4c4e58, roughness: 0.84, metalness: 0.48,
-      emissive: 0x101418, emissiveIntensity: 0.1, flatShading: true,
+      color: 0x6e737e, roughness: 0.8, metalness: 0.42,
+      emissive: 0x1a1e28, emissiveIntensity: 0.12, flatShading: true,
     });
     const darkMat = new THREE.MeshStandardMaterial({
-      color: 0x383a42, roughness: 0.9, metalness: 0.52,
-      emissive: 0x06080a, emissiveIntensity: 0.08, flatShading: true,
+      color: 0x565b66, roughness: 0.86, metalness: 0.48,
+      emissive: 0x101418, emissiveIntensity: 0.1, flatShading: true,
     });
     const base = new THREE.Mesh(
       new THREE.BoxGeometry(wallW * 0.98, wallH * 0.88, wallD * 0.42),
@@ -437,28 +437,53 @@ export class Spawner {
       g.add(rib);
     }
     const turBase = new THREE.Mesh(
-      new THREE.BoxGeometry(0.55, 0.18, 0.4),
+      new THREE.BoxGeometry(0.64, 0.22, 0.48),
       darkMat
     );
-    turBase.position.set(0, wallH + 0.1, 0);
+    turBase.position.set(0, wallH + 0.13, 0);
     g.add(turBase);
     const gunMat = new THREE.MeshStandardMaterial({
-      color: 0x2a2a30, roughness: 0.75, metalness: 0.6, flatShading: true,
+      color: 0x4a505c, roughness: 0.62, metalness: 0.72, flatShading: true,
     });
-    for (const gx of [-0.14, 0.14]) {
+    const gunY = wallH + 0.3;
+    const gunZ = wallD * 0.34;
+    for (const gx of [-0.17, 0.17]) {
+      const breech = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.095, 0.12, 6),
+        gunMat
+      );
+      breech.rotation.x = Math.PI / 2;
+      breech.position.set(gx, gunY, gunZ - 0.06);
+      g.add(breech);
       const barrel = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.06, 0.07, 0.55, 5),
+        new THREE.CylinderGeometry(0.056, 0.068, 0.88, 6),
         gunMat
       );
       barrel.rotation.x = Math.PI / 2;
-      barrel.position.set(gx, wallH + 0.22, wallD * 0.35);
+      barrel.position.set(gx, gunY, gunZ + 0.38);
       g.add(barrel);
+      const muzzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.056, 0.06, 5),
+        new THREE.MeshStandardMaterial({
+          color: 0x2e3238, roughness: 0.55, metalness: 0.85, flatShading: true,
+        })
+      );
+      muzzle.rotation.x = Math.PI / 2;
+      muzzle.position.set(gx, gunY, gunZ + 0.82);
+      g.add(muzzle);
     }
     const warn = new THREE.Mesh(
-      new THREE.BoxGeometry(0.5, 0.12, 0.06),
-      new THREE.MeshBasicMaterial({ color: 0xffaa33 })
+      new THREE.BoxGeometry(0.52, 0.11, 0.07),
+      new THREE.MeshStandardMaterial({
+        color: 0xb81810,
+        emissive: 0xff2208,
+        emissiveIntensity: 0.95,
+        roughness: 0.4,
+        metalness: 0.25,
+        flatShading: true,
+      })
     );
-    warn.position.set(0, wallH + 0.12, wallD / 2 + 0.05);
+    warn.position.set(0, wallH + 0.14, wallD / 2 + 0.045);
     g.add(warn);
     return g;
   }

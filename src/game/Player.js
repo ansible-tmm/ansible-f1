@@ -1711,12 +1711,17 @@ export class Player {
     const _sfx = new THREE.Vector3();
     const _sfy = new THREE.Vector3();
     const _sfz = new THREE.Vector3();
+    /** Trench / X-wing nose −Z — wing plane should contain span + forward so foil reads thin from chase cam. */
+    const _sfFwd = new THREE.Vector3(0, 0, -1);
     const _sfUp = new THREE.Vector3(0, 1, 0);
     const _sfFallback = new THREE.Vector3(0, 0, 1);
     const setSfoilWingOrientation = (mesh, spanRaw) => {
       _sfx.copy(spanRaw).normalize();
-      _sfy.crossVectors(_sfx, _sfUp);
-      if (_sfy.lengthSq() < 1e-10) _sfy.crossVectors(_sfx, _sfFallback);
+      _sfy.crossVectors(_sfx, _sfFwd);
+      if (_sfy.lengthSq() < 1e-10) {
+        _sfy.crossVectors(_sfx, _sfUp);
+        if (_sfy.lengthSq() < 1e-10) _sfy.crossVectors(_sfx, _sfFallback);
+      }
       _sfy.normalize();
       _sfz.crossVectors(_sfx, _sfy).normalize();
       sfoilBasis.makeBasis(_sfx, _sfy, _sfz);

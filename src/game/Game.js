@@ -27,7 +27,14 @@ import {
   ACHIEVEMENT_DEFS,
 } from "../utils/storage.js";
 import {
-  preload, play, startLoop, stopLoop, startBgm, playFinaleBed, stopFinaleBed,
+  preload,
+  play,
+  playWithOnEnded,
+  startLoop,
+  stopLoop,
+  startBgm,
+  playFinaleBed,
+  stopFinaleBed,
 } from "../utils/audio.js";
 import { submitGlobalScore } from "../utils/firebase.js";
 import { GodzillaMode } from "./GodzillaMode.js";
@@ -73,6 +80,8 @@ const SFX = {
   DS_ALMOST_THERE: "./assets/audio/almost_there.m4a",
   /** Death Star trench — when the exit / finish arch first spawns ahead (not tutorial). */
   DS_BLOW_THIS_THING: "./assets/audio/blow_this_thing.m4a",
+  /** Chained after DS_BLOW_THIS_THING ends — proton torpedo moment. */
+  DS_FINAL_SHOT: "./assets/audio/final_shot.m4a",
   /** Death Star finale — when the sphere detonates (same moment as boom mesh). */
   DS_DEATH_STAR_EXPLOSION: "./assets/audio/death_star_explosion.m4a",
   /** Death Star finale escape shot — cut at explosion; hand off to DS_DEATH_STAR_EXPLOSION. */
@@ -89,6 +98,12 @@ preload([...Object.values(SFX), ENGINE_LOOP, ENGINE_LOOP_XWING]);
 /** World −Z = trench “forward”; bolts are not parented to the scrolling track. */
 const XWING_BOLT_SPEED = 218;
 const XWING_BOLT_LIFE_MS = 520;
+/** Trench finish portal — must match Track.spawnFinishLine (circle / exhaust port). */
+const DS_FINISH_PORTAL_Y = 0.11;
+const DS_FINISH_PORTAL_Z_LOCAL = 0.18;
+const DS_PROTON_TORPEDO_SPEED = 108;
+const _TORP_AXIS_Y = new THREE.Vector3(0, 1, 0);
+const _TORP_DIR = new THREE.Vector3();
 
 /**
  * @typedef {'boot'|'main_menu'|'running'|'quiz'|'paused'|'game_over'|'billboard'|'godzilla'} GameState
@@ -269,10 +284,16 @@ export class Game {
     this._finishCoastSpeed = 0;
     this._dsFinishBreakawayT = 0;
     this._dsAlmostTherePlayed = false;
+    /** Cancels DS finish-line VO → torpedo chain if run resets mid-playback. */
+    this._dsFinishSfxGeneration = 0;
+    /** @type {{ mesh: THREE.Mesh, speed: number }[]} */
+    this._dsProtonTorpedoes = [];
     this._orbitStartTime = 0;
     this._orbitCenter = new THREE.Vector3();
     this._lcOverlayShown = false;
     this._lcOverlayDelayMs = 3000;
+    /** After a finished DS trench run, next `backToMenu` locks DS and returns to highway + URL. */
+    this._revertFromDeathStarComplete = false;
     /** @type {THREE.Group|null} */
     this._dsFinaleGroup = null;
     /** @type {THREE.Mesh|null} */
@@ -652,6 +673,101 @@ export class Game {
     this._xwingCannonIndex = 0;
   }
 
+  _clearDsProtonTorpedoes() {
+    for (const b of this._dsProtonTorpedoes) {
+      this.scene.remove(b.mesh);
+      b.mesh.geometry?.dispose();
+      const m = b.mesh.material;
+      if (m) {
+        if (Array.isArray(m)) m.forEach((x) => x.dispose());
+        else m.dispose();
+      }
+    }
+    this._dsProtonTorpedoes.length = 0;
+  }
+
+  /** Two orange proton torpedoes from the X-wing toward the trench exhaust port (after VO). */
+  _spawnDsProtonTorpedoesToFinish() {
+    if (this.currentLevel !== "DS" || this.player.carType !== "xwing") return;
+    if (this.track.getFinishZ() == null) return;
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff7700,
+      emissive: 0xff5500,
+      emissiveIntensity: 2.4,
+      metalness: 0.28,
+      roughness: 0.38,
+      transparent: true,
+      opacity: 0.96,
+    });
+    const hw = this.player.mesh;
+    /** Under-fuselage launch points; +Z is aft in local space — tubes sit forward of wing root. */
+    const localPts = [
+      new THREE.Vector3(-0.26, 0.14, 0.42),
+      new THREE.Vector3(0.26, 0.14, 0.42),
+    ];
+    const len = 0.72;
+    const r0 = 0.1;
+    const r1 = 0.13;
+    const tz0 = this.track.getFinishZ() + DS_FINISH_PORTAL_Z_LOCAL;
+    for (const lp of localPts) {
+      const w = lp.clone();
+      hw.localToWorld(w);
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(r0, r1, len, 12),
+        mat.clone()
+      );
+      cap.position.copy(w);
+      _TORP_DIR.set(-w.x, DS_FINISH_PORTAL_Y - w.y, tz0 - w.z).normalize();
+      cap.quaternion.setFromUnitVectors(_TORP_AXIS_Y, _TORP_DIR);
+      this.scene.add(cap);
+      this._dsProtonTorpedoes.push({
+        mesh: cap,
+        speed: DS_PROTON_TORPEDO_SPEED,
+      });
+    }
+  }
+
+  _updateDsProtonTorpedoes(effDt) {
+    if (!this._dsProtonTorpedoes.length) return;
+    const fz = this.track.getFinishZ();
+    if (fz == null) {
+      this._clearDsProtonTorpedoes();
+      return;
+    }
+    const tx = 0;
+    const ty = DS_FINISH_PORTAL_Y;
+    const tz = fz + DS_FINISH_PORTAL_Z_LOCAL;
+    const hitR = 0.42;
+    for (let i = this._dsProtonTorpedoes.length - 1; i >= 0; i--) {
+      const b = this._dsProtonTorpedoes[i];
+      const m = b.mesh;
+      const dx = tx - m.position.x;
+      const dy = ty - m.position.y;
+      const dz = tz - m.position.z;
+      const dist = Math.hypot(dx, dy, dz);
+      const step = b.speed * effDt;
+      if (dist <= hitR || dist <= step * 1.02) {
+        this.scene.remove(m);
+        m.geometry?.dispose();
+        const mat = m.material;
+        if (mat) {
+          if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+          else mat.dispose();
+        }
+        this._dsProtonTorpedoes.splice(i, 1);
+        continue;
+      }
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const nz = dz / dist;
+      m.position.x += nx * step;
+      m.position.y += ny * step;
+      m.position.z += nz * step;
+      _TORP_DIR.set(nx, ny, nz);
+      m.quaternion.setFromUnitVectors(_TORP_AXIS_Y, _TORP_DIR);
+    }
+  }
+
   _updateXwingLaserBolts(effDt) {
     const now = performance.now();
     const pz = this.player.mesh.position.z;
@@ -953,6 +1069,7 @@ export class Game {
   }
 
   startFromMenu() {
+    this._revertFromDeathStarComplete = false;
     this._stopAttractMode();
     clearTimeout(this._gameOverTimer);
     this.resetRun();
@@ -1078,6 +1195,8 @@ export class Game {
     this._finishCoastSpeed = 0;
     this._dsFinishBreakawayT = 0;
     this._dsAlmostTherePlayed = false;
+    this._dsFinishSfxGeneration++;
+    this._clearDsProtonTorpedoes();
     if (this.player) this.player._finishBreakawayEase = null;
     this._cleanupCelebration();
     this._cleanupBombs();
@@ -1322,6 +1441,28 @@ export class Game {
     });
   }
 
+  /** One-off after completing Death Star trench: lock secret level, default to AIOps, fix theme URL. */
+  _applyDeathStarRunCompleteReturnToHighway() {
+    if (!this._revertFromDeathStarComplete) return;
+    this._revertFromDeathStarComplete = false;
+    setDeathStarTrenchUnlocked(false);
+    const fallback = "A";
+    this.currentLevel = fallback;
+    setLastLevel(fallback);
+    this.spawner.levelId = fallback;
+    this.track.dispose();
+    this.track = new Track(this.scene, fallback);
+    const t = LEVELS[fallback];
+    if (t) {
+      this.scene.background = new THREE.Color(t.sceneBg);
+      this.scene.fog = new THREE.Fog(t.fog, 48, 175);
+    }
+    this.ui.setActiveLevel(fallback);
+    this.ui.syncDeathStarTrenchCardVisibility();
+    this.ui.refreshLevelSelectPreviews();
+    syncThemeUrl(fallback, "replace");
+  }
+
   backToMenu() {
     this._clearXwingLaserBolts();
     this.state = "main_menu";
@@ -1337,6 +1478,8 @@ export class Game {
     this._cleanupCelebration();
     this.player.resetCelebrationPose();
     stopLoop();
+
+    this._applyDeathStarRunCompleteReturnToHighway();
 
     const d = DRIVERS[this.currentDriver];
     if (d && this.player.carType !== d.car) {
@@ -1371,6 +1514,7 @@ export class Game {
 
   switchLevel(levelId, returnTo = "main_menu") {
     if (!LEVELS[levelId]) return;
+    this._revertFromDeathStarComplete = false;
     if (levelId === "DS" && !getDeathStarTrenchUnlocked()) return;
     if (this.currentLevel === "DS" && levelId !== "DS") {
       setDeathStarTrenchUnlocked(false);
@@ -1671,7 +1815,9 @@ export class Game {
       pickups: this.pickupsCollected,
       correct: this.sessionCorrect,
     });
-    this.ui.resetGameOver(getLastName(), getLastCountry());
+    this.ui.resetGameOver(getLastName(), getLastCountry(), {
+      hideNameEntry: this.currentLevel === "DS",
+    });
     this.ui.showHud(false);
     this.ui.showGameOver(true);
 
@@ -1707,6 +1853,7 @@ export class Game {
     if (this.currentLevel === "DS") {
       this._lcOverlayDelayMs = 7200;
       this._spawnDeathStarFinale();
+      this._revertFromDeathStarComplete = true;
     } else {
       this._lcOverlayDelayMs = 3000;
       this._spawnCelebration(this._orbitCenter);
@@ -1751,10 +1898,12 @@ export class Game {
   }
 
   async saveLcScore() {
+    if (this.currentLevel === "DS") {
+      this.ui.setStatus(this._t("Trench run — leaderboards are not the Jedi way."), 4000);
+      return;
+    }
     if (this._isCheater()) {
-      const msg = this.currentLevel === "DS"
-        ? "Trench run — leaderboards are not the Jedi way."
-        : this.player.carType === "hippo"
+      const msg = this.player.carType === "hippo"
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
         : this.player.carType === "scaloneta"
         ? "¡La Scaloneta no necesita leaderboard, campeón!"
@@ -1786,10 +1935,12 @@ export class Game {
   }
 
   async saveScore() {
+    if (this.currentLevel === "DS") {
+      this.ui.setStatus(this._t("Trench run — leaderboards are not the Jedi way."), 4000);
+      return;
+    }
     if (this._isCheater()) {
-      const msg = this.currentLevel === "DS"
-        ? "Trench run — leaderboards are not the Jedi way."
-        : this.player.carType === "hippo"
+      const msg = this.player.carType === "hippo"
         ? "Sorry, hippo mode can't be on the leaderboard. Stop cheating!"
         : this.player.carType === "scaloneta"
         ? "¡La Scaloneta no necesita leaderboard, campeón!"
@@ -1975,7 +2126,8 @@ export class Game {
         this._lcOverlayShown = true;
         this.ui.showLevelComplete(true);
       }
-      if (now - this._orbitStartTime > 30000) {
+      const autoMenuMs = this.currentLevel === "DS" ? 26000 : 30000;
+      if (now - this._orbitStartTime > autoMenuMs) {
         this.backToMenu();
       }
       return;
@@ -2000,6 +2152,7 @@ export class Game {
     if (this.state === "running") {
       this._tutorialUpdate(now);
       this._updateRun(effDt, now, dt, ts);
+      this._updateDsProtonTorpedoes(effDt);
     }
 
     this._updateCamera(dt, now);
@@ -2068,7 +2221,12 @@ export class Game {
       const timeLeft = dur - this.runTime;
       this.track.spawnFinishLine(this.player.mesh.position.z, this.worldSpeed, timeLeft);
       if (this.currentLevel === "DS" && !this.tutorialMode) {
-        play(SFX.DS_BLOW_THIS_THING, 0.88);
+        const gen = this._dsFinishSfxGeneration;
+        playWithOnEnded(SFX.DS_BLOW_THIS_THING, 0.88, () => {
+          if (gen !== this._dsFinishSfxGeneration || this.state !== "running") return;
+          play(SFX.DS_FINAL_SHOT, 0.9);
+          this._spawnDsProtonTorpedoesToFinish();
+        });
       }
       this.ui.setStatus(this._t("Checkered flag ahead — finish is near!"), 3000);
     }
@@ -3346,12 +3504,16 @@ export class Game {
     const _finSx = new THREE.Vector3();
     const _finSy = new THREE.Vector3();
     const _finSz = new THREE.Vector3();
+    const _finFwd = new THREE.Vector3(0, 0, -1);
     const _finUp = new THREE.Vector3(0, 1, 0);
     const _finFb = new THREE.Vector3(0, 0, 1);
     const setFinaleSfoilWing = (mesh, spanRaw) => {
       _finSx.copy(spanRaw).normalize();
-      _finSy.crossVectors(_finSx, _finUp);
-      if (_finSy.lengthSq() < 1e-10) _finSy.crossVectors(_finSx, _finFb);
+      _finSy.crossVectors(_finSx, _finFwd);
+      if (_finSy.lengthSq() < 1e-10) {
+        _finSy.crossVectors(_finSx, _finUp);
+        if (_finSy.lengthSq() < 1e-10) _finSy.crossVectors(_finSx, _finFb);
+      }
       _finSy.normalize();
       _finSz.crossVectors(_finSx, _finSy).normalize();
       finSfoilBasis.makeBasis(_finSx, _finSy, _finSz);
@@ -3389,34 +3551,94 @@ export class Game {
     return g;
   }
 
-  /** Low-poly Y-wing (rear toward +Z) for the escape finale. */
+  /** Low-poly Y-wing (nose −Z, rear +Z) — nacelles tied in with struts + crossbar, not three blobs. */
   _buildFinaleMiniYWing() {
     const g = new THREE.Group();
-    const body = new THREE.MeshStandardMaterial({
-      color: 0x9a9888, metalness: 0.45, roughness: 0.48, flatShading: true,
+    const hull = new THREE.MeshStandardMaterial({
+      color: 0xa8a69a, metalness: 0.42, roughness: 0.46, flatShading: true,
     });
     const nacelle = new THREE.MeshStandardMaterial({
-      color: 0x777064, metalness: 0.5, roughness: 0.4, flatShading: true,
+      color: 0x6e6a62, metalness: 0.52, roughness: 0.42, flatShading: true,
+    });
+    const dark = new THREE.MeshStandardMaterial({
+      color: 0x4a4844, metalness: 0.55, roughness: 0.5, flatShading: true,
     });
     const accent = new THREE.MeshStandardMaterial({
-      color: 0xcc7722, metalness: 0.35, roughness: 0.45, flatShading: true,
+      color: 0xc9a020, metalness: 0.38, roughness: 0.48, flatShading: true,
     });
-    const core = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.95), body);
-    core.position.set(0, 0.22, 0.05);
-    g.add(core);
+
+    const nacelleCx = 0.58;
+    const fuselageHalfW = 0.17;
+    const innerNacelleX = nacelleCx - 0.14;
+
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.18, 0.72), hull);
+    deck.position.set(0, 0.2, 0.04);
+    g.add(deck);
+
+    const cockpit = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.14, 0.32), hull);
+    cockpit.position.set(0, 0.23, -0.38);
+    g.add(cockpit);
+    const canopy = new THREE.Mesh(
+      new THREE.BoxGeometry(0.14, 0.06, 0.16),
+      new THREE.MeshStandardMaterial({
+        color: 0x1e2228, metalness: 0.7, roughness: 0.25, flatShading: true,
+      })
+    );
+    canopy.position.set(0, 0.28, -0.42);
+    g.add(canopy);
+
+    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.28), dark);
+    neck.position.set(0, 0.18, 0.38);
+    g.add(neck);
+
+    const crossBar = new THREE.Mesh(new THREE.BoxGeometry(nacelleCx * 2 + 0.26, 0.06, 0.1), dark);
+    crossBar.position.set(0, 0.2, 0.44);
+    g.add(crossBar);
+
     for (const side of [-1, 1]) {
-      const n = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.72, 8), nacelle);
-      n.rotation.x = Math.PI / 2;
-      n.position.set(side * 1.05, 0.18, 0.12);
-      g.add(n);
-      const str = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.55), accent);
-      str.position.set(side * 0.52, 0.19, 0.1);
-      g.add(str);
+      const sx = side;
+      const mainStrut = new THREE.Mesh(new THREE.BoxGeometry(innerNacelleX - fuselageHalfW, 0.055, 0.1), accent);
+      mainStrut.position.set(sx * (fuselageHalfW + mainStrut.geometry.parameters.width * 0.5), 0.19, 0.02);
+      g.add(mainStrut);
+
+      const aftStrut = new THREE.Mesh(new THREE.BoxGeometry(innerNacelleX - fuselageHalfW - 0.04, 0.048, 0.08), dark);
+      aftStrut.position.set(sx * (fuselageHalfW + aftStrut.geometry.parameters.width * 0.5), 0.17, 0.28);
+      g.add(aftStrut);
+
+      const pod = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.62, 10), nacelle);
+      pod.rotation.x = Math.PI / 2;
+      pod.position.set(sx * nacelleCx, 0.18, 0.1);
+      g.add(pod);
+
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.52), hull);
+      dome.position.set(sx * nacelleCx, 0.18, -0.24);
+      g.add(dome);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.022, 6, 14), accent);
+      band.rotation.x = Math.PI / 2;
+      band.position.set(sx * nacelleCx, 0.18, -0.18);
+      g.add(band);
+
+      const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.08, 8), dark);
+      nozzle.rotation.x = Math.PI / 2;
+      nozzle.position.set(sx * nacelleCx, 0.18, 0.44);
+      g.add(nozzle);
     }
-    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.35, 6), body);
+
+    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.085, 0.28, 6), hull);
     nose.rotation.x = Math.PI / 2;
-    nose.position.set(0, 0.22, -0.62);
+    nose.position.set(0, 0.2, -0.62);
     g.add(nose);
+    for (const sx of [-0.06, 0.06]) {
+      const cn = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.22, 5), dark);
+      cn.rotation.x = Math.PI / 2;
+      cn.position.set(sx, 0.19, -0.78);
+      g.add(cn);
+    }
+
+    const turret = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.08), dark);
+    turret.position.set(0, 0.3, -0.28);
+    g.add(turret);
+
     g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     return g;
   }
@@ -3512,15 +3734,57 @@ export class Game {
       metalness: 0.12,
       flatShading: true,
     });
+    const equatorLineMat = new THREE.MeshStandardMaterial({
+      color: 0x080a10,
+      roughness: 0.9,
+      metalness: 0.22,
+      emissive: 0x040508,
+      emissiveIntensity: 0.4,
+      flatShading: true,
+    });
+    const dishRimMat = new THREE.MeshStandardMaterial({
+      color: 0x626672,
+      roughness: 0.78,
+      metalness: 0.32,
+      emissive: 0x1a2230,
+      emissiveIntensity: 0.2,
+      flatShading: true,
+    });
+    const dishWellMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2e38,
+      roughness: 0.92,
+      metalness: 0.14,
+      emissive: 0x0e1018,
+      emissiveIntensity: 0.15,
+      flatShading: true,
+    });
 
     const dsGrp = new THREE.Group();
     /** Nearer + larger so it stays in frame with the fighters (was too small / off-axis). */
     dsGrp.position.set(-46, 28, -272);
-    dsGrp.add(new THREE.Mesh(new THREE.SphereGeometry(56, 20, 16), dsMat));
-    const band = new THREE.Mesh(new THREE.TorusGeometry(57.2, 0.85, 5, 44), trenchMat);
-    band.rotation.x = Math.PI / 2;
-    band.scale.set(1, 0.14, 1);
-    dsGrp.add(band);
+    dsGrp.add(new THREE.Mesh(new THREE.SphereGeometry(56, 22, 18), dsMat));
+
+    // Equator: broad trench band + thin dark line on the true equator (XZ plane).
+    const trenchBand = new THREE.Mesh(new THREE.TorusGeometry(56.75, 0.95, 8, 56), trenchMat);
+    trenchBand.rotation.x = Math.PI / 2;
+    trenchBand.scale.set(1, 0.16, 1);
+    dsGrp.add(trenchBand);
+    const equatorLine = new THREE.Mesh(new THREE.TorusGeometry(56.08, 0.26, 6, 72), equatorLineMat);
+    equatorLine.rotation.x = Math.PI / 2;
+    dsGrp.add(equatorLine);
+
+    // Superlaser dish — smaller ring above equator, facing slightly toward camera (−Z) + up (+Y).
+    const dishNormal = new THREE.Vector3(0.3, 0.55, -0.45).normalize();
+    const dishPos = dishNormal.clone().multiplyScalar(55.82);
+    const dishGrp = new THREE.Group();
+    dishGrp.position.copy(dishPos);
+    dishGrp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dishNormal);
+    const dishWell = new THREE.Mesh(new THREE.CircleGeometry(6.2, 26), dishWellMat);
+    dishWell.position.z = -0.42;
+    dishGrp.add(dishWell);
+    dishGrp.add(new THREE.Mesh(new THREE.RingGeometry(6.4, 14.2, 36), dishRimMat));
+    dsGrp.add(dishGrp);
+
     g.add(dsGrp);
     this._dsFinaleDsMesh = dsGrp;
 
@@ -3704,6 +3968,7 @@ export class Game {
     const elapsed = (now - this._orbitStartTime) / 1000;
     if (this.currentLevel === "DS") {
       this._updateDeathStarFinale(dt, now);
+      this._updateDsProtonTorpedoes(dt);
       const settle = Math.min(1, elapsed / 0.52);
       const ease = 1 - (1 - settle) ** 2.35;
       const camTx = 0;

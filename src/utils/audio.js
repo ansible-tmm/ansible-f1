@@ -59,6 +59,45 @@ export function play(url, volume = 1) {
   src.start(0);
 }
 
+/**
+ * Play a one-shot; invoke `onEnded` when playback finishes (Web Audio or HTMLAudio fallback).
+ * When SFX are muted, delays `onEnded` by the decoded buffer duration (or `fallbackDurationSec`) so chained beats still line up.
+ * @param {number} [fallbackDurationSec] used if buffer missing when muted
+ */
+export function playWithOnEnded(url, volume, onEnded, fallbackDurationSec = 3.5) {
+  const done = () => {
+    try {
+      onEnded?.();
+    } catch (_) {
+      /* ignore */
+    }
+  };
+  if (_sfxMuted) {
+    const buf = buffers[url];
+    const ms = buf ? buf.duration * 1000 : fallbackDurationSec * 1000;
+    setTimeout(done, ms);
+    return;
+  }
+  const c = getContext();
+  if (c.state === "suspended") c.resume();
+  const buf = buffers[url];
+  if (!buf) {
+    const el = new Audio(url);
+    el.volume = volume;
+    el.onended = done;
+    el.play().catch(done);
+    loadBuffer(url).catch(() => {});
+    return;
+  }
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.onended = done;
+  const gain = c.createGain();
+  gain.gain.value = volume;
+  src.connect(gain).connect(c.destination);
+  src.start(0);
+}
+
 // --- Engine loop (in-game SFX loop, respects SFX mute) ---
 let _loopEl = null;
 let _loopUrl = null;

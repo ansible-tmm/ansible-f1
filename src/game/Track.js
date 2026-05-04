@@ -2167,12 +2167,14 @@ export class Track {
       );
       lintel.position.set(0, 5.4, z);
       g.add(lintel);
+      /** Portal flush with trench deck (road plane y≈0), not floating mid-air. */
+      const portalY = 0.11;
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(1.15, 0.12, 10, 24),
         glowMat
       );
       ring.rotation.x = Math.PI / 2;
-      ring.position.set(0, 3.2, z + 0.1);
+      ring.position.set(0, portalY, z + 0.1);
       g.add(ring);
       const port = new THREE.Mesh(
         new THREE.CircleGeometry(0.85, 20),
@@ -2181,13 +2183,13 @@ export class Track {
         })
       );
       port.rotation.x = -Math.PI / 2;
-      port.position.set(0, 3.2, z + 0.18);
+      port.position.set(0, portalY, z + 0.18);
       g.add(port);
       const beamL = new THREE.Mesh(
         new THREE.BoxGeometry(0.08, 0.12, span * 0.85),
         new THREE.MeshBasicMaterial({ color: 0xffaa44 })
       );
-      beamL.position.set(0, 3.2, z);
+      beamL.position.set(0, 0.06, z);
       g.add(beamL);
       this.group.add(g);
       this._finishLine = g;

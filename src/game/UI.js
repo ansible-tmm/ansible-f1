@@ -1088,14 +1088,27 @@ export class UI {
     if (this.el.goCorrect) this.el.goCorrect.textContent = String(stats.correct);
   }
 
-  /** Reset game over screen to entry mode (name input visible, leaderboard hidden). */
-  resetGameOver(lastName, lastCountry) {
+  /**
+   * Reset game over screen to entry mode (name input visible, leaderboard hidden).
+   * @param {object} [options]
+   * @param {boolean} [options.hideNameEntry] — Death Star / no-leaderboard runs: hide name, country, Save.
+   */
+  resetGameOver(lastName, lastCountry, options = {}) {
+    const hideNameEntry = options.hideNameEntry === true;
     if (this.el.goEntry) this.el.goEntry.classList.remove("hidden");
     if (this.el.goLeaderboard) this.el.goLeaderboard.classList.add("hidden");
     if (this.el.goRankBanner) this.el.goRankBanner.classList.add("hidden");
+    if (this.el.goEntry) {
+      const label = this.el.goEntry.querySelector(".go-name-label");
+      const row = this.el.goEntry.querySelector(".go-name-row");
+      if (label) label.classList.toggle("hidden", hideNameEntry);
+      if (row) row.classList.toggle("hidden", hideNameEntry);
+    }
     if (this.el.goNameInput) {
       this.el.goNameInput.value = lastName || "";
-      setTimeout(() => this.el.goNameInput.focus(), 80);
+      if (!hideNameEntry) {
+        setTimeout(() => this.el.goNameInput.focus(), 80);
+      }
     }
     if (this.el.goCountry) {
       this.el.goCountry.value = lastCountry || "US";
