@@ -78,6 +78,10 @@ const SFX = {
   XWING_LASER: "./assets/audio/xwing_blast.m4a",
   /** Death Star trench — one-shot at 25% run progress (not tutorial). */
   DS_ALMOST_THERE: "./assets/audio/almost_there.m4a",
+  /** Death Star trench — one-shot at 50% run progress (not tutorial). */
+  DS_USE_THE_FORCE: "./assets/audio/use_the_force.m4a",
+  /** Death Star trench — one-shot at 75% run progress (not tutorial). */
+  DS_R2D2: "./assets/audio/r2d2.m4a",
   /** Death Star trench — when the exit / finish arch first spawns ahead (not tutorial). */
   DS_BLOW_THIS_THING: "./assets/audio/blow_this_thing.m4a",
   /** Chained after DS_BLOW_THIS_THING ends — proton torpedo moment. */
@@ -284,6 +288,8 @@ export class Game {
     this._finishCoastSpeed = 0;
     this._dsFinishBreakawayT = 0;
     this._dsAlmostTherePlayed = false;
+    this._dsUseTheForcePlayed = false;
+    this._dsR2d2Played = false;
     /** Cancels DS finish-line VO → torpedo chain if run resets mid-playback. */
     this._dsFinishSfxGeneration = 0;
     /** @type {{ mesh: THREE.Mesh, speed: number }[]} */
@@ -1195,6 +1201,8 @@ export class Game {
     this._finishCoastSpeed = 0;
     this._dsFinishBreakawayT = 0;
     this._dsAlmostTherePlayed = false;
+    this._dsUseTheForcePlayed = false;
+    this._dsR2d2Played = false;
     this._dsFinishSfxGeneration++;
     this._clearDsProtonTorpedoes();
     if (this.player) this.player._finishBreakawayEase = null;
@@ -2143,6 +2151,8 @@ export class Game {
       this._updateCamera(0, now);
       this._refreshHudOnly(now);
       this._maybePlayDsAlmostThere();
+      this._maybePlayDsUseTheForce();
+      this._maybePlayDsR2d2();
       return;
     }
 
@@ -2209,10 +2219,40 @@ export class Game {
     play(SFX.DS_ALMOST_THERE, 0.88);
   }
 
+  /** Death Star trench: one-shot at 50% track time (also during quiz UI). */
+  _maybePlayDsUseTheForce() {
+    if (
+      this.currentLevel !== "DS" ||
+      this.tutorialMode ||
+      this._dsUseTheForcePlayed ||
+      this.runTime < CONFIG.LEVEL_DURATION * 0.5
+    ) {
+      return;
+    }
+    this._dsUseTheForcePlayed = true;
+    play(SFX.DS_USE_THE_FORCE, 0.88);
+  }
+
+  /** Death Star trench: one-shot at 75% track time (also during quiz UI). */
+  _maybePlayDsR2d2() {
+    if (
+      this.currentLevel !== "DS" ||
+      this.tutorialMode ||
+      this._dsR2d2Played ||
+      this.runTime < CONFIG.LEVEL_DURATION * 0.75
+    ) {
+      return;
+    }
+    this._dsR2d2Played = true;
+    play(SFX.DS_R2D2, 0.88);
+  }
+
   _updateRun(effDt, now, rawDt, spawnScale) {
     if (!this.tutorialMode) this.runTime += effDt;
 
     this._maybePlayDsAlmostThere();
+    this._maybePlayDsUseTheForce();
+    this._maybePlayDsR2d2();
 
     const dur = CONFIG.LEVEL_DURATION;
     const warnTime = dur - 10;
