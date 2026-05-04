@@ -76,6 +76,10 @@ const QUEST_BGM = "./assets/audio/quest-bgm.mp3";
 
 preload([...Object.values(SFX), ENGINE_LOOP, ENGINE_LOOP_XWING]);
 
+/** World −Z = trench “forward”; bolts are not parented to the scrolling track. */
+const XWING_BOLT_SPEED = 218;
+const XWING_BOLT_LIFE_MS = 520;
+
 /**
  * @typedef {'boot'|'main_menu'|'running'|'quiz'|'paused'|'game_over'|'billboard'|'godzilla'} GameState
  */
@@ -261,6 +265,13 @@ export class Game {
     this._dsFinaleBoom = null;
     /** @type {THREE.Points|null} */
     this._dsFinaleParticles = null;
+    /** Death Star level-complete camera / look-at (wide shot of battle station). */
+    this._dsCamFrom = new THREE.Vector3();
+    this._dsCamTo = new THREE.Vector3();
+    this._dsLookFrom = new THREE.Vector3();
+    this._dsLookAt = new THREE.Vector3();
+    /** @type {{ near: number, far: number }|null} */
+    this._dsFogRestore = null;
     this._celebCrowd = [];
     this._celebConfetti = [];
     this._secretBuffer = "";
@@ -621,12 +632,12 @@ export class Game {
   }
 
   _updateXwingLaserBolts(effDt) {
-    const dz = this.worldSpeed * effDt;
     const now = performance.now();
+    const pz = this.player.mesh.position.z;
     for (let i = this._xwingLaserBolts.length - 1; i >= 0; i--) {
       const b = this._xwingLaserBolts[i];
-      b.mesh.position.z += dz;
-      if (now > b.until) {
+      b.mesh.position.z -= XWING_BOLT_SPEED * effDt;
+      if (now > b.until || b.mesh.position.z < pz - 120) {
         this.scene.remove(b.mesh);
         b.mesh.geometry?.dispose();
         const m = b.mesh.material;
@@ -664,7 +675,7 @@ export class Game {
     return best ? { kind: best.kind, e: best.e } : null;
   }
 
-  _spawnXwingLaserBolts(px, py, pz) {
+  _spawnXwingLaserBolts() {
     const mat = new THREE.MeshStandardMaterial({
       color: 0xff2200,
       emissive: 0xff4400,
@@ -674,13 +685,25 @@ export class Game {
       transparent: true,
       opacity: 0.92,
     });
-    const until = performance.now() + 95;
-    for (const ox of [-0.2, 0.2]) {
+    const until = performance.now() + XWING_BOLT_LIFE_MS;
+    const hw = this.player.mesh;
+    const boltLen = 5.2;
+    const half = boltLen * 0.5;
+    /** Four wing/fuselage exits in model space; nose is −Z. */
+    const localPts = [
+      new THREE.Vector3(-1.06, 0.26, -0.36),
+      new THREE.Vector3(1.06, 0.26, -0.36),
+      new THREE.Vector3(-0.5, 0.3, -0.5),
+      new THREE.Vector3(0.5, 0.3, -0.5),
+    ];
+    for (const lv of localPts) {
+      const w = lv.clone();
+      hw.localToWorld(w);
       const bolt = new THREE.Mesh(
-        new THREE.BoxGeometry(0.1, 0.1, 16),
+        new THREE.BoxGeometry(0.08, 0.08, boltLen),
         mat.clone(),
       );
-      bolt.position.set(px + ox, py, pz - 8);
+      bolt.position.set(w.x, w.y, w.z - half);
       this.scene.add(bolt);
       this._xwingLaserBolts.push({ mesh: bolt, until });
     }
@@ -691,11 +714,7 @@ export class Game {
     if (now < this._xwingFireCooldownUntil) return;
     this._xwingFireCooldownUntil = now + 240;
 
-    const px = this.player.mesh.position.x;
-    const py = this.player.mesh.position.y + 0.22;
-    const pz = this.player.mesh.position.z;
-
-    this._spawnXwingLaserBolts(px, py, pz);
+    this._spawnXwingLaserBolts();
     play(SFX.XWING_LASER, 0.82);
 
     const hit = this._pickXwingBlastTarget();
@@ -1334,6 +1353,7 @@ export class Game {
     }
     this.currentLevel = levelId;
     setLastLevel(levelId);
+    this.spawner.levelId = levelId;
 
     this.track.dispose();
     this.track = new Track(this.scene, levelId);
@@ -1341,8 +1361,9 @@ export class Game {
     const theme = LEVELS[levelId];
     if (theme) {
       this.scene.background = new THREE.Color(theme.sceneBg);
-      const fogNear = levelId === "DS" ? 52 : 48;
-      const fogFar = levelId === "DS" ? 260 : 175;
+      /** DS: fade only in the far distance so the trench doesn’t read as a gray “cloud bank”. */
+      const fogNear = levelId === "DS" ? 110 : 48;
+      const fogFar = levelId === "DS" ? 520 : 175;
       this.scene.fog = new THREE.Fog(theme.fog, fogNear, fogFar);
     }
 
@@ -3114,6 +3135,7 @@ export class Game {
   _startAttractMode() {
     this._attractActive = true;
     this._attractDodgeTimer = 0;
+    this.spawner.levelId = this.currentLevel;
     this.spawner.reset();
     this.player.mesh.visible = true;
     this.player.targetLaneIndex = 1;
@@ -3213,59 +3235,84 @@ export class Game {
 
   _spawnDeathStarFinale() {
     this._cleanupDeathStarFinale();
+
+    this._dsCamFrom.copy(this.camera.position);
+    const p = this.player.mesh.position;
+    this._dsLookFrom.set(p.x * 0.12, CONFIG.PLAYER_Y + 1.05, -2);
+    this._dsCamTo.set(3, 54, 125);
+    this._dsLookAt.set(0, 10, -252);
+
     const g = new THREE.Group();
     this._dsFinaleGroup = g;
     this.scene.add(g);
 
     const dsMat = new THREE.MeshStandardMaterial({
-      color: 0x4a4a55, roughness: 0.92, metalness: 0.15,
-      emissive: 0x101018, emissiveIntensity: 0.35,
+      color: 0x4c4e5a,
+      roughness: 0.9,
+      metalness: 0.2,
+      emissive: 0x121620,
+      emissiveIntensity: 0.42,
+      flatShading: true,
     });
-    const dsMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(9, 1), dsMat);
-    dsMesh.position.set(0.8, 5.2, -52);
-    dsMesh.scale.set(1.05, 0.34, 1);
+    const dsMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(36, 1), dsMat);
+    dsMesh.position.set(0, 11, -270);
+    dsMesh.scale.set(1, 0.3, 1);
     g.add(dsMesh);
 
-    /** Small thermal-flash only — huge scaled spheres read like a “sun” in the trench. */
     const boomMat = new THREE.MeshStandardMaterial({
-      color: 0xff5520, emissive: 0xff3300, emissiveIntensity: 1.1,
-      transparent: true, opacity: 0.75,
+      color: 0xff5520,
+      emissive: 0xff3300,
+      emissiveIntensity: 1.2,
+      transparent: true,
+      opacity: 0.88,
     });
-    const boom = new THREE.Mesh(new THREE.SphereGeometry(0.38, 14, 14), boomMat);
-    boom.position.set(0.6, 1.15, -11);
+    const boom = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 16), boomMat);
+    boom.position.set(7, 7.5, -234);
     g.add(boom);
     this._dsFinaleBoom = boom;
 
-    const n = 200;
+    const n = 360;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(n * 3);
     const vel = [];
     for (let i = 0; i < n; i++) {
-      pos[i * 3] = boom.position.x + (Math.random() - 0.5) * 0.35;
-      pos[i * 3 + 1] = boom.position.y + (Math.random() - 0.5) * 0.35;
-      pos[i * 3 + 2] = boom.position.z + (Math.random() - 0.5) * 0.35;
+      pos[i * 3] = boom.position.x + (Math.random() - 0.5) * 0.5;
+      pos[i * 3 + 1] = boom.position.y + (Math.random() - 0.5) * 0.5;
+      pos[i * 3 + 2] = boom.position.z + (Math.random() - 0.5) * 0.5;
       vel.push({
-        vx: (Math.random() - 0.5) * 6,
-        vy: (Math.random() - 0.5) * 6,
-        vz: (Math.random() - 0.5) * 6 - 2,
+        vx: (Math.random() - 0.5) * 28,
+        vy: (Math.random() - 0.5) * 22 + 8,
+        vz: (Math.random() - 0.5) * 28 + 42,
       });
     }
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     const pMat = new THREE.PointsMaterial({
       color: 0xffcc88,
-      size: 0.1,
+      size: 0.22,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.72,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
+      sizeAttenuation: true,
     });
     const pts = new THREE.Points(geo, pMat);
     g.add(pts);
     this._dsFinaleParticles = pts;
     pts.userData.vel = vel;
+
+    if (this.scene.fog instanceof THREE.Fog) {
+      this._dsFogRestore = { near: this.scene.fog.near, far: this.scene.fog.far };
+      this.scene.fog.near = 72;
+      this.scene.fog.far = 620;
+    }
   }
 
   _cleanupDeathStarFinale() {
+    if (this._dsFogRestore && this.scene.fog instanceof THREE.Fog) {
+      this.scene.fog.near = this._dsFogRestore.near;
+      this.scene.fog.far = this._dsFogRestore.far;
+    }
+    this._dsFogRestore = null;
     if (this._dsFinaleGroup) {
       this.scene.remove(this._dsFinaleGroup);
       this._dsFinaleGroup.traverse((c) => {
@@ -3284,13 +3331,14 @@ export class Game {
 
   _updateDeathStarFinale(dt, now) {
     const t = (now - this._orbitStartTime) / 1000;
+    const tb = Math.max(0, t - 2.35);
     if (this._dsFinaleBoom) {
-      const s = 1 + Math.min(3.2, t * t * 5 + t * 0.8);
+      const s = 1 + Math.min(8, tb * tb * 5.5 + tb * 1.2);
       this._dsFinaleBoom.scale.setScalar(s);
       const mat = /** @type {THREE.MeshStandardMaterial} */ (this._dsFinaleBoom.material);
       if (mat && mat.emissiveIntensity !== undefined) {
-        mat.emissiveIntensity = Math.max(0.12, 1.15 - t * 0.55);
-        mat.opacity = Math.max(0, 0.72 - t * 0.22);
+        mat.emissiveIntensity = Math.max(0.1, 1.25 - tb * 0.42);
+        mat.opacity = Math.max(0, 0.88 - tb * 0.18);
       }
     }
     if (this._dsFinaleParticles && this._dsFinaleParticles.userData.vel) {
@@ -3301,13 +3349,11 @@ export class Game {
         arr[i * 3] += vel[i].vx * dt;
         arr[i * 3 + 1] += vel[i].vy * dt;
         arr[i * 3 + 2] += vel[i].vz * dt;
-        vel[i].vy -= 2.2 * dt;
+        vel[i].vy -= 3.5 * dt;
+        vel[i].vx *= 0.985;
+        vel[i].vz *= 0.988;
       }
       posAttr.needsUpdate = true;
-    }
-    const p = this.player.mesh.position;
-    if (this._dsFinaleGroup) {
-      this._dsFinaleGroup.position.set(p.x, p.y, p.z);
     }
   }
 
@@ -3315,18 +3361,13 @@ export class Game {
     const elapsed = (now - this._orbitStartTime) / 1000;
     if (this.currentLevel === "DS") {
       this._updateDeathStarFinale(dt, now);
-      const angle = elapsed * 0.42;
-      const radius = 7.2;
-      const p = this.player.mesh.position;
-      const deckY = CONFIG.PLAYER_Y + 1.1;
-      const height = deckY + 1.35 + Math.sin(elapsed * 0.32) * 0.35;
-      this.camera.position.set(
-        p.x + Math.sin(angle) * radius,
-        height,
-        p.z + Math.cos(angle) * radius
-      );
-      const lookZ = p.z - 22;
-      this.camera.lookAt(p.x * 0.25, deckY + 0.55, lookZ);
+      const pull = Math.min(1, elapsed / 3.35);
+      const ease = 1 - (1 - pull) ** 2.1;
+      this.camera.position.lerpVectors(this._dsCamFrom, this._dsCamTo, ease);
+      const lx = THREE.MathUtils.lerp(this._dsLookFrom.x, this._dsLookAt.x, ease);
+      const ly = THREE.MathUtils.lerp(this._dsLookFrom.y, this._dsLookAt.y, ease);
+      const lz = THREE.MathUtils.lerp(this._dsLookFrom.z, this._dsLookAt.z, ease);
+      this.camera.lookAt(lx, ly, lz);
       return;
     }
     const angle = elapsed * 0.5;

@@ -643,9 +643,10 @@ export const LEVELS = {
     laneMarker: 0xa8aeb8,
     side:     0x4a4c58,
     sideEmissive: 0x1a1c28,
-    fog:      0x242830,
-    sky:      0x0a1022,
-    sceneBg:  0x121826,
+    /** Near-black fog so distance fades to space, not a gray “cloud”. */
+    fog:      0x040508,
+    sky:      0x000000,
+    sceneBg:  0x000000,
     scenery: "trench",
     music: "./assets/audio/trench-run.m4a",
     billboards: [
