@@ -3696,31 +3696,40 @@ export class Game {
     return g;
   }
 
-  _addFinaleStarfield(parent, count = 720) {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const u = Math.random() * Math.PI * 2;
-      const c = 2 * Math.random() - 1;
-      const s = Math.sqrt(Math.max(0, 1 - c * c));
-      const rr = 380 + Math.random() * 520;
-      pos[i * 3] = rr * s * Math.cos(u);
-      pos[i * 3 + 1] = rr * s * Math.sin(u) * 0.55 + (Math.random() - 0.5) * 140;
-      pos[i * 3 + 2] = -160 - Math.random() * 480;
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    const pts = new THREE.Points(
-      geo,
-      new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.35,
-        transparent: true,
-        opacity: 0.55,
-        depthWrite: false,
-        sizeAttenuation: true,
-      }),
-    );
-    parent.add(pts);
+  /**
+   * Escape finale sky — dense star shell. `fog: false` so scene fog does not wash them to black.
+   * Two layers: distant dome + nearer specks so the frame reads as space, not empty void.
+   */
+  _addFinaleStarfield(parent) {
+    const mkLayer = (count, rMin, rMax, ySquash, zBias, size, opacity, color) => {
+      const pos = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const u = Math.random() * Math.PI * 2;
+        const c = 2 * Math.random() - 1;
+        const s = Math.sqrt(Math.max(0, 1 - c * c));
+        const rr = rMin + Math.random() * (rMax - rMin);
+        pos[i * 3] = rr * s * Math.cos(u);
+        pos[i * 3 + 1] = rr * s * Math.sin(u) * ySquash + (Math.random() - 0.5) * 120;
+        pos[i * 3 + 2] = zBias - Math.random() * (rMax * 0.85);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const pts = new THREE.Points(
+        geo,
+        new THREE.PointsMaterial({
+          color,
+          size,
+          transparent: true,
+          opacity,
+          depthWrite: false,
+          sizeAttenuation: true,
+          fog: false,
+        }),
+      );
+      parent.add(pts);
+    };
+    mkLayer(2200, 280, 720, 0.62, -120, 0.42, 0.88, 0xf2f6ff);
+    mkLayer(900, 120, 340, 0.75, -40, 0.28, 0.72, 0xd8e4ff);
   }
 
   _spawnDeathStarFinale() {
