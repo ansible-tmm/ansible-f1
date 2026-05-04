@@ -1574,7 +1574,8 @@ export class Track {
   }
 
   _trenchSkyline(skylineGroup) {
-    const nPts = this._isDeathStar ? 5200 : 220;
+    /** DS: fewer points than before so the trench doesn’t read as a snow globe; finale uses its own starfield. */
+    const nPts = this._isDeathStar ? 2400 : 220;
     const positions = new Float32Array(nPts * 3);
     for (let i = 0; i < nPts; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 260;
@@ -1599,9 +1600,9 @@ export class Track {
       starGeo,
       new THREE.PointsMaterial({
         color: this._isDeathStar ? 0xd8e4f0 : 0xeeeeff,
-        size: this._isDeathStar ? 0.11 : 0.09,
+        size: this._isDeathStar ? 0.095 : 0.09,
         transparent: true,
-        opacity: this._isDeathStar ? 0.95 : 0.75,
+        opacity: this._isDeathStar ? 0.82 : 0.75,
         depthWrite: false,
         sizeAttenuation: true,
         /** DS: don’t dim stars with scene fog — avoids a “darker void” wedge vs. corners. */
