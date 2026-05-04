@@ -1,4 +1,5 @@
 # Sample workflow for building and deploying a Jekyll site to GitHub Pages
+# Use Node 24–backed action majors (see GitHub deprecation of Node 20 runners).
 name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 
 on:
@@ -25,9 +26,12 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    env:
+      # Nudge any remaining JS actions (e.g. nested composites) onto Node 24.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Sync theme entry pages
         run: bash scripts/sync-theme-entrypoints.sh
       - name: Setup Pages
@@ -38,7 +42,7 @@ jobs:
           source: ./
           destination: ./_site
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
 
   # Deployment job
   deploy:
@@ -47,6 +51,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
