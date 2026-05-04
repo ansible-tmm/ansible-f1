@@ -3840,16 +3840,21 @@ export class Game {
     equatorLine.rotation.x = Math.PI / 2;
     dsGrp.add(equatorLine);
 
-    // Superlaser dish — faces the escape camera (was a fixed normal that often read edge‑on / backface‑culled).
+    // Superlaser dish — above the equatorial trench (blend toward +Y) while still facing the camera enough to read.
     const toCam = this._dsFinaleCamFrom.clone().sub(dsGrp.position);
     if (toCam.lengthSq() < 4) {
       toCam.set(0.22, 0.38, 0.9);
     }
     toCam.normalize();
+    const upBias = 0.52;
+    const dishNormal = toCam
+      .multiplyScalar(1 - upBias)
+      .add(new THREE.Vector3(0, upBias, 0))
+      .normalize();
     const dishRadius = 55.65;
     const dishGrp = new THREE.Group();
-    dishGrp.position.copy(toCam.clone().multiplyScalar(dishRadius));
-    dishGrp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), toCam);
+    dishGrp.position.copy(dishNormal.clone().multiplyScalar(dishRadius));
+    dishGrp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dishNormal);
     const dishWell = new THREE.Mesh(new THREE.CircleGeometry(6.4, 28), dishWellMat);
     dishWell.position.z = -0.48;
     dishGrp.add(dishWell);
