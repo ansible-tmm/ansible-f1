@@ -126,6 +126,8 @@ export class Spawner {
 
     let effPickupInterval = pickupInterval;
     if (this.attractMode) effPickupInterval *= 1.85;
+    /** Death Star trench only: ~half as many shield / boost / playbook pickups (obstacles unchanged). */
+    if (this.levelId === "DS") effPickupInterval *= 2;
     if (this.pickupTimer >= effPickupInterval) {
       this.pickupTimer = 0;
       this._spawnPickup(elapsedRunSeconds, warm);

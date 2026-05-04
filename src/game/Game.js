@@ -832,16 +832,21 @@ export class Game {
     const hw = this.player.mesh;
     const boltLen = 5.2;
     const half = boltLen * 0.5;
-    /** Four cannon tips on S-foils in model space; nose is −Z (see Player._buildXWingMesh). */
+    const tips = hw.userData?.xwingBarrelTips;
+    /** Fallback if mesh predates wingtip barrels (nose −Z). */
     const localPts = [
       new THREE.Vector3(-1.16, 0.68, -0.12),
       new THREE.Vector3(1.16, 0.68, -0.12),
       new THREE.Vector3(-1.16, -0.02, -0.12),
       new THREE.Vector3(1.16, -0.02, -0.12),
     ];
-    const idx = this._xwingCannonIndex % localPts.length;
-    this._xwingCannonIndex = (this._xwingCannonIndex + 1) % localPts.length;
-    const w = localPts[idx].clone();
+    const n = tips?.length === 4 ? 4 : localPts.length;
+    const idx = this._xwingCannonIndex % n;
+    this._xwingCannonIndex = (this._xwingCannonIndex + 1) % n;
+    const w =
+      tips?.length === 4
+        ? tips[idx].clone()
+        : localPts[idx].clone();
     hw.localToWorld(w);
     const bolt = new THREE.Mesh(
       new THREE.BoxGeometry(0.08, 0.08, boltLen),
@@ -1136,21 +1141,32 @@ export class Game {
       this.ui.buildTutorialChecklist(TUTORIAL_STEPS);
       this.ui.showTutorialChecklist(true);
     }
+    /** DS trench: only countdown audio during 3-2-1; engine + takeoff after “Go!”. */
+    const dsXwingCountdown = isDs && this.player.carType === "xwing";
+
     if (this.player.carType === "xwing") {
-      play(SFX.XWING_TAKEOFF, 0.88);
+      if (!dsXwingCountdown) {
+        play(SFX.XWING_TAKEOFF, 0.88);
+      }
     } else {
       play(SFX.START_RUN, 0.75);
     }
-    startLoop(
-      this.player.carType === "xwing" ? ENGINE_LOOP_XWING : ENGINE_LOOP,
-      0.2,
-    );
+    if (!dsXwingCountdown) {
+      startLoop(
+        this.player.carType === "xwing" ? ENGINE_LOOP_XWING : ENGINE_LOOP,
+        0.2,
+      );
+    }
 
     if (isDs) {
       play(SFX.COUNTDOWN, 0.8);
       this.ui.showTutorialCountdown(() => {
         this._tutorialPaused = false;
         this.ui.setStatus(this._t("Go!"), 1500);
+        if (dsXwingCountdown) {
+          play(SFX.XWING_TAKEOFF, 0.88);
+          startLoop(ENGINE_LOOP_XWING, 0.2);
+        }
       });
     }
   }
@@ -3783,20 +3799,31 @@ export class Game {
       flatShading: true,
     });
     const dishRimMat = new THREE.MeshStandardMaterial({
-      color: 0x626672,
-      roughness: 0.78,
-      metalness: 0.32,
-      emissive: 0x1a2230,
-      emissiveIntensity: 0.2,
+      color: 0x8a909c,
+      roughness: 0.72,
+      metalness: 0.38,
+      emissive: 0x2a3448,
+      emissiveIntensity: 0.45,
       flatShading: true,
+      side: THREE.DoubleSide,
     });
     const dishWellMat = new THREE.MeshStandardMaterial({
-      color: 0x2a2e38,
+      color: 0x1e222c,
       roughness: 0.92,
       metalness: 0.14,
-      emissive: 0x0e1018,
-      emissiveIntensity: 0.15,
+      emissive: 0x182840,
+      emissiveIntensity: 0.35,
       flatShading: true,
+      side: THREE.DoubleSide,
+    });
+    const dishCollarMat = new THREE.MeshStandardMaterial({
+      color: 0x5c6472,
+      roughness: 0.8,
+      metalness: 0.35,
+      emissive: 0x1a2030,
+      emissiveIntensity: 0.28,
+      flatShading: true,
+      side: THREE.DoubleSide,
     });
 
     const dsGrp = new THREE.Group();
@@ -3813,16 +3840,27 @@ export class Game {
     equatorLine.rotation.x = Math.PI / 2;
     dsGrp.add(equatorLine);
 
-    // Superlaser dish — smaller ring above equator, facing slightly toward camera (−Z) + up (+Y).
-    const dishNormal = new THREE.Vector3(0.3, 0.55, -0.45).normalize();
-    const dishPos = dishNormal.clone().multiplyScalar(55.82);
+    // Superlaser dish — faces the escape camera (was a fixed normal that often read edge‑on / backface‑culled).
+    const toCam = this._dsFinaleCamFrom.clone().sub(dsGrp.position);
+    if (toCam.lengthSq() < 4) {
+      toCam.set(0.22, 0.38, 0.9);
+    }
+    toCam.normalize();
+    const dishRadius = 55.65;
     const dishGrp = new THREE.Group();
-    dishGrp.position.copy(dishPos);
-    dishGrp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dishNormal);
-    const dishWell = new THREE.Mesh(new THREE.CircleGeometry(6.2, 26), dishWellMat);
-    dishWell.position.z = -0.42;
+    dishGrp.position.copy(toCam.clone().multiplyScalar(dishRadius));
+    dishGrp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), toCam);
+    const dishWell = new THREE.Mesh(new THREE.CircleGeometry(6.4, 28), dishWellMat);
+    dishWell.position.z = -0.48;
     dishGrp.add(dishWell);
-    dishGrp.add(new THREE.Mesh(new THREE.RingGeometry(6.4, 14.2, 36), dishRimMat));
+    const dishMain = new THREE.Mesh(new THREE.RingGeometry(6.55, 14.8, 40), dishRimMat);
+    dishGrp.add(dishMain);
+    const dishCollar = new THREE.Mesh(new THREE.RingGeometry(14.6, 16.4, 40), dishCollarMat);
+    dishCollar.position.z = 0.12;
+    dishGrp.add(dishCollar);
+    const dishTorus = new THREE.Mesh(new THREE.TorusGeometry(10.6, 0.42, 10, 48), dishCollarMat);
+    dishTorus.position.z = 0.06;
+    dishGrp.add(dishTorus);
     dsGrp.add(dishGrp);
 
     g.add(dsGrp);
@@ -3870,14 +3908,18 @@ export class Game {
     const xL = this._buildFinaleMiniXWing();
     xL.scale.setScalar(2.45);
     xL.position.set(3.4, 5.55, -108);
+    /** Models are built nose −Z; flight is +Z toward camera — yaw π so nose leads. */
+    xL.rotation.y = Math.PI;
     g.add(xL);
     const xC = this._buildFinaleMiniXWing();
     xC.scale.setScalar(2.55);
     xC.position.set(0, 5.75, -92);
+    xC.rotation.y = Math.PI;
     g.add(xC);
     const yW = this._buildFinaleMiniYWing();
     yW.scale.setScalar(2.25);
     yW.position.set(-3.5, 5.4, -100);
+    yW.rotation.y = Math.PI;
     g.add(yW);
 
     g.userData.finaleShips = [

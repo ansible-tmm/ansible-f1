@@ -1664,8 +1664,10 @@ export class Player {
     const engineMat = new THREE.MeshStandardMaterial({
       color: 0x2a2a30, metalness: 0.75, roughness: 0.38, flatShading: true,
     });
-    const chrome = new THREE.MeshStandardMaterial({
-      color: 0xaab0b8, metalness: 0.85, roughness: 0.24, flatShading: true,
+    /** Wingtip laser barrels — light gray, forward (−Z) like the film models. */
+    const barrelMat = new THREE.MeshStandardMaterial({
+      color: 0xc4cad4, metalness: 0.52, roughness: 0.4,
+      emissive: 0x1e2228, emissiveIntensity: 0.06, flatShading: true,
     });
     const r2Mat = new THREE.MeshStandardMaterial({
       color: 0x2244aa, metalness: 0.42, roughness: 0.5,
@@ -1728,6 +1730,16 @@ export class Player {
       mesh.quaternion.setFromRotationMatrix(sfoilBasis);
     };
 
+    const barrelQ = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, -1)
+    );
+    const mountH = 0.075;
+    const poleLen = 0.58;
+    const muzzleH = 0.042;
+    /** Mesh-local emitter points — Game spawns turbolaser bolts here. */
+    g.userData.xwingBarrelTips = [];
+
     for (const raw of sfoilDirs) {
       const d = raw.clone().normalize();
       const wing = new THREE.Mesh(
@@ -1748,16 +1760,60 @@ export class Player {
       stripe.position.y += 0.016;
       g.add(stripe);
 
-      const cannon = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.026, 0.021, 0.28, 6),
-        chrome
-      );
-      cannon.rotation.x = Math.PI / 2;
       const tipD = 0.22 + wingLen * 0.94;
       const tip = bodyC.clone().add(d.clone().multiplyScalar(tipD));
       tip.y -= 0.018;
-      cannon.position.copy(tip);
-      g.add(cannon);
+
+      const mount = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.036, 0.042, mountH, 8),
+        barrelMat
+      );
+      mount.quaternion.copy(barrelQ);
+      mount.position.copy(tip).add(new THREE.Vector3(0, 0, -mountH * 0.5));
+      g.add(mount);
+
+      const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0125, 0.0145, poleLen, 8),
+        barrelMat
+      );
+      pole.quaternion.copy(barrelQ);
+      pole.position.copy(tip).add(new THREE.Vector3(0, 0, -(mountH + poleLen * 0.5)));
+      g.add(pole);
+
+      const muzzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.011, muzzleH, 8),
+        barrelMat
+      );
+      muzzle.quaternion.copy(barrelQ);
+      muzzle.position.copy(tip).add(
+        new THREE.Vector3(0, 0, -(mountH + poleLen + muzzleH * 0.5))
+      );
+      g.add(muzzle);
+
+      const cross = new THREE.Group();
+      cross.quaternion.copy(barrelQ);
+      cross.position.copy(
+        tip.clone().add(new THREE.Vector3(0, 0, -(mountH + poleLen + muzzleH)))
+      );
+      const prW = 0.034;
+      const prT = 0.006;
+      const prD = 0.014;
+      const barH = new THREE.Mesh(
+        new THREE.BoxGeometry(prW, prT, prD),
+        barrelMat
+      );
+      const barV = new THREE.Mesh(
+        new THREE.BoxGeometry(prT, prW, prD),
+        barrelMat
+      );
+      cross.add(barH);
+      cross.add(barV);
+      g.add(cross);
+
+      const emitterZ = mountH + poleLen + muzzleH + prD * 0.5 + 0.008;
+      g.userData.xwingBarrelTips.push(
+        tip.clone().add(new THREE.Vector3(0, 0, -emitterZ))
+      );
     }
 
     const glowMat = new THREE.MeshBasicMaterial({
