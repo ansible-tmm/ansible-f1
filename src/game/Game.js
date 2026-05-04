@@ -3699,18 +3699,43 @@ export class Game {
   /**
    * Escape finale sky — dense star shell. `fog: false` so scene fog does not wash them to black.
    * Two layers: distant dome + nearer specks so the frame reads as space, not empty void.
+   * Stars are rejected inside an exclusion sphere around the finale Death Star so they don’t sit on the mesh.
    */
   _addFinaleStarfield(parent) {
+    /** Keep in sync with `_spawnDeathStarFinale` dsGrp.position + sphere (~56) + trench/dish margin. */
+    const dsExcl = new THREE.Vector3(-46, 28, -272);
+    const dsExclR = 94;
+    const dsExclR2 = dsExclR * dsExclR;
+    const p = new THREE.Vector3();
+    const dir = new THREE.Vector3();
+
     const mkLayer = (count, rMin, rMax, ySquash, zBias, size, opacity, color) => {
       const pos = new Float32Array(count * 3);
       for (let i = 0; i < count; i++) {
-        const u = Math.random() * Math.PI * 2;
-        const c = 2 * Math.random() - 1;
-        const s = Math.sqrt(Math.max(0, 1 - c * c));
-        const rr = rMin + Math.random() * (rMax - rMin);
-        pos[i * 3] = rr * s * Math.cos(u);
-        pos[i * 3 + 1] = rr * s * Math.sin(u) * ySquash + (Math.random() - 0.5) * 120;
-        pos[i * 3 + 2] = zBias - Math.random() * (rMax * 0.85);
+        let placed = false;
+        for (let attempt = 0; attempt < 80 && !placed; attempt++) {
+          const u = Math.random() * Math.PI * 2;
+          const c = 2 * Math.random() - 1;
+          const s = Math.sqrt(Math.max(0, 1 - c * c));
+          const rr = rMin + Math.random() * (rMax - rMin);
+          p.set(
+            rr * s * Math.cos(u),
+            rr * s * Math.sin(u) * ySquash + (Math.random() - 0.5) * 120,
+            zBias - Math.random() * (rMax * 0.85),
+          );
+          if (p.distanceToSquared(dsExcl) >= dsExclR2) {
+            placed = true;
+          }
+        }
+        if (!placed) {
+          dir.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+          if (dir.lengthSq() < 1e-6) dir.set(0.37, 0.52, -0.78);
+          dir.normalize();
+          p.copy(dsExcl).addScaledVector(dir, dsExclR + 40 + Math.random() * (rMax - rMin));
+        }
+        pos[i * 3] = p.x;
+        pos[i * 3 + 1] = p.y;
+        pos[i * 3 + 2] = p.z;
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
