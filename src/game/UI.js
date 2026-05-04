@@ -1847,7 +1847,7 @@ export class UI {
       { road: "#667788", edge: "#8899aa", lane: "#ccddff", side: "#dde8f0", sky: "#aabbcc", scenery: "snow" },
       { road: "#555555", edge: "#cc8844", lane: "#ffdd44", side: "#8a9a5a", sky: "#6699cc", scenery: "coast" },
       { road: "#2a2a30", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
-      { road: "#1a1a22", edge: "#3a3a48", lane: "#ff3333", side: "#0d0d12", sky: "#020208", scenery: "trench" },
+      { road: "#4a4c54", edge: "#5a5c64", lane: "#9aa0a8", side: "#383a42", sky: "#050508", scenery: "trench" },
     ];
 
     const W = 148, H = 100;

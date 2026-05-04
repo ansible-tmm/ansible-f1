@@ -65,13 +65,15 @@ const SFX = {
   CROONER_4: "./assets/audio/make_money.m4a",
   CROONER_5: "./assets/audio/right_next_to_me.m4a",
   COUNTDOWN: "./assets/audio/countdown.m4a",
+  XWING_TAKEOFF: "./assets/audio/starwars-ship-takeoff.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
+const ENGINE_LOOP_XWING = "./assets/audio/xwing-engine.m4a";
 const DEFAULT_BGM = "./assets/audio/bgm.m4a";
 const QUEST_BGM = "./assets/audio/quest-bgm.mp3";
 
-preload(Object.values(SFX));
+preload([...Object.values(SFX), ENGINE_LOOP, ENGINE_LOOP_XWING]);
 
 /**
  * @typedef {'boot'|'main_menu'|'running'|'quiz'|'paused'|'game_over'|'billboard'|'godzilla'} GameState
@@ -812,8 +814,15 @@ export class Game {
     this.ui.showTutorialBanner();
     this.ui.buildTutorialChecklist(TUTORIAL_STEPS);
     this.ui.showTutorialChecklist(true);
-    play(SFX.START_RUN, 0.75);
-    startLoop(ENGINE_LOOP, 0.2);
+    if (this.player.carType === "xwing") {
+      play(SFX.XWING_TAKEOFF, 0.88);
+    } else {
+      play(SFX.START_RUN, 0.75);
+    }
+    startLoop(
+      this.player.carType === "xwing" ? ENGINE_LOOP_XWING : ENGINE_LOOP,
+      0.2,
+    );
   }
 
   resetRun() {
@@ -1102,7 +1111,9 @@ export class Game {
     const theme = LEVELS[levelId];
     if (theme) {
       this.scene.background = new THREE.Color(theme.sceneBg);
-      this.scene.fog = new THREE.Fog(theme.fog, 48, 175);
+      const fogNear = levelId === "DS" ? 38 : 48;
+      const fogFar = levelId === "DS" ? 220 : 175;
+      this.scene.fog = new THREE.Fog(theme.fog, fogNear, fogFar);
     }
 
     startBgm(theme.music || DEFAULT_BGM, 0.1);
@@ -2893,6 +2904,8 @@ export class Game {
         this.ui.showAttractScores(false);
       }, 10000);
     }, 30000);
+
+    this._applyDeathStarRunVehicle();
   }
 
   _stopAttractMode() {

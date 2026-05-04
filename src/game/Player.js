@@ -1643,30 +1643,30 @@ export class Player {
   _buildXWingMesh() {
     const g = new THREE.Group();
     const hull = new THREE.MeshStandardMaterial({
-      color: 0xc8c8c8, metalness: 0.55, roughness: 0.38,
-      emissive: 0x303038, emissiveIntensity: 0.12,
+      color: 0xb8b8c0, metalness: 0.5, roughness: 0.42,
+      emissive: 0x252528, emissiveIntensity: 0.1, flatShading: true,
     });
     const dark = new THREE.MeshStandardMaterial({
-      color: 0x4a4a52, metalness: 0.6, roughness: 0.45,
-      emissive: 0x101014, emissiveIntensity: 0.1,
+      color: 0x454850, metalness: 0.55, roughness: 0.48,
+      emissive: 0x0c0c10, emissiveIntensity: 0.08, flatShading: true,
     });
     const red = new THREE.MeshStandardMaterial({
-      color: 0xcc2222, metalness: 0.4, roughness: 0.45,
-      emissive: 0x440000, emissiveIntensity: 0.35,
+      color: 0xbb2222, metalness: 0.42, roughness: 0.48,
+      emissive: 0x550808, emissiveIntensity: 0.28, flatShading: true,
     });
     const glass = new THREE.MeshStandardMaterial({
-      color: 0x88ccff, metalness: 0.75, roughness: 0.12,
-      transparent: true, opacity: 0.72,
+      color: 0x77b8dd, metalness: 0.7, roughness: 0.15,
+      transparent: true, opacity: 0.7, flatShading: true,
     });
     const engineMat = new THREE.MeshStandardMaterial({
-      color: 0x333338, metalness: 0.7, roughness: 0.35,
+      color: 0x2a2a30, metalness: 0.72, roughness: 0.4, flatShading: true,
     });
 
     const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.35, 1.35), hull);
     fuselage.position.set(0, 0.32, 0);
     g.add(fuselage);
 
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 6), hull);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 5), hull);
     nose.rotation.x = -Math.PI / 2;
     nose.position.set(0, 0.32, -0.95);
     g.add(nose);
@@ -1683,16 +1683,18 @@ export class Player {
       const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.52), red);
       stripe.position.set(side * 1.12, 0.28, 0.05);
       g.add(stripe);
-      const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 8), engineMat);
+      const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 6), engineMat);
       eng.rotation.x = Math.PI / 2;
       eng.position.set(side * 0.95, 0.28, 0.55);
       g.add(eng);
       const glow = new THREE.Mesh(
-        new THREE.CircleGeometry(0.06, 8),
-        new THREE.MeshBasicMaterial({ color: 0xff8833, transparent: true, opacity: 0.9 })
+        new THREE.CircleGeometry(0.09, 6),
+        new THREE.MeshBasicMaterial({
+          color: 0xff4418, transparent: true, opacity: 0.95,
+        })
       );
       glow.rotation.x = -Math.PI / 2;
-      glow.position.set(side * 0.95, 0.28, 0.7);
+      glow.position.set(side * 0.95, 0.28, 0.72);
       g.add(glow);
     }
 

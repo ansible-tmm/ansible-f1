@@ -387,46 +387,64 @@ export class Spawner {
     const g = new THREE.Group();
     const wallW = 1.8, wallH = 1.3, wallD = 0.55;
     const panelMat = new THREE.MeshStandardMaterial({
-      color: 0x4a4c56, roughness: 0.82, metalness: 0.45,
-      emissive: 0x101418, emissiveIntensity: 0.2,
+      color: 0x4c4e58, roughness: 0.84, metalness: 0.48,
+      emissive: 0x101418, emissiveIntensity: 0.1, flatShading: true,
     });
     const darkMat = new THREE.MeshStandardMaterial({
-      color: 0x35363e, roughness: 0.88, metalness: 0.5,
-      emissive: 0x080a0c, emissiveIntensity: 0.15,
+      color: 0x383a42, roughness: 0.9, metalness: 0.52,
+      emissive: 0x06080a, emissiveIntensity: 0.08, flatShading: true,
     });
-    const back = new THREE.Mesh(
-      new THREE.BoxGeometry(wallW * 0.98, wallH * 0.95, wallD * 0.35),
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(wallW * 0.98, wallH * 0.88, wallD * 0.42),
       panelMat
     );
-    back.position.set(0, wallH / 2, -wallD * 0.12);
-    g.add(back);
-    const cols = 5;
-    const rows = 4;
+    base.position.set(0, wallH * 0.46, -wallD * 0.06);
+    g.add(base);
+    const cols = 4;
+    const rows = 3;
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const px = (col - (cols - 1) / 2) * (wallW / cols);
-        const py = 0.22 + row * (wallH / rows);
+        const py = 0.28 + row * (wallH / rows);
         const panel = new THREE.Mesh(
-          new THREE.BoxGeometry(wallW / cols - 0.06, wallH / rows - 0.05, wallD * 0.55),
-          Math.random() < 0.35 ? darkMat : panelMat
+          new THREE.BoxGeometry(wallW / cols - 0.08, wallH / rows - 0.06, wallD * 0.62),
+          Math.random() < 0.4 ? darkMat : panelMat
         );
-        panel.position.set(px, py, wallD * 0.08);
+        panel.position.set(px, py, wallD * 0.12);
         g.add(panel);
       }
     }
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const rib = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, wallH * 0.88, wallD * 0.9),
+        new THREE.BoxGeometry(0.1, wallH * 0.82, wallD * 0.88),
         darkMat
       );
-      rib.position.set(-wallW * 0.35 + i * wallW * 0.35, wallH / 2, 0);
+      rib.position.set(-wallW * 0.38 + i * (wallW / 3.2), wallH / 2, 0.02);
       g.add(rib);
     }
-    const warn = new THREE.Mesh(
-      new THREE.BoxGeometry(0.55, 0.16, 0.06),
-      new THREE.MeshBasicMaterial({ color: 0xffcc00 })
+    const turBase = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 0.18, 0.4),
+      darkMat
     );
-    warn.position.set(0, wallH + 0.14, wallD / 2 + 0.04);
+    turBase.position.set(0, wallH + 0.1, 0);
+    g.add(turBase);
+    const gunMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2a30, roughness: 0.75, metalness: 0.6, flatShading: true,
+    });
+    for (const gx of [-0.14, 0.14]) {
+      const barrel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.07, 0.55, 5),
+        gunMat
+      );
+      barrel.rotation.x = Math.PI / 2;
+      barrel.position.set(gx, wallH + 0.22, wallD * 0.35);
+      g.add(barrel);
+    }
+    const warn = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.12, 0.06),
+      new THREE.MeshBasicMaterial({ color: 0xffaa33 })
+    );
+    warn.position.set(0, wallH + 0.12, wallD / 2 + 0.05);
     g.add(warn);
     return g;
   }

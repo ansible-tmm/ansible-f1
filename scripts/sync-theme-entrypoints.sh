@@ -15,6 +15,7 @@ THEMES=(
   AAP-on-cloud
   Metrics-and-telemetry
   AAP-101
+  Death-Star-Trench
 )
 
 for d in "${THEMES[@]}"; do

@@ -37,8 +37,11 @@ export class Track {
   _road() {
     const t = this.theme;
     const roadMat = new THREE.MeshStandardMaterial({
-      color: t.road, metalness: 0.15, roughness: 0.88,
-      emissive: t.roadEmissive, emissiveIntensity: 0.12,
+      color: t.road, metalness: t.scenery === "trench" ? 0.35 : 0.15,
+      roughness: t.scenery === "trench" ? 0.78 : 0.88,
+      emissive: t.roadEmissive,
+      emissiveIntensity: t.scenery === "trench" ? 0.06 : 0.12,
+      flatShading: t.scenery === "trench",
     });
     this._roadMat = roadMat;
     this._roadOrigColor = roadMat.color.getHex();
@@ -67,14 +70,19 @@ export class Track {
       road.position.y = 0;
       road.receiveShadow = true;
       this.group.add(road);
+      if (t.scenery === "trench") {
+        this._addTrenchFloorGreeble();
+      }
     }
 
     this.edgeGroup = new THREE.Group();
     this.group.add(this.edgeGroup);
     this._edgeSpacing = this._curve ? 5 : 20;
     this._edgeCount = this._curve ? 80 : 24;
+    const edgeEmissiveInt = t.scenery === "trench" ? 0.22 : 0.6;
     const edgeMat = new THREE.MeshStandardMaterial({
-      color: t.edge, emissive: t.edgeEmissive, emissiveIntensity: 0.6,
+      color: t.edge, emissive: t.edgeEmissive, emissiveIntensity: edgeEmissiveInt,
+      flatShading: t.scenery === "trench",
     });
     this._edgeMat = edgeMat;
     this._edgeOrigColor = edgeMat.color.getHex();
@@ -99,7 +107,10 @@ export class Track {
     if (t.scenery !== "city" && t.scenery !== "durham") {
       const groundMat = new THREE.MeshStandardMaterial({
         color: t.side, emissive: t.sideEmissive,
-        emissiveIntensity: 0.15, roughness: 0.95,
+        emissiveIntensity: t.scenery === "trench" ? 0.08 : 0.15,
+        roughness: t.scenery === "trench" ? 0.92 : 0.95,
+        metalness: t.scenery === "trench" ? 0.25 : 0,
+        flatShading: t.scenery === "trench",
       });
       const gw = this._curve ? 100 : 80;
       const groundL = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat);
@@ -117,12 +128,14 @@ export class Track {
     this.markerGroup = new THREE.Group();
     this.group.add(this.markerGroup);
 
+    const isTrench = this.theme.scenery === "trench";
     const mat = new THREE.MeshBasicMaterial({
       color: this.theme.laneMarker,
-      transparent: true, opacity: 0.85,
+      transparent: true,
+      opacity: isTrench ? 0.45 : 0.85,
     });
-    this._markerSpacing = this._curve ? 4 : 8;
-    this._markerCount = this._curve ? 100 : 40;
+    this._markerSpacing = this._curve ? 4 : isTrench ? 6 : 8;
+    this._markerCount = this._curve ? 100 : isTrench ? 52 : 40;
     this._markerMeshes = [];
     for (let i = 0; i < this._markerCount; i++) {
       const z = -200 + i * this._markerSpacing;
@@ -134,6 +147,44 @@ export class Track {
         m.userData.baseX = x;
         this.markerGroup.add(m);
         this._markerMeshes.push(m);
+      }
+    }
+  }
+
+  /** Raised seams + deck plates (low-poly Rogue Squadron vibe). */
+  _addTrenchFloorGreeble() {
+    const seamMat = new THREE.MeshStandardMaterial({
+      color: 0x35363c, roughness: 0.9, metalness: 0.4,
+      emissive: 0x08080a, emissiveIntensity: 0.04, flatShading: true,
+    });
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0x42444c, roughness: 0.88, metalness: 0.38,
+      emissive: 0x0a0a0e, emissiveIntensity: 0.05, flatShading: true,
+    });
+    for (let i = 0; i < 55; i++) {
+      const z = -198 + i * 7.2;
+      const seam = new THREE.Mesh(
+        new THREE.BoxGeometry(21.8, 0.035, 0.09),
+        seamMat
+      );
+      seam.position.set(0, 0.018, z);
+      this.group.add(seam);
+    }
+    for (let row = 0; row < 42; row++) {
+      const z = -196 + row * 9.2;
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 4; k++) {
+          const x = side * (3.15 + k * 0.95);
+          if (Math.random() < 0.22) continue;
+          const dz = 1.4 + Math.random() * 1.8;
+          const h = 0.04 + Math.random() * 0.05;
+          const plate = new THREE.Mesh(
+            new THREE.BoxGeometry(0.85 + Math.random() * 0.35, h, dz),
+            plateMat
+          );
+          plate.position.set(x + (Math.random() - 0.5) * 0.15, 0.02 + h / 2, z + (Math.random() - 0.5) * 2);
+          this.group.add(plate);
+        }
       }
     }
   }
@@ -1326,46 +1377,77 @@ export class Track {
 
   _trenchProps() {
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x4a4a52, roughness: 0.88, metalness: 0.35,
-      emissive: 0x1a1a22, emissiveIntensity: 0.2,
+      color: 0x4e5058, roughness: 0.86, metalness: 0.42,
+      emissive: 0x141418, emissiveIntensity: 0.12, flatShading: true,
+    });
+    const insetMat = new THREE.MeshStandardMaterial({
+      color: 0x3a3c44, roughness: 0.9, metalness: 0.48,
+      emissive: 0x0a0a0e, emissiveIntensity: 0.08, flatShading: true,
     });
     const ribMat = new THREE.MeshStandardMaterial({
-      color: 0x3a3a44, roughness: 0.9, metalness: 0.5,
-      emissive: 0x101018, emissiveIntensity: 0.15,
+      color: 0x32343c, roughness: 0.92, metalness: 0.55,
+      emissive: 0x060608, emissiveIntensity: 0.06, flatShading: true,
     });
     const pipeMat = new THREE.MeshStandardMaterial({
-      color: 0x5a5a62, roughness: 0.75, metalness: 0.55,
+      color: 0x555862, roughness: 0.8, metalness: 0.58, flatShading: true,
+    });
+    const beamMat = new THREE.MeshStandardMaterial({
+      color: 0x404248, roughness: 0.88, metalness: 0.4, flatShading: true,
     });
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
+      const segD = this._propSpacing * 0.94;
       for (const side of [-1, 1]) {
-        const wx = side * 7.2;
+        const wx = side * 5.85;
         const wall = new THREE.Mesh(
-          new THREE.BoxGeometry(1.4, 7.5, this._propSpacing * 0.92),
+          new THREE.BoxGeometry(2.0, 8.8, segD),
           wallMat
         );
-        wall.position.set(wx, 3.75, z);
+        wall.position.set(wx, 4.4, z);
         this.propsGroup.add(wall);
-        for (let r = 0; r < 4; r++) {
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 2; col++) {
+            if (Math.random() < 0.28) continue;
+            const inset = new THREE.Mesh(
+              new THREE.BoxGeometry(0.4 + Math.random() * 0.2, 1.1 + Math.random() * 0.45, 0.14),
+              insetMat
+            );
+            inset.position.set(
+              wx + side * 1.02,
+              1.4 + row * 2.05,
+              z - segD * 0.38 + col * (segD * 0.42) + Math.random() * 0.35
+            );
+            this.propsGroup.add(inset);
+          }
+        }
+        for (let r = 0; r < 3; r++) {
           const rib = new THREE.Mesh(
-            new THREE.BoxGeometry(0.12, 6.8, 0.25),
+            new THREE.BoxGeometry(0.14, 7.8, 0.22),
             ribMat
           );
           rib.position.set(
-            wx + side * 0.72,
-            3.4,
-            z - this._propSpacing * 0.35 + r * (this._propSpacing * 0.22)
+            wx + side * 1.01,
+            4.0,
+            z - segD * 0.44 + r * (segD * 0.2)
           );
           this.propsGroup.add(rib);
         }
-        if (Math.random() < 0.45) {
+        if (Math.random() < 0.5) {
           const pipe = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.15, 2.2, 6),
+            new THREE.CylinderGeometry(0.14, 0.16, 2.4, 5),
             pipeMat
           );
-          pipe.rotation.z = side * 0.4;
-          pipe.position.set(wx + side * 0.55, 2.5 + Math.random() * 2, z + (Math.random() - 0.5) * 4);
+          pipe.rotation.z = side * 0.35;
+          pipe.position.set(wx + side * 0.62, 2.8 + Math.random() * 2.2, z + (Math.random() - 0.5) * 5);
           this.propsGroup.add(pipe);
+        }
+        if (i % 4 === 0) {
+          const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(12.8, 0.2, 0.32),
+            beamMat
+          );
+          beam.position.set(0, 8.1, z);
+          this.propsGroup.add(beam);
         }
       }
     }
@@ -1373,23 +1455,27 @@ export class Track {
 
   _trenchSkyline(skylineGroup) {
     const starMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.85,
+      color: 0xeeeeff, transparent: true, opacity: 0.75,
     });
-    for (let si = 0; si < 120; si++) {
+    for (let si = 0; si < 220; si++) {
       const st = new THREE.Mesh(
-        new THREE.SphereGeometry(0.04 + Math.random() * 0.05, 4, 4),
+        new THREE.BoxGeometry(
+          0.05 + Math.random() * 0.06,
+          0.05 + Math.random() * 0.06,
+          0.05 + Math.random() * 0.06
+        ),
         starMat
       );
       st.position.set(
-        (Math.random() - 0.5) * 180,
-        18 + Math.random() * 45,
-        -30 - Math.random() * 80
+        (Math.random() - 0.5) * 200,
+        22 + Math.random() * 55,
+        -35 - Math.random() * 90
       );
       skylineGroup.add(st);
     }
     const dsMat = new THREE.MeshStandardMaterial({
-      color: 0x3a3a42, roughness: 0.95, metalness: 0.15,
-      emissive: 0x0a0a10, emissiveIntensity: 0.25,
+      color: 0x45454e, roughness: 0.94, metalness: 0.18,
+      emissive: 0x0c0c12, emissiveIntensity: 0.18, flatShading: true,
     });
     const ds = new THREE.Mesh(
       new THREE.IcosahedronGeometry(22, 1),
@@ -1399,10 +1485,10 @@ export class Track {
     ds.scale.set(1.1, 0.35, 1);
     skylineGroup.add(ds);
     const dish = new THREE.Mesh(
-      new THREE.SphereGeometry(6, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5),
+      new THREE.SphereGeometry(6, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5),
       new THREE.MeshStandardMaterial({
-        color: 0x2a2a32, roughness: 0.85, metalness: 0.2,
-        emissive: 0x151520, emissiveIntensity: 0.2,
+        color: 0x35353e, roughness: 0.88, metalness: 0.22,
+        emissive: 0x121218, emissiveIntensity: 0.15, flatShading: true,
       })
     );
     dish.rotation.x = Math.PI * 0.5;
@@ -1912,11 +1998,11 @@ export class Track {
 
     if (this.theme.scenery === "trench") {
       const frameMat = new THREE.MeshStandardMaterial({
-        color: 0x3a3a44, roughness: 0.85, metalness: 0.4,
-        emissive: 0x221100, emissiveIntensity: 0.15,
+        color: 0x454850, roughness: 0.88, metalness: 0.42,
+        emissive: 0x181a20, emissiveIntensity: 0.1, flatShading: true,
       });
       const glowMat = new THREE.MeshStandardMaterial({
-        color: 0xff3311, emissive: 0xff6600, emissiveIntensity: 1.2,
+        color: 0xff5520, emissive: 0xff4400, emissiveIntensity: 1.0, flatShading: true,
       });
       const span = 12;
       for (const side of [-1, 1]) {
