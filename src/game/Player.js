@@ -1688,19 +1688,24 @@ export class Player {
     const glowMat = new THREE.MeshBasicMaterial({
       color: 0xff4418, transparent: true, opacity: 0.95,
     });
-    const engineZ = 0.62;
-    const engineXs = [-0.26, -0.09, 0.09, 0.26];
-    for (const ex of engineXs) {
+    /** Four nozzles in a 2×2 “rectangle” (not one row): upper pair slightly tighter X like studio X-wings. */
+    const engineSlots = [
+      { x: -0.11, y: 0.37, z: 0.63 },
+      { x: 0.11, y: 0.37, z: 0.63 },
+      { x: -0.16, y: 0.19, z: 0.61 },
+      { x: 0.16, y: 0.19, z: 0.61 },
+    ];
+    for (const slot of engineSlots) {
       const eng = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.075, 0.088, 0.24, 8),
+        new THREE.CylinderGeometry(0.072, 0.085, 0.22, 8),
         engineMat
       );
       eng.rotation.x = Math.PI / 2;
-      eng.position.set(ex, 0.28, engineZ);
+      eng.position.set(slot.x, slot.y, slot.z);
       g.add(eng);
-      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.065, 6), glowMat);
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.062, 6), glowMat);
       glow.rotation.x = -Math.PI / 2;
-      glow.position.set(ex, 0.28, engineZ + 0.15);
+      glow.position.set(slot.x, slot.y, slot.z + 0.14);
       g.add(glow);
     }
 

@@ -155,6 +155,26 @@ export class UI {
     this._syncSummitDockVisibility();
   }
 
+  /** Death Star trench: no scripted tutorial or “How to play” from the main menu. */
+  _rebuildMainMenuNavButtons() {
+    const hp = document.getElementById("btn-how-to-play");
+    const hideHowTo = this._summitLinkLevelId === "DS";
+    if (hp) {
+      hp.classList.toggle("hidden", hideHowTo);
+      hp.setAttribute("aria-hidden", hideHowTo ? "true" : "false");
+    }
+    const ids = [
+      "btn-start",
+      "btn-choose-level-menu",
+      "btn-choose-driver",
+    ];
+    if (!hideHowTo) ids.push("btn-how-to-play");
+    ids.push("btn-highscores", "btn-achievements");
+    this._menuBtns = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    if (this._menuIdx >= this._menuBtns.length) this._menuIdx = 0;
+    this._updateMenuFocus();
+  }
+
   syncDeathStarTrenchCardVisibility() {
     const card = document.querySelector(".level-card-ds");
     if (!card) return;
@@ -289,16 +309,7 @@ export class UI {
       }
     });
 
-    this._menuBtns = [
-      document.getElementById("btn-start"),
-      document.getElementById("btn-choose-level-menu"),
-      document.getElementById("btn-choose-driver"),
-      document.getElementById("btn-how-to-play"),
-      document.getElementById("btn-highscores"),
-      document.getElementById("btn-achievements"),
-    ].filter(Boolean);
-    this._menuIdx = 0;
-    this._updateMenuFocus();
+    this._rebuildMainMenuNavButtons();
 
     window.addEventListener("keydown", (e) => {
       if (!this._isMainMenuActive()) return;
@@ -379,6 +390,7 @@ export class UI {
   }
 
   _openTutorial() {
+    if (this._summitLinkLevelId === "DS") return;
     if (!this.el.tutorialOverlay || !this.el.mainMenu) return;
     this.el.mainMenu.classList.add("hidden");
     this.el.tutorialOverlay.classList.remove("hidden");
@@ -1821,6 +1833,7 @@ export class UI {
     this._summitLinkLevelId = levelId;
     this._refreshSummitBoothLink();
     this._syncSummitDockVisibility();
+    this._rebuildMainMenuNavButtons();
   }
 
   _refreshSummitBoothLink() {

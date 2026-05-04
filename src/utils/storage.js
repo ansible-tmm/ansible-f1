@@ -9,8 +9,18 @@ const KEYS = {
   LAST_LEVEL: "builtToAutomate_lastLevel",
   LAST_DRIVER: "builtToAutomate_lastDriver",
   ACHIEVEMENTS: "builtToAutomate_achievements",
+  /** Legacy key — no longer used; removed on load so DS is not “stuck” unlocked. */
   DEATH_STAR_TRENCH: "builtToAutomate_deathStarTrenchUnlocked",
 };
+
+/** Death Star unlock is in-memory only: survives navigation within one page load, clears on refresh / new tab. */
+let _deathStarTrenchUnlocked = false;
+
+try {
+  localStorage.removeItem(KEYS.DEATH_STAR_TRENCH);
+} catch {
+  /* ignore */
+}
 
 function readNumber(key, fallback = 0) {
   try {
@@ -164,18 +174,11 @@ export function setLastDriver(id) {
 }
 
 export function getDeathStarTrenchUnlocked() {
-  try {
-    return localStorage.getItem(KEYS.DEATH_STAR_TRENCH) === "1";
-  } catch {
-    return false;
-  }
+  return _deathStarTrenchUnlocked;
 }
 
 export function setDeathStarTrenchUnlocked(on = true) {
-  try {
-    if (on) localStorage.setItem(KEYS.DEATH_STAR_TRENCH, "1");
-    else localStorage.removeItem(KEYS.DEATH_STAR_TRENCH);
-  } catch { /* ignore */ }
+  _deathStarTrenchUnlocked = !!on;
 }
 
 // --- Achievements ---

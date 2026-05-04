@@ -79,56 +79,92 @@ export class Track {
       }
     }
 
-    this.edgeGroup = new THREE.Group();
-    this.group.add(this.edgeGroup);
     this._edgeSpacing = this._curve ? 5 : 20;
     this._edgeCount = this._curve ? 80 : 24;
-    const edgeEmissiveInt = t.scenery === "trench" ? 0.22 : 0.6;
-    const edgeMat = new THREE.MeshStandardMaterial({
-      color: t.edge, emissive: t.edgeEmissive, emissiveIntensity: edgeEmissiveInt,
-      flatShading: t.scenery === "trench",
-    });
-    this._edgeMat = edgeMat;
-    this._edgeOrigColor = edgeMat.color.getHex();
-    this._edgeOrigEmissive = edgeMat.emissive.getHex();
     this._edgeMeshes = [];
-    for (let i = 0; i < this._edgeCount; i++) {
-      const z = -200 + i * this._edgeSpacing;
-      const el = new THREE.Mesh(
-        new THREE.BoxGeometry(0.35, 0.08, this._edgeSpacing), edgeMat
-      );
-      el.position.set(-5.8, 0.05, z);
-      el.userData.baseX = -5.8;
-      this.edgeGroup.add(el);
-      const er = el.clone();
-      er.position.x = 5.8;
-      er.userData.baseX = 5.8;
-      this.edgeGroup.add(er);
-      this._edgeMeshes.push(el, er);
-    }
-
-    // Ground planes on each side of the road
-    if (t.scenery !== "city" && t.scenery !== "durham") {
-      const groundMat = new THREE.MeshStandardMaterial({
-        color: t.side, emissive: t.sideEmissive,
-        emissiveIntensity: t.scenery === "trench" ? 0.08 : 0.15,
-        roughness: t.scenery === "trench" ? 0.92 : 0.95,
-        metalness: t.scenery === "trench" ? 0.25 : 0,
+    if (!this._isDeathStar) {
+      this.edgeGroup = new THREE.Group();
+      this.group.add(this.edgeGroup);
+      const edgeEmissiveInt = t.scenery === "trench" ? 0.22 : 0.6;
+      const edgeMat = new THREE.MeshStandardMaterial({
+        color: t.edge, emissive: t.edgeEmissive, emissiveIntensity: edgeEmissiveInt,
         flatShading: t.scenery === "trench",
       });
-      const gw = this._curve ? 100 : 80;
-      const groundL = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat);
-      groundL.rotation.x = -Math.PI / 2;
-      groundL.position.set(-51, -0.02, 0);
-      this.group.add(groundL);
-      const groundR = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat.clone());
-      groundR.rotation.x = -Math.PI / 2;
-      groundR.position.set(51, -0.02, 0);
-      this.group.add(groundR);
+      this._edgeMat = edgeMat;
+      this._edgeOrigColor = edgeMat.color.getHex();
+      this._edgeOrigEmissive = edgeMat.emissive.getHex();
+      for (let i = 0; i < this._edgeCount; i++) {
+        const z = -200 + i * this._edgeSpacing;
+        const el = new THREE.Mesh(
+          new THREE.BoxGeometry(0.35, 0.08, this._edgeSpacing), edgeMat
+        );
+        el.position.set(-5.8, 0.05, z);
+        el.userData.baseX = -5.8;
+        this.edgeGroup.add(el);
+        const er = el.clone();
+        er.position.x = 5.8;
+        er.userData.baseX = 5.8;
+        this.edgeGroup.add(er);
+        this._edgeMeshes.push(el, er);
+      }
+    } else {
+      this.edgeGroup = null;
+      this._edgeMat = null;
+    }
+
+    // Beside the deck: flat planes (other themes) or solid low aprons (Death Star — reads as volume, not black sheets)
+    if (t.scenery !== "city" && t.scenery !== "durham") {
+      if (this._isDeathStar) {
+        const apronMat = new THREE.MeshStandardMaterial({
+          color: 0x3a3c48,
+          emissive: 0x151820,
+          emissiveIntensity: 0.14,
+          roughness: 0.86,
+          metalness: 0.42,
+          flatShading: true,
+        });
+        const apLen = 400;
+        const apW = 36;
+        const apH = 0.85;
+        const innerHalf = 11;
+        const leftCx = -(innerHalf + apW / 2);
+        const apronL = new THREE.Mesh(new THREE.BoxGeometry(apW, apH, apLen), apronMat);
+        apronL.position.set(leftCx, -apH * 0.5 + 0.06, 0);
+        apronL.receiveShadow = true;
+        this.group.add(apronL);
+        const apronR = new THREE.Mesh(new THREE.BoxGeometry(apW, apH, apLen), apronMat.clone());
+        apronR.position.set(-leftCx, -apH * 0.5 + 0.06, 0);
+        apronR.receiveShadow = true;
+        this.group.add(apronR);
+      } else {
+        const groundMat = new THREE.MeshStandardMaterial({
+          color: t.side, emissive: t.sideEmissive,
+          emissiveIntensity: t.scenery === "trench" ? 0.08 : 0.15,
+          roughness: t.scenery === "trench" ? 0.92 : 0.95,
+          metalness: t.scenery === "trench" ? 0.25 : 0,
+          flatShading: t.scenery === "trench",
+        });
+        const gw = this._curve ? 100 : 80;
+        const groundL = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat);
+        groundL.rotation.x = -Math.PI / 2;
+        groundL.position.set(-51, -0.02, 0);
+        this.group.add(groundL);
+        const groundR = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat.clone());
+        groundR.rotation.x = -Math.PI / 2;
+        groundR.position.set(51, -0.02, 0);
+        this.group.add(groundR);
+      }
     }
   }
 
   _laneMarkers() {
+    if (this._isDeathStar) {
+      this.markerGroup = null;
+      this._markerMeshes = [];
+      this._markerSpacing = 8;
+      return;
+    }
+
     this.markerGroup = new THREE.Group();
     this.group.add(this.markerGroup);
 
@@ -1440,14 +1476,6 @@ export class Track {
         );
         rib.position.set(wx + side * 1.02, 4.2, z);
         this.propsGroup.add(rib);
-        if (i % 4 === 0) {
-          const beam = new THREE.Mesh(
-            new THREE.BoxGeometry(12.8, 0.22, 0.28),
-            beamMat
-          );
-          beam.position.set(0, 8.1, z);
-          this.propsGroup.add(beam);
-        }
       }
     }
   }
@@ -1974,7 +2002,7 @@ export class Track {
     }
 
     // Apply curve offsets to lane markers
-    if (this._curve && this._markerMeshes) {
+    if (this._curve && this.markerGroup && this._markerMeshes.length) {
       const gz = this.markerGroup.position.z;
       for (const m of this._markerMeshes) {
         const wz = gz + m.position.z;
@@ -1990,7 +2018,7 @@ export class Track {
     }
 
     // Apply curve offsets to edge strips
-    if (this._curve && this._edgeMeshes) {
+    if (this._curve && this.edgeGroup && this._edgeMeshes.length) {
       const gz = this.edgeGroup.position.z;
       for (const e of this._edgeMeshes) {
         const wz = gz + e.position.z;

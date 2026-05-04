@@ -917,23 +917,46 @@ export class Game {
     clearTimeout(this._gameOverTimer);
     this.resetRun();
     this._applyDeathStarRunVehicle();
-    this.tutorialMode = true;
-    this._tutorialStep = 0;
-    this._tutorialPaused = false;
-    this._tutorialEntity = null;
-    this._tutorialSpawned = false;
-    this._tutorialBannerShown = false;
-    this._tutorialSpawnDelay = 0;
-    this._tutorialTipShown = false;
-    this._tutorialQuizActive = false;
-    this._tutorialWaitingForBrake = false;
-    this._tutorialEntityWasHit = false;
-    this._tutorialHitPending = false;
-    this._tutorialPickupCollected = false;
-    this._tutorialBillboardIntroShown = false;
-    this._tutorialBillboardNudgeAt = null;
-    this._tutorialBillboardNudgeShown = false;
-    this.spawner.scriptedMode = true;
+
+    const isDs = this.currentLevel === "DS";
+    if (isDs) {
+      this.tutorialMode = false;
+      this._tutorialPaused = true;
+      this._tutorialStep = 0;
+      this._tutorialEntity = null;
+      this._tutorialSpawned = false;
+      this._tutorialBannerShown = false;
+      this._tutorialSpawnDelay = 0;
+      this._tutorialTipShown = false;
+      this._tutorialQuizActive = false;
+      this._tutorialWaitingForBrake = false;
+      this._tutorialEntityWasHit = false;
+      this._tutorialHitPending = false;
+      this._tutorialPickupCollected = false;
+      this._tutorialBillboardIntroShown = false;
+      this._tutorialBillboardNudgeAt = null;
+      this._tutorialBillboardNudgeShown = false;
+      this.spawner.scriptedMode = false;
+    } else {
+      this.tutorialMode = true;
+      this._tutorialStep = 0;
+      this._tutorialPaused = false;
+      this._tutorialEntity = null;
+      this._tutorialSpawned = false;
+      this._tutorialBannerShown = false;
+      this._tutorialSpawnDelay = 0;
+      this._tutorialTipShown = false;
+      this._tutorialQuizActive = false;
+      this._tutorialWaitingForBrake = false;
+      this._tutorialEntityWasHit = false;
+      this._tutorialHitPending = false;
+      this._tutorialPickupCollected = false;
+      this._tutorialBillboardIntroShown = false;
+      this._tutorialBillboardNudgeAt = null;
+      this._tutorialBillboardNudgeShown = false;
+      this.spawner.scriptedMode = true;
+    }
+
     this.state = "running";
     this.ui.showMainMenu(false);
     this.ui.showGameOver(false);
@@ -941,10 +964,15 @@ export class Game {
     this.ui.showPause(false);
     this.ui.showHud(true);
     this.ui.setScalonetaHud(this._isScaloneta);
-    this.ui.showSkipTutorial(true);
-    this.ui.showTutorialBanner();
-    this.ui.buildTutorialChecklist(TUTORIAL_STEPS);
-    this.ui.showTutorialChecklist(true);
+    if (isDs) {
+      this.ui.hideAllTutorialUI();
+      this.ui.showSkipTutorial(false);
+    } else {
+      this.ui.showSkipTutorial(true);
+      this.ui.showTutorialBanner();
+      this.ui.buildTutorialChecklist(TUTORIAL_STEPS);
+      this.ui.showTutorialChecklist(true);
+    }
     if (this.player.carType === "xwing") {
       play(SFX.XWING_TAKEOFF, 0.88);
     } else {
@@ -954,6 +982,14 @@ export class Game {
       this.player.carType === "xwing" ? ENGINE_LOOP_XWING : ENGINE_LOOP,
       0.2,
     );
+
+    if (isDs) {
+      play(SFX.COUNTDOWN, 0.8);
+      this.ui.showTutorialCountdown(() => {
+        this._tutorialPaused = false;
+        this.ui.setStatus(this._t("Go!"), 1500);
+      });
+    }
   }
 
   resetRun() {
@@ -1292,6 +1328,10 @@ export class Game {
   switchLevel(levelId, returnTo = "main_menu") {
     if (!LEVELS[levelId]) return;
     if (levelId === "DS" && !getDeathStarTrenchUnlocked()) return;
+    if (this.currentLevel === "DS" && levelId !== "DS") {
+      setDeathStarTrenchUnlocked(false);
+      this.ui.syncDeathStarTrenchCardVisibility();
+    }
     this.currentLevel = levelId;
     setLastLevel(levelId);
 
