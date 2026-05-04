@@ -700,10 +700,10 @@ export class Game {
     const half = boltLen * 0.5;
     /** Four cannon tips on S-foils in model space; nose is −Z (see Player._buildXWingMesh). */
     const localPts = [
-      new THREE.Vector3(-0.91, 1.09, -0.12),
-      new THREE.Vector3(0.91, 1.09, -0.12),
-      new THREE.Vector3(-0.96, -0.44, -0.12),
-      new THREE.Vector3(0.96, -0.44, -0.12),
+      new THREE.Vector3(-1.09, 0.82, -0.12),
+      new THREE.Vector3(1.09, 0.82, -0.12),
+      new THREE.Vector3(-1.11, -0.19, -0.12),
+      new THREE.Vector3(1.11, -0.19, -0.12),
     ];
     const idx = this._xwingCannonIndex % localPts.length;
     this._xwingCannonIndex = (this._xwingCannonIndex + 1) % localPts.length;
@@ -2582,7 +2582,8 @@ export class Game {
       this.spawner.explodeObstacle(e);
       return;
     }
-    if (this._isCheater()) {
+    /** DS stays “cheater” for leaderboards only — trench hits use normal damage below. */
+    if (this._isCheater() && this.currentLevel !== "DS") {
       this.spawner.explodeObstacle(e);
       const showPopup = this._cheaterPopupAllowed();
       if (showPopup) {
@@ -2703,7 +2704,11 @@ export class Game {
       return;
     }
 
-    if (this.quizEnabled && !this._isCheater() && this.remediationsUsed < CONFIG.MAX_REMEDIATIONS) {
+    if (
+      this.quizEnabled &&
+      (!this._isCheater() || this.currentLevel === "DS") &&
+      this.remediationsUsed < CONFIG.MAX_REMEDIATIONS
+    ) {
       this.recoveryPrompt = true;
       const showTip = !hasSeenRecoveryTip();
       this.ui.showRecovery(true, showTip, () => {
@@ -2725,7 +2730,7 @@ export class Game {
       this.spawner.explodeRival(e);
       return;
     }
-    if (this._isCheater()) {
+    if (this._isCheater() && this.currentLevel !== "DS") {
       this.spawner.explodeRival(e);
       const showPopup = this._cheaterPopupAllowed();
       if (showPopup) {
@@ -2845,7 +2850,11 @@ export class Game {
       return;
     }
 
-    if (this.quizEnabled && !this._isCheater() && this.remediationsUsed < CONFIG.MAX_REMEDIATIONS) {
+    if (
+      this.quizEnabled &&
+      (!this._isCheater() || this.currentLevel === "DS") &&
+      this.remediationsUsed < CONFIG.MAX_REMEDIATIONS
+    ) {
       this.recoveryPrompt = true;
       const showTip = !hasSeenRecoveryTip();
       this.ui.showRecovery(true, showTip, () => {
@@ -2968,7 +2977,7 @@ export class Game {
         );
       }
     } else if (t === "BOOST_TOKEN") {
-      if (this._isCheater()) {
+      if (this._isCheater() && this.currentLevel !== "DS") {
         const now = performance.now();
         const stacking = now < this.boostUntil;
         const base = stacking ? this.boostUntil : now;
@@ -3269,10 +3278,10 @@ export class Game {
     fuselage.position.copy(bodyC);
     g.add(fuselage);
     const dirs = [
-      new THREE.Vector3(-0.58, 0.48, -0.06),
-      new THREE.Vector3(0.58, 0.48, -0.06),
-      new THREE.Vector3(-0.58, -0.42, -0.06),
-      new THREE.Vector3(0.58, -0.42, -0.06),
+      new THREE.Vector3(-0.64, 0.30, -0.06),
+      new THREE.Vector3(0.64, 0.30, -0.06),
+      new THREE.Vector3(-0.64, -0.28, -0.06),
+      new THREE.Vector3(0.64, -0.28, -0.06),
     ];
     for (const raw of dirs) {
       const d = raw.clone().normalize();
@@ -3401,6 +3410,17 @@ export class Game {
     const g = new THREE.Group();
     this._dsFinaleGroup = g;
     this.scene.add(g);
+
+    /** Track lights live under `track.group`; hiding the trench removed all lights, so Standard materials read black. */
+    const finHemi = new THREE.HemisphereLight(0xc8d6ee, 0x1c222a, 0.78);
+    g.add(finHemi);
+    g.add(new THREE.AmbientLight(0x6a7580, 0.42));
+    const finKey = new THREE.DirectionalLight(0xfff6ec, 0.95);
+    finKey.position.set(-90, 95, 40);
+    g.add(finKey);
+    const finRim = new THREE.DirectionalLight(0x8aa0c0, 0.4);
+    finRim.position.set(100, 55, -30);
+    g.add(finRim);
 
     this._addFinaleStarfield(g);
 
