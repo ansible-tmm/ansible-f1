@@ -26,7 +26,9 @@ import {
   unlockAchievement,
   ACHIEVEMENT_DEFS,
 } from "../utils/storage.js";
-import { preload, play, startLoop, stopLoop, startBgm } from "../utils/audio.js";
+import {
+  preload, play, startLoop, stopLoop, startBgm, playFinaleBed, stopFinaleBed,
+} from "../utils/audio.js";
 import { submitGlobalScore } from "../utils/firebase.js";
 import { GodzillaMode } from "./GodzillaMode.js";
 import { syncThemeUrl } from "../utils/themePath.js";
@@ -67,6 +69,14 @@ const SFX = {
   COUNTDOWN: "./assets/audio/countdown.m4a",
   XWING_TAKEOFF: "./assets/audio/starwars-ship-takeoff.m4a",
   XWING_LASER: "./assets/audio/xwing_blast.m4a",
+  /** Death Star trench — one-shot at 25% run progress (not tutorial). */
+  DS_ALMOST_THERE: "./assets/audio/almost_there.m4a",
+  /** Death Star trench — when the exit / finish arch first spawns ahead (not tutorial). */
+  DS_BLOW_THIS_THING: "./assets/audio/blow_this_thing.m4a",
+  /** Death Star finale — when the sphere detonates (same moment as boom mesh). */
+  DS_DEATH_STAR_EXPLOSION: "./assets/audio/death_star_explosion.m4a",
+  /** Death Star finale escape shot — cut at explosion; hand off to DS_DEATH_STAR_EXPLOSION. */
+  DS_FINAL_SCENE: "./assets/audio/final_scene_starwars.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -257,6 +267,8 @@ export class Game {
     this._finishLineSpawned = false;
     this._finishing = false;
     this._finishCoastSpeed = 0;
+    this._dsFinishBreakawayT = 0;
+    this._dsAlmostTherePlayed = false;
     this._orbitStartTime = 0;
     this._orbitCenter = new THREE.Vector3();
     this._lcOverlayShown = false;
@@ -1064,6 +1076,9 @@ export class Game {
     this._finishLineSpawned = false;
     this._finishing = false;
     this._finishCoastSpeed = 0;
+    this._dsFinishBreakawayT = 0;
+    this._dsAlmostTherePlayed = false;
+    if (this.player) this.player._finishBreakawayEase = null;
     this._cleanupCelebration();
     this._cleanupBombs();
     this._cleanupTransformSmoke();
@@ -1073,6 +1088,7 @@ export class Game {
     this.player.mesh.position.x = CONFIG.LANES[1];
     this.player.mesh.visible = true;
     this.player._curveX = 0;
+    this.player.resetCelebrationPose();
   }
 
   resume() {
@@ -1668,6 +1684,7 @@ export class Game {
   }
 
   _levelComplete() {
+    if (this.player) this.player._finishBreakawayEase = null;
     this.state = "level_complete";
     this.timeScale = 1;
     this.recoveryPrompt = false;
@@ -1973,6 +1990,7 @@ export class Game {
     if (this.state === "quiz") {
       this._updateCamera(0, now);
       this._refreshHudOnly(now);
+      this._maybePlayDsAlmostThere();
       return;
     }
 
@@ -2024,8 +2042,24 @@ export class Game {
     });
   }
 
+  /** Death Star trench: one-shot “almost there” at 25% track time (also during quiz UI). */
+  _maybePlayDsAlmostThere() {
+    if (
+      this.currentLevel !== "DS" ||
+      this.tutorialMode ||
+      this._dsAlmostTherePlayed ||
+      this.runTime < CONFIG.LEVEL_DURATION * 0.25
+    ) {
+      return;
+    }
+    this._dsAlmostTherePlayed = true;
+    play(SFX.DS_ALMOST_THERE, 0.88);
+  }
+
   _updateRun(effDt, now, rawDt, spawnScale) {
     if (!this.tutorialMode) this.runTime += effDt;
+
+    this._maybePlayDsAlmostThere();
 
     const dur = CONFIG.LEVEL_DURATION;
     const warnTime = dur - 10;
@@ -2033,6 +2067,9 @@ export class Game {
       this._finishLineSpawned = true;
       const timeLeft = dur - this.runTime;
       this.track.spawnFinishLine(this.player.mesh.position.z, this.worldSpeed, timeLeft);
+      if (this.currentLevel === "DS" && !this.tutorialMode) {
+        play(SFX.DS_BLOW_THIS_THING, 0.88);
+      }
       this.ui.setStatus(this._t("Checkered flag ahead — finish is near!"), 3000);
     }
 
@@ -2041,9 +2078,30 @@ export class Game {
       this._finishing = true;
       this._finishCoastSpeed = this.worldSpeed;
       this.spawner.reset();
+      if (this.currentLevel === "DS") {
+        this._dsFinishBreakawayT = 0;
+      }
     }
 
     if (this._finishing) {
+      if (this.currentLevel === "DS") {
+        const coast = this._finishCoastSpeed;
+        this.worldSpeed = coast;
+        this.track.update(effDt, coast);
+        this.spawner.update(rawDt, coast, this.runTime, 0);
+        this._dsFinishBreakawayT += effDt;
+        const breakDur = 2.75;
+        const t = Math.min(1, this._dsFinishBreakawayT / breakDur);
+        const ease = t * t * (3 - 2 * t);
+        this.player._finishBreakawayEase = ease;
+        this.player.update(effDt);
+        this._updateCameraDsFinishBreakaway(effDt, now, ease);
+        if (this._dsFinishBreakawayT >= breakDur) {
+          this.player._finishBreakawayEase = null;
+          this._levelComplete();
+        }
+        return;
+      }
       this._finishCoastSpeed *= Math.pow(0.15, effDt);
       this.worldSpeed = this._finishCoastSpeed;
       this.track.update(effDt, this._finishCoastSpeed);
@@ -3284,10 +3342,25 @@ export class Game {
       new THREE.Vector3(-0.68, -0.19, -0.06),
       new THREE.Vector3(0.68, -0.19, -0.06),
     ];
+    const finSfoilBasis = new THREE.Matrix4();
+    const _finSx = new THREE.Vector3();
+    const _finSy = new THREE.Vector3();
+    const _finSz = new THREE.Vector3();
+    const _finUp = new THREE.Vector3(0, 1, 0);
+    const _finFb = new THREE.Vector3(0, 0, 1);
+    const setFinaleSfoilWing = (mesh, spanRaw) => {
+      _finSx.copy(spanRaw).normalize();
+      _finSy.crossVectors(_finSx, _finUp);
+      if (_finSy.lengthSq() < 1e-10) _finSy.crossVectors(_finSx, _finFb);
+      _finSy.normalize();
+      _finSz.crossVectors(_finSx, _finSy).normalize();
+      finSfoilBasis.makeBasis(_finSx, _finSy, _finSz);
+      mesh.quaternion.setFromRotationMatrix(finSfoilBasis);
+    };
     for (const raw of dirs) {
       const d = raw.clone().normalize();
       const w = new THREE.Mesh(new THREE.BoxGeometry(wingLen, wingT, wingW), hull);
-      w.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d);
+      setFinaleSfoilWing(w, raw);
       w.position.copy(bodyC).add(d.clone().multiplyScalar(0.18 + wingLen * 0.5));
       g.add(w);
       const st = new THREE.Mesh(new THREE.BoxGeometry(wingLen * 0.18, wingT + 0.008, 0.07), red);
@@ -3510,9 +3583,12 @@ export class Game {
     ];
     g.userData.dsPos = dsGrp.position.clone();
     g.userData.explosionPrimed = false;
+
+    playFinaleBed(SFX.DS_FINAL_SCENE, 0.52);
   }
 
   _cleanupDeathStarFinale() {
+    stopFinaleBed();
     if (this._dsFinalePrevVis) {
       for (const { o, v } of this._dsFinalePrevVis) o.visible = v;
       this._dsFinalePrevVis = null;
@@ -3569,6 +3645,8 @@ export class Game {
       g.userData.explosionPrimed = true;
       this._dsFinaleDsMesh.visible = false;
       if (this._dsFinaleBoom) this._dsFinaleBoom.visible = true;
+      stopFinaleBed();
+      play(SFX.DS_DEATH_STAR_EXPLOSION, 0.92);
       const pMat = /** @type {THREE.PointsMaterial|null} */ (
         this._dsFinaleParticles && this._dsFinaleParticles.material
       );
@@ -3804,6 +3882,30 @@ export class Game {
       c.material.dispose();
     }
     this._celebConfetti = [];
+  }
+
+  /** Chase cam while DS finish line: ship climbs at cruise speed before finale cut. */
+  _updateCameraDsFinishBreakaway(dt, now, ease) {
+    const px = this.player.mesh.position.x;
+    const camLift = ease * 5.1;
+    const lookLift = ease * 4.0;
+    const camBack = ease * 0.55;
+    const target = new THREE.Vector3(
+      px * 0.3,
+      this.cameraBase.y + camLift,
+      this.cameraBase.z + camBack
+    );
+    this.camera.position.lerp(target, 1 - Math.exp(-3.4 * dt));
+
+    let shake = 0;
+    if (now < this.shakeUntil) {
+      shake =
+        this.shakeAmp *
+        Math.sin(now * 0.08) *
+        ((this.shakeUntil - now) / 200);
+    }
+    this.camera.position.x += shake;
+    this.camera.lookAt(px * 0.15, 1.15 + lookLift, -2 + ease * 0.35);
   }
 
   _updateCamera(dt, now) {

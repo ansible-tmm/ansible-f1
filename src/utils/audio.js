@@ -84,6 +84,25 @@ export function stopLoop() {
   _loopUrl = null;
 }
 
+/** Long one-shot bed (HTMLAudio) so it can be cut cleanly — e.g. DS finale before explosion SFX. */
+let _finaleBedEl = null;
+
+export function playFinaleBed(url, volume = 0.5) {
+  stopFinaleBed();
+  if (_sfxMuted) return;
+  _finaleBedEl = new Audio(url);
+  _finaleBedEl.volume = volume;
+  _finaleBedEl.play().catch(() => {});
+}
+
+export function stopFinaleBed() {
+  if (_finaleBedEl) {
+    _finaleBedEl.pause();
+    _finaleBedEl.currentTime = 0;
+    _finaleBedEl = null;
+  }
+}
+
 // --- Background music (always looping, independent of engine loop) ---
 let _bgmEl = null;
 let _bgmVol = 0.1;
@@ -116,6 +135,7 @@ export function isSfxMuted() {
 export function toggleSfxMute() {
   _sfxMuted = !_sfxMuted;
   if (_sfxMuted) {
+    stopFinaleBed();
     if (_loopEl) {
       _loopEl.pause();
       _loopEl.currentTime = 0;

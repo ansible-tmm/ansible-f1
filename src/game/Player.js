@@ -23,6 +23,8 @@ export class Player {
     this.shieldRing = null;
     this._buildFlowGlow();
     this._buildShieldRing();
+    /** Set by Game (0..1) during DS finish glide — climb + pitch before finale. */
+    this._finishBreakawayEase = null;
   }
 
   swapCar(carType) {
@@ -50,6 +52,7 @@ export class Player {
     this.shieldRing = null;
     this._buildFlowGlow();
     this._buildShieldRing();
+    this._finishBreakawayEase = null;
   }
 
   _buildCarForType(type) {
@@ -1704,13 +1707,29 @@ export class Player {
       new THREE.Vector3(0.72, -0.20, -0.08),
     ];
 
+    const sfoilBasis = new THREE.Matrix4();
+    const _sfx = new THREE.Vector3();
+    const _sfy = new THREE.Vector3();
+    const _sfz = new THREE.Vector3();
+    const _sfUp = new THREE.Vector3(0, 1, 0);
+    const _sfFallback = new THREE.Vector3(0, 0, 1);
+    const setSfoilWingOrientation = (mesh, spanRaw) => {
+      _sfx.copy(spanRaw).normalize();
+      _sfy.crossVectors(_sfx, _sfUp);
+      if (_sfy.lengthSq() < 1e-10) _sfy.crossVectors(_sfx, _sfFallback);
+      _sfy.normalize();
+      _sfz.crossVectors(_sfx, _sfy).normalize();
+      sfoilBasis.makeBasis(_sfx, _sfy, _sfz);
+      mesh.quaternion.setFromRotationMatrix(sfoilBasis);
+    };
+
     for (const raw of sfoilDirs) {
       const d = raw.clone().normalize();
       const wing = new THREE.Mesh(
         new THREE.BoxGeometry(wingLen, wingT, wingW),
         hull
       );
-      wing.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), d);
+      setSfoilWingOrientation(wing, raw);
       const centerDist = 0.22 + wingLen * 0.5;
       wing.position.copy(bodyC).add(d.clone().multiplyScalar(centerDist));
       g.add(wing);
@@ -3768,7 +3787,16 @@ export class Player {
       this.mesh.position.y = CONFIG.PLAYER_Y + bob + this._skateJumpY;
       this.mesh.rotation.x = this._skateJumpY > 0.3 ? Math.sin(t * 0.015) * 0.15 : 0;
     } else {
-      this.mesh.position.y = CONFIG.PLAYER_Y + hoverLift + bob;
+      let y = CONFIG.PLAYER_Y + hoverLift + bob;
+      if (this.carType === "xwing" && this._finishBreakawayEase != null) {
+        const e = this._finishBreakawayEase;
+        const sm = e * e * (3 - 2 * e);
+        y += sm * 8.6;
+        this.mesh.position.z = -sm * 0.7;
+      } else if (this.carType === "xwing") {
+        this.mesh.position.z = 0;
+      }
+      this.mesh.position.y = y;
     }
 
     this.mesh.rotation.z = THREE.MathUtils.lerp(
@@ -3854,13 +3882,19 @@ export class Player {
       pos.needsUpdate = true;
     }
 
-    this.mesh.rotation.x = isF16
+    let rotX = isF16
       ? Math.sin(t * 0.003) * 0.04 + Math.cos(t * 0.002) * 0.025
       : isTrain
         ? Math.sin(t * 0.002) * 0.03 + Math.cos(t * 0.0015) * 0.018
         : isHover
           ? Math.sin(t * 0.0025) * 0.035 + Math.cos(t * 0.0017) * 0.02
           : 0;
+    if (this.carType === "xwing" && this._finishBreakawayEase != null) {
+      const e = this._finishBreakawayEase;
+      const sm = e * e * (3 - 2 * e);
+      rotX += -sm * 0.4;
+    }
+    this.mesh.rotation.x = rotX;
 
     if (this._smokeParticles) {
       for (const smoke of this._smokeParticles) {
