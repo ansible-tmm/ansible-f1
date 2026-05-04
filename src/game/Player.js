@@ -1696,12 +1696,12 @@ export class Player {
     r2.position.set(0, 0.51, 0.12);
     g.add(r2);
 
-    /** Flatter “open” X than steep 45° diagonals — closer to film S-foil spread. */
+    /** Shallow S-foils — film attack position is a wide “flat” X, not a tall X. */
     const sfoilDirs = [
-      new THREE.Vector3(-0.68, 0.32, -0.08),
-      new THREE.Vector3(0.68, 0.32, -0.08),
-      new THREE.Vector3(-0.68, -0.30, -0.08),
-      new THREE.Vector3(0.68, -0.30, -0.08),
+      new THREE.Vector3(-0.72, 0.22, -0.08),
+      new THREE.Vector3(0.72, 0.22, -0.08),
+      new THREE.Vector3(-0.72, -0.20, -0.08),
+      new THREE.Vector3(0.72, -0.20, -0.08),
     ];
 
     for (const raw of sfoilDirs) {

@@ -43,6 +43,8 @@ export class Spawner {
     this._nextRivalColorIdx = 0;
     this.levelId = "A";
     this.scriptedMode = false;
+    /** Main-menu attract loop: fewer score pickups so the demo isn’t cluttered. */
+    this.attractMode = false;
   }
 
   reset() {
@@ -57,6 +59,7 @@ export class Spawner {
     this.rivalTimer = 0;
     this.busTimer = 0;
     this.gatorTimer = 0;
+    this.attractMode = false;
   }
 
   _removeEntity(e) {
@@ -121,7 +124,9 @@ export class Spawner {
       }
     }
 
-    if (this.pickupTimer >= pickupInterval) {
+    let effPickupInterval = pickupInterval;
+    if (this.attractMode) effPickupInterval *= 1.85;
+    if (this.pickupTimer >= effPickupInterval) {
       this.pickupTimer = 0;
       this._spawnPickup(elapsedRunSeconds, warm);
     }
@@ -243,7 +248,13 @@ export class Spawner {
 
     let roll = Math.random();
     let type;
-    if (roll < (warm ? 0.15 : 0.25)) {
+    if (this.attractMode) {
+      if (roll < 0.22) type = "BOOST_TOKEN";
+      else if (roll < 0.48) type = "POLICY_SHIELD";
+      else if (roll < 0.58) type = "PLAYBOOK";
+      else if (roll < 0.68) type = "CERTIFIED_COLLECTION";
+      else type = Math.random() < 0.55 ? "POLICY_SHIELD" : "BOOST_TOKEN";
+    } else if (roll < (warm ? 0.15 : 0.25)) {
       type = "BOOST_TOKEN";
     } else if (roll < 0.50) {
       type = "PLAYBOOK";

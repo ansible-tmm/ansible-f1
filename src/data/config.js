@@ -240,7 +240,7 @@ export const TUTORIAL_STEPS = [
 ];
 
 export const TUTORIAL_QUIZ_QUESTION = {
-  question: "According to the Q4 2024 Forrester Wave report, who is the leader in infrastructure automation?",
+  prompt: "According to the Q4 2024 Forrester Wave report, who is the leader in infrastructure automation?",
   options: [
     "Red Hat Ansible Automation Platform",
     "Coyote Automation Suite",

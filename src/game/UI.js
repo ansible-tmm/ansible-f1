@@ -1061,7 +1061,7 @@ export class UI {
   renderQuizQuestion(q) {
     this.resetQuizOverlay();
     if (!this.el.quizPrompt || !this.el.quizOpts) return;
-    this.el.quizPrompt.textContent = q.prompt;
+    this.el.quizPrompt.textContent = q.prompt ?? q.question ?? "";
     this.el.quizOpts.innerHTML = "";
     q.options.forEach((opt, i) => {
       const b = document.createElement("button");

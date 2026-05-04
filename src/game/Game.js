@@ -700,10 +700,10 @@ export class Game {
     const half = boltLen * 0.5;
     /** Four cannon tips on S-foils in model space; nose is −Z (see Player._buildXWingMesh). */
     const localPts = [
-      new THREE.Vector3(-1.09, 0.82, -0.12),
-      new THREE.Vector3(1.09, 0.82, -0.12),
-      new THREE.Vector3(-1.11, -0.19, -0.12),
-      new THREE.Vector3(1.11, -0.19, -0.12),
+      new THREE.Vector3(-1.16, 0.68, -0.12),
+      new THREE.Vector3(1.16, 0.68, -0.12),
+      new THREE.Vector3(-1.16, -0.02, -0.12),
+      new THREE.Vector3(1.16, -0.02, -0.12),
     ];
     const idx = this._xwingCannonIndex % localPts.length;
     this._xwingCannonIndex = (this._xwingCannonIndex + 1) % localPts.length;
@@ -3158,6 +3158,7 @@ export class Game {
     this._attractSpawnElapsed = 0;
     this.spawner.levelId = this.currentLevel;
     this.spawner.reset();
+    this.spawner.attractMode = true;
     this.player.mesh.visible = true;
     this.player.targetLaneIndex = 1;
     this.player.laneIndex = 1;
@@ -3278,10 +3279,10 @@ export class Game {
     fuselage.position.copy(bodyC);
     g.add(fuselage);
     const dirs = [
-      new THREE.Vector3(-0.64, 0.30, -0.06),
-      new THREE.Vector3(0.64, 0.30, -0.06),
-      new THREE.Vector3(-0.64, -0.28, -0.06),
-      new THREE.Vector3(0.64, -0.28, -0.06),
+      new THREE.Vector3(-0.68, 0.21, -0.06),
+      new THREE.Vector3(0.68, 0.21, -0.06),
+      new THREE.Vector3(-0.68, -0.19, -0.06),
+      new THREE.Vector3(0.68, -0.19, -0.06),
     ];
     for (const raw of dirs) {
       const d = raw.clone().normalize();
@@ -3403,8 +3404,8 @@ export class Game {
 
     if (this.scene.fog instanceof THREE.Fog) {
       this._dsFogRestore = { near: this.scene.fog.near, far: this.scene.fog.far };
-      this.scene.fog.near = 48;
-      this.scene.fog.far = 780;
+      this.scene.fog.near = 8;
+      this.scene.fog.far = 960;
     }
 
     const g = new THREE.Group();
@@ -3425,11 +3426,11 @@ export class Game {
     this._addFinaleStarfield(g);
 
     const dsMat = new THREE.MeshStandardMaterial({
-      color: 0x6a6d78,
-      roughness: 0.88,
-      metalness: 0.18,
-      emissive: 0x0a0c12,
-      emissiveIntensity: 0.38,
+      color: 0x7a7e8a,
+      roughness: 0.84,
+      metalness: 0.2,
+      emissive: 0x1a2230,
+      emissiveIntensity: 0.55,
       flatShading: true,
     });
     const trenchMat = new THREE.MeshStandardMaterial({
@@ -3440,9 +3441,10 @@ export class Game {
     });
 
     const dsGrp = new THREE.Group();
-    dsGrp.position.set(-108, 50, -582);
-    dsGrp.add(new THREE.Mesh(new THREE.SphereGeometry(38, 18, 14), dsMat));
-    const band = new THREE.Mesh(new THREE.TorusGeometry(39.2, 0.65, 5, 40), trenchMat);
+    /** Nearer + larger so it stays in frame with the fighters (was too small / off-axis). */
+    dsGrp.position.set(-46, 28, -272);
+    dsGrp.add(new THREE.Mesh(new THREE.SphereGeometry(56, 20, 16), dsMat));
+    const band = new THREE.Mesh(new THREE.TorusGeometry(57.2, 0.85, 5, 44), trenchMat);
     band.rotation.x = Math.PI / 2;
     band.scale.set(1, 0.14, 1);
     dsGrp.add(band);
@@ -3489,22 +3491,22 @@ export class Game {
     this._dsFinaleParticles = pts;
 
     const xL = this._buildFinaleMiniXWing();
-    xL.scale.setScalar(1.65);
-    xL.position.set(9.2, 6.2, -242);
+    xL.scale.setScalar(2.45);
+    xL.position.set(3.4, 5.55, -108);
     g.add(xL);
     const xC = this._buildFinaleMiniXWing();
-    xC.scale.setScalar(1.72);
-    xC.position.set(0, 6.5, -222);
+    xC.scale.setScalar(2.55);
+    xC.position.set(0, 5.75, -92);
     g.add(xC);
     const yW = this._buildFinaleMiniYWing();
-    yW.scale.setScalar(1.55);
-    yW.position.set(-9.5, 5.9, -238);
+    yW.scale.setScalar(2.25);
+    yW.position.set(-3.5, 5.4, -100);
     g.add(yW);
 
     g.userData.finaleShips = [
-      { grp: xL, vz: 18 },
-      { grp: xC, vz: 20 },
-      { grp: yW, vz: 17 },
+      { grp: xL, vz: 11 },
+      { grp: xC, vz: 13 },
+      { grp: yW, vz: 10 },
     ];
     g.userData.dsPos = dsGrp.position.clone();
     g.userData.explosionPrimed = false;
@@ -3624,21 +3626,21 @@ export class Game {
     const elapsed = (now - this._orbitStartTime) / 1000;
     if (this.currentLevel === "DS") {
       this._updateDeathStarFinale(dt, now);
-      const settle = Math.min(1, elapsed / 1.05);
-      const ease = 1 - (1 - settle) ** 2.2;
+      const settle = Math.min(1, elapsed / 0.52);
+      const ease = 1 - (1 - settle) ** 2.35;
       const camTx = 0;
-      const camTy = 15;
-      const camTz = 108;
+      const camTy = 10.5;
+      const camTz = 44;
       this.camera.position.set(
         THREE.MathUtils.lerp(this._dsFinaleCamFrom.x, camTx, ease),
         THREE.MathUtils.lerp(this._dsFinaleCamFrom.y, camTy, ease),
         THREE.MathUtils.lerp(this._dsFinaleCamFrom.z, camTz, ease),
       );
-      const lx0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.x, -8, ease);
-      const ly0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.y, 6.2, ease);
-      const lz0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.z, -228, ease);
-      const w = Math.sin(elapsed * 0.28) * 0.4;
-      this.camera.lookAt(lx0 + w * 0.35, ly0 + w * 0.12, lz0 + w * 0.5);
+      const lx0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.x, -6, ease);
+      const ly0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.y, 5.65, ease);
+      const lz0 = THREE.MathUtils.lerp(this._dsFinaleLookFrom.z, -118, ease);
+      const w = Math.sin(elapsed * 0.28) * 0.22;
+      this.camera.lookAt(lx0 + w * 0.25, ly0 + w * 0.08, lz0 + w * 0.35);
       return;
     }
     const angle = elapsed * 0.5;
