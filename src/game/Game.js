@@ -883,11 +883,8 @@ export class Game {
   _bindHorn() {
     this.renderer.domElement.addEventListener("click", () => {
       if (this.state !== "running") return;
-      if (
-        this.currentLevel === "DS" &&
-        this.player.carType === "xwing" &&
-        !this.recoveryPrompt
-      ) {
+      /** Trench: always turbolasers on click (including during remediation — avoids horn fallback). */
+      if (this.currentLevel === "DS" && this.player.carType === "xwing") {
         this._fireXwingBlasters();
         return;
       }
