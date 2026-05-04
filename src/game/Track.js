@@ -12,6 +12,8 @@ export class Track {
     scene.add(this.group);
     this.levelId = levelId;
     this.theme = LEVELS[levelId] || LEVELS.A;
+    /** True only for Death Star Trench (not other hypothetical trench themes). */
+    this._isDeathStar = levelId === "DS";
 
     this._curve = this.theme.curve || null;
     this._scrollDist = 0;
@@ -22,7 +24,9 @@ export class Track {
     this._road();
     this._laneMarkers();
     this._sideProps();
-    this._billboards();
+    if (levelId !== "DS") {
+      this._billboards();
+    }
     this._skyline();
     this._horizon();
     this._lights();
@@ -1377,23 +1381,43 @@ export class Track {
 
   _trenchProps() {
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x4e5058, roughness: 0.86, metalness: 0.42,
-      emissive: 0x141418, emissiveIntensity: 0.12, flatShading: true,
+      color: 0x5a5c68, roughness: 0.82, metalness: 0.48,
+      emissive: 0x1c1e28, emissiveIntensity: 0.14, flatShading: true,
     });
-    const insetMat = new THREE.MeshStandardMaterial({
-      color: 0x3a3c44, roughness: 0.9, metalness: 0.48,
-      emissive: 0x0a0a0e, emissiveIntensity: 0.08, flatShading: true,
+    const turretBaseMat = new THREE.MeshStandardMaterial({
+      color: 0x4a4c58, roughness: 0.88, metalness: 0.52,
+      emissive: 0x12141a, emissiveIntensity: 0.1, flatShading: true,
     });
-    const ribMat = new THREE.MeshStandardMaterial({
-      color: 0x32343c, roughness: 0.92, metalness: 0.55,
-      emissive: 0x060608, emissiveIntensity: 0.06, flatShading: true,
-    });
-    const pipeMat = new THREE.MeshStandardMaterial({
-      color: 0x555862, roughness: 0.8, metalness: 0.58, flatShading: true,
+    const gunMat = new THREE.MeshStandardMaterial({
+      color: 0x353842, roughness: 0.75, metalness: 0.62,
+      emissive: 0x2a1010, emissiveIntensity: 0.08, flatShading: true,
     });
     const beamMat = new THREE.MeshStandardMaterial({
-      color: 0x404248, roughness: 0.88, metalness: 0.4, flatShading: true,
+      color: 0x484a56, roughness: 0.88, metalness: 0.45, flatShading: true,
     });
+    const addTurret = (wx, side, z) => {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.55, 0.62, 1.1, 6),
+        turretBaseMat
+      );
+      base.position.set(wx + side * 0.95, 0.55, z);
+      this.propsGroup.add(base);
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(0.42, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        turretBaseMat
+      );
+      dome.position.set(wx + side * 0.95, 1.15, z);
+      this.propsGroup.add(dome);
+      for (const bz of [-0.14, 0.14]) {
+        const barrel = new THREE.Mesh(
+          new THREE.BoxGeometry(0.75, 0.1, 0.1),
+          gunMat
+        );
+        barrel.position.set(wx + side * 1.18, 1.02, z + bz);
+        barrel.rotation.y = side * 0.08;
+        this.propsGroup.add(barrel);
+      }
+    };
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
       const segD = this._propSpacing * 0.94;
@@ -1405,45 +1429,20 @@ export class Track {
         );
         wall.position.set(wx, 4.4, z);
         this.propsGroup.add(wall);
-        for (let row = 0; row < 3; row++) {
-          for (let col = 0; col < 2; col++) {
-            if (Math.random() < 0.28) continue;
-            const inset = new THREE.Mesh(
-              new THREE.BoxGeometry(0.4 + Math.random() * 0.2, 1.1 + Math.random() * 0.45, 0.14),
-              insetMat
-            );
-            inset.position.set(
-              wx + side * 1.02,
-              1.4 + row * 2.05,
-              z - segD * 0.38 + col * (segD * 0.42) + Math.random() * 0.35
-            );
-            this.propsGroup.add(inset);
-          }
+        const tz = z - segD * 0.25 + (i % 3) * (segD * 0.22);
+        addTurret(wx, side, tz);
+        if ((i + side) % 2 === 0) {
+          addTurret(wx, side, z + segD * 0.28);
         }
-        for (let r = 0; r < 3; r++) {
-          const rib = new THREE.Mesh(
-            new THREE.BoxGeometry(0.14, 7.8, 0.22),
-            ribMat
-          );
-          rib.position.set(
-            wx + side * 1.01,
-            4.0,
-            z - segD * 0.44 + r * (segD * 0.2)
-          );
-          this.propsGroup.add(rib);
-        }
-        if (Math.random() < 0.5) {
-          const pipe = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.14, 0.16, 2.4, 5),
-            pipeMat
-          );
-          pipe.rotation.z = side * 0.35;
-          pipe.position.set(wx + side * 0.62, 2.8 + Math.random() * 2.2, z + (Math.random() - 0.5) * 5);
-          this.propsGroup.add(pipe);
-        }
+        const rib = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 7.2, 0.18),
+          beamMat
+        );
+        rib.position.set(wx + side * 1.02, 4.2, z);
+        this.propsGroup.add(rib);
         if (i % 4 === 0) {
           const beam = new THREE.Mesh(
-            new THREE.BoxGeometry(12.8, 0.2, 0.32),
+            new THREE.BoxGeometry(12.8, 0.22, 0.28),
             beamMat
           );
           beam.position.set(0, 8.1, z);
@@ -1454,28 +1453,62 @@ export class Track {
   }
 
   _trenchSkyline(skylineGroup) {
-    const starMat = new THREE.MeshBasicMaterial({
-      color: 0xeeeeff, transparent: true, opacity: 0.75,
-    });
-    for (let si = 0; si < 220; si++) {
-      const st = new THREE.Mesh(
-        new THREE.BoxGeometry(
-          0.05 + Math.random() * 0.06,
-          0.05 + Math.random() * 0.06,
-          0.05 + Math.random() * 0.06
-        ),
-        starMat
-      );
-      st.position.set(
-        (Math.random() - 0.5) * 200,
-        22 + Math.random() * 55,
-        -35 - Math.random() * 90
-      );
-      skylineGroup.add(st);
+    const nPts = this._isDeathStar ? 4200 : 220;
+    const positions = new Float32Array(nPts * 3);
+    for (let i = 0; i < nPts; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 260;
+      positions[i * 3 + 1] = 18 + Math.random() * 85;
+      positions[i * 3 + 2] = -40 - Math.random() * 220;
     }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const starPts = new THREE.Points(
+      starGeo,
+      new THREE.PointsMaterial({
+        color: this._isDeathStar ? 0xd8e0ff : 0xeeeeff,
+        size: this._isDeathStar ? 0.14 : 0.09,
+        transparent: true,
+        opacity: this._isDeathStar ? 0.9 : 0.75,
+        depthWrite: false,
+        sizeAttenuation: true,
+      })
+    );
+    skylineGroup.add(starPts);
+
+    if (this._isDeathStar) {
+      const yavinG = new THREE.Group();
+      yavinG.position.set(-62, 32, -155);
+      const body = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(16, 2),
+        new THREE.MeshStandardMaterial({
+          color: 0x4a5538, roughness: 0.92, metalness: 0.12,
+          emissive: 0x1a2210, emissiveIntensity: 0.12, flatShading: true,
+        })
+      );
+      yavinG.add(body);
+      const band = new THREE.Mesh(
+        new THREE.TorusGeometry(11, 2.2, 6, 20),
+        new THREE.MeshStandardMaterial({
+          color: 0x2a4a38, roughness: 0.88, metalness: 0.08,
+          emissive: 0x0a180a, emissiveIntensity: 0.08, flatShading: true,
+        })
+      );
+      band.rotation.x = Math.PI * 0.47;
+      band.rotation.z = 0.25;
+      yavinG.add(band);
+      const atmo = new THREE.Mesh(
+        new THREE.SphereGeometry(17.5, 10, 8),
+        new THREE.MeshBasicMaterial({
+          color: 0x4466aa, transparent: true, opacity: 0.12, depthWrite: false,
+        })
+      );
+      yavinG.add(atmo);
+      skylineGroup.add(yavinG);
+    }
+
     const dsMat = new THREE.MeshStandardMaterial({
-      color: 0x45454e, roughness: 0.94, metalness: 0.18,
-      emissive: 0x0c0c12, emissiveIntensity: 0.18, flatShading: true,
+      color: 0x55565e, roughness: 0.94, metalness: 0.18,
+      emissive: 0x141418, emissiveIntensity: 0.22, flatShading: true,
     });
     const ds = new THREE.Mesh(
       new THREE.IcosahedronGeometry(22, 1),
@@ -1487,8 +1520,8 @@ export class Track {
     const dish = new THREE.Mesh(
       new THREE.SphereGeometry(6, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5),
       new THREE.MeshStandardMaterial({
-        color: 0x35353e, roughness: 0.88, metalness: 0.22,
-        emissive: 0x121218, emissiveIntensity: 0.15, flatShading: true,
+        color: 0x404248, roughness: 0.88, metalness: 0.22,
+        emissive: 0x181a22, emissiveIntensity: 0.18, flatShading: true,
       })
     );
     dish.rotation.x = Math.PI * 0.5;
@@ -1812,7 +1845,7 @@ export class Track {
       forest: [0x447744, 0x2a4a2a], desert: [0x998855, 0x665530],
       swamp: [0x3a5530, 0x1a2a14], snow: [0x7788aa, 0x445566],
       water: [0x2255aa, 0x0a1840], coast: [0x557755, 0x2a3a2a],
-      trench: [0x2a2a38, 0x101018],
+      trench: [0x4a4c58, 0x2a2c38],
     };
     const [gc1, gc2] = gridColors[t.scenery] || [0x888888, 0x444444];
     const grid = new THREE.GridHelper(400, 80, gc1, gc2);
@@ -1821,10 +1854,11 @@ export class Track {
     grid.scale.set(1.2, 1, 1.5);
     this.group.add(grid);
 
+    const skyOp = this._isDeathStar ? 0.55 : 0.95;
     const sky = new THREE.Mesh(
       new THREE.PlaneGeometry(600, 200),
       new THREE.MeshBasicMaterial({
-        color: t.sky, transparent: true, opacity: 0.95,
+        color: t.sky, transparent: true, opacity: skyOp,
       })
     );
     sky.position.set(0, 80, -200);
@@ -1836,35 +1870,37 @@ export class Track {
     const isTrench = this.theme.scenery === "trench";
 
     const amb = new THREE.AmbientLight(
-      isTrench ? 0x445566 : isCity ? 0xb8c8e0 : 0xdde8f0,
-      isTrench ? 0.35 : isCity ? 0.72 : 0.9
+      isTrench ? (this._isDeathStar ? 0x8899aa : 0x445566) : isCity ? 0xb8c8e0 : 0xdde8f0,
+      isTrench ? (this._isDeathStar ? 0.58 : 0.35) : isCity ? 0.72 : 0.9
     );
     this.group.add(amb);
 
     const hemi = new THREE.HemisphereLight(
-      isTrench ? 0x223344 : isCity ? 0x8899bb : 0xaabbcc,
-      isTrench ? 0x080810 : isCity ? 0x1a1520 : 0x443322,
-      isTrench ? 0.4 : isCity ? 0.55 : 0.65
+      isTrench ? (this._isDeathStar ? 0x446688 : 0x223344) : isCity ? 0x8899bb : 0xaabbcc,
+      isTrench ? (this._isDeathStar ? 0x181c28 : 0x080810) : isCity ? 0x1a1520 : 0x443322,
+      isTrench ? (this._isDeathStar ? 0.62 : 0.4) : isCity ? 0.55 : 0.65
     );
     hemi.position.set(0, 80, 0);
     this.group.add(hemi);
 
     const key = new THREE.DirectionalLight(
-      isTrench ? 0xaabbcc : isCity ? 0xd8e8ff : 0xfff8e8,
-      isTrench ? 0.55 : isCity ? 0.95 : 1.1
+      isTrench ? (this._isDeathStar ? 0xc8d4e8 : 0xaabbcc) : isCity ? 0xd8e8ff : 0xfff8e8,
+      isTrench ? (this._isDeathStar ? 0.72 : 0.55) : isCity ? 0.95 : 1.1
     );
     key.position.set(-6, 32, 28);
     this.group.add(key);
 
     const rim = new THREE.DirectionalLight(
-      isTrench ? 0x6688aa : isCity ? 0xaaccff : 0xddccaa,
-      isTrench ? 0.25 : isCity ? 0.45 : 0.55
+      isTrench ? (this._isDeathStar ? 0x8899bb : 0x6688aa) : isCity ? 0xaaccff : 0xddccaa,
+      isTrench ? (this._isDeathStar ? 0.38 : 0.25) : isCity ? 0.45 : 0.55
     );
     rim.position.set(0, 14, 42);
     this.group.add(rim);
 
     if (isTrench) {
-      const trenchFill = new THREE.PointLight(0xff4422, 0.4, 80, 2);
+      const trenchFill = new THREE.PointLight(
+        0xff6644, this._isDeathStar ? 0.28 : 0.4, 80, 2
+      );
       trenchFill.position.set(0, 3, -40);
       this.group.add(trenchFill);
     } else if (isCity) {

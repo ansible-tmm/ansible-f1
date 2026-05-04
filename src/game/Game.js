@@ -66,6 +66,7 @@ const SFX = {
   CROONER_5: "./assets/audio/right_next_to_me.m4a",
   COUNTDOWN: "./assets/audio/countdown.m4a",
   XWING_TAKEOFF: "./assets/audio/starwars-ship-takeoff.m4a",
+  XWING_LASER: "./assets/audio/laser-sound.m4a",
 };
 
 const ENGINE_LOOP = "./assets/audio/engine-loop.mp4";
@@ -128,6 +129,10 @@ const ES = {
   "Shield: ON": "Escudo: SÍ",
   "⚡ Flow active — 1.2× score": "⚡ Flujo activo — 1.2× puntos",
   "Flow: —": "Flujo: —",
+  "Click a billboard to continue the tutorial":
+    "Haz clic en un cartel para seguir con el tutorial",
+  "TIE destroyed! +120": "¡TIE destruido! +120",
+  "Turbolaser hit! +90": "¡Turboláser! +90",
 };
 
 export class Game {
@@ -200,6 +205,13 @@ export class Game {
     this._tutorialSpawned = false;
     this._tutorialBannerShown = false;
     this._tutorialBillboardIntroShown = false;
+    /** @type {number|null} */
+    this._tutorialBillboardNudgeAt = null;
+    this._tutorialBillboardNudgeShown = false;
+
+    /** @type {{ mesh: THREE.Mesh, until: number }[]} */
+    this._xwingLaserBolts = [];
+    this._xwingFireCooldownUntil = 0;
 
     // Quiz toggle
     this.quizEnabled = true;
@@ -595,9 +607,123 @@ export class Game {
     });
   }
 
+  _clearXwingLaserBolts() {
+    for (const b of this._xwingLaserBolts) {
+      this.scene.remove(b.mesh);
+      b.mesh.geometry?.dispose();
+      const m = b.mesh.material;
+      if (m) {
+        if (Array.isArray(m)) m.forEach((x) => x.dispose());
+        else m.dispose();
+      }
+    }
+    this._xwingLaserBolts.length = 0;
+  }
+
+  _updateXwingLaserBolts(effDt) {
+    const dz = this.worldSpeed * effDt;
+    const now = performance.now();
+    for (let i = this._xwingLaserBolts.length - 1; i >= 0; i--) {
+      const b = this._xwingLaserBolts[i];
+      b.mesh.position.z += dz;
+      if (now > b.until) {
+        this.scene.remove(b.mesh);
+        b.mesh.geometry?.dispose();
+        const m = b.mesh.material;
+        if (m) {
+          if (Array.isArray(m)) m.forEach((x) => x.dispose());
+          else m.dispose();
+        }
+        this._xwingLaserBolts.splice(i, 1);
+      }
+    }
+  }
+
+  /** @returns {{ kind: 'rival'|'obstacle', e: object }|null} */
+  _pickXwingBlastTarget() {
+    const px = this.player.mesh.position.x;
+    const pz = this.player.mesh.position.z;
+    const maxDz = -1.0;
+    const minDz = -72;
+    const maxDx = 2.35;
+    let best = /** @type {{ kind: 'rival'|'obstacle', e: object, dz: number }|null} */ (null);
+    for (const r of this.spawner.rivals) {
+      if (!r.active) continue;
+      const dz = r.mesh.position.z - pz;
+      if (dz >= maxDz || dz < minDz) continue;
+      if (Math.abs(r.mesh.position.x - px) > maxDx) continue;
+      if (!best || dz > best.dz) best = { kind: "rival", e: r, dz };
+    }
+    for (const o of this.spawner.obstacles) {
+      if (!o.active || o.subtype !== "OUTAGE") continue;
+      const dz = o.mesh.position.z - pz;
+      if (dz >= maxDz || dz < minDz) continue;
+      if (Math.abs(o.mesh.position.x - px) > maxDx) continue;
+      if (!best || dz > best.dz) best = { kind: "obstacle", e: o, dz };
+    }
+    return best ? { kind: best.kind, e: best.e } : null;
+  }
+
+  _spawnXwingLaserBolts(px, py, pz) {
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff2200,
+      emissive: 0xff4400,
+      emissiveIntensity: 2.2,
+      metalness: 0.2,
+      roughness: 0.35,
+      transparent: true,
+      opacity: 0.92,
+    });
+    const until = performance.now() + 95;
+    for (const ox of [-0.2, 0.2]) {
+      const bolt = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.1, 16),
+        mat.clone(),
+      );
+      bolt.position.set(px + ox, py, pz - 8);
+      this.scene.add(bolt);
+      this._xwingLaserBolts.push({ mesh: bolt, until });
+    }
+  }
+
+  _fireXwingBlasters() {
+    const now = performance.now();
+    if (now < this._xwingFireCooldownUntil) return;
+    this._xwingFireCooldownUntil = now + 240;
+
+    const px = this.player.mesh.position.x;
+    const py = this.player.mesh.position.y + 0.22;
+    const pz = this.player.mesh.position.z;
+
+    this._spawnXwingLaserBolts(px, py, pz);
+    play(SFX.XWING_LASER, 0.82);
+
+    const hit = this._pickXwingBlastTarget();
+    if (hit) {
+      if (hit.kind === "rival") {
+        this.spawner.explodeRival(hit.e);
+        this.score += 120;
+        this.ui.showPickupPopup(this._t("TIE destroyed! +120"));
+      } else {
+        this.spawner.explodeObstacle(hit.e);
+        this.score += 90;
+        this.ui.showPickupPopup(this._t("Turbolaser hit! +90"));
+      }
+      play(SFX.OBSTACLE_HIT, 0.45);
+    }
+  }
+
   _bindHorn() {
     this.renderer.domElement.addEventListener("click", () => {
       if (this.state !== "running") return;
+      if (
+        this.currentLevel === "DS" &&
+        this.player.carType === "xwing" &&
+        !this.recoveryPrompt
+      ) {
+        this._fireXwingBlasters();
+        return;
+      }
       if (this.player.carType === "skateboard") {
         this.player.skateJump();
         play(SFX.BOOST_WHOOSH, 0.6);
@@ -722,6 +848,9 @@ export class Game {
   }
 
   _openBillboard(id) {
+    this._tutorialBillboardNudgeAt = null;
+    this._tutorialBillboardNudgeShown = false;
+    this.ui.hideTutorialBillboardNudge();
     this._bbReturnState = this.state === "main_menu" ? "main_menu" : "running";
     this._activeBillboard = id;
     this.state = "billboard";
@@ -802,6 +931,8 @@ export class Game {
     this._tutorialHitPending = false;
     this._tutorialPickupCollected = false;
     this._tutorialBillboardIntroShown = false;
+    this._tutorialBillboardNudgeAt = null;
+    this._tutorialBillboardNudgeShown = false;
     this.spawner.scriptedMode = true;
     this.state = "running";
     this.ui.showMainMenu(false);
@@ -863,6 +994,7 @@ export class Game {
     this.comboTimer = 0;
     this._nearMissChecked.clear();
     this._demoCompleted.clear();
+    this._clearXwingLaserBolts();
     this._runBoostCount = 0;
     this._runMaxCombo = 0;
     this._finishLineSpawned = false;
@@ -906,12 +1038,36 @@ export class Game {
     if (now < this._tutorialSpawnDelay) return;
 
     if (step.kind === "billboard") {
+      if (this.currentLevel === "DS") {
+        this._advanceTutorialStep(null);
+        return;
+      }
       if (!this._tutorialBillboardIntroShown) {
         this._tutorialBillboardIntroShown = true;
         this._tutorialPaused = true;
         const cx = this.renderer.domElement.clientWidth / 2;
         const cy = this.renderer.domElement.clientHeight * 0.36;
         this.ui.showTutorialTip(cx, cy, step.tip);
+      } else if (
+        !this._tutorialPaused &&
+        this.state === "running" &&
+        this._tutorialBillboardNudgeAt != null
+      ) {
+        if (
+          !this._tutorialBillboardNudgeShown &&
+          now >= this._tutorialBillboardNudgeAt
+        ) {
+          this._tutorialBillboardNudgeShown = true;
+          this._tutorialBillboardNudgeAt = null;
+          this.ui.showTutorialBillboardNudge(
+            this._t("Click a billboard to continue the tutorial"),
+          );
+        }
+        if (this._tutorialBillboardNudgeShown) {
+          this.ui.updateTutorialBillboardNudge(
+            this._tutorialBillboardNudgeScreenPos(),
+          );
+        }
       }
       return;
     }
@@ -988,6 +1144,27 @@ export class Game {
     return { x: (v.x * hw) + hw, y: -(v.y * hh) + hh };
   }
 
+  /** Screen position for tutorial “point at billboard” nudge (center of a themed board face). */
+  _tutorialBillboardNudgeScreenPos() {
+    const theme = LEVELS[this.currentLevel];
+    const list = theme?.billboards;
+    const w = this.renderer.domElement.clientWidth;
+    const h = this.renderer.domElement.clientHeight;
+    const fallback = { x: w * 0.72, y: h * 0.38 };
+    if (!list?.length) return fallback;
+    const idx = list.length >= 2 ? 1 : 0;
+    const id = list[idx].id;
+    const g = this.track.billboards[id];
+    if (!g) return fallback;
+    const faceY = g.userData.faceCenterY ?? 10;
+    const v = new THREE.Vector3(0, faceY, 0.5);
+    v.applyMatrix4(g.matrixWorld);
+    v.project(this.camera);
+    const hw = w / 2;
+    const hh = h / 2;
+    return { x: (v.x * hw) + hw, y: -(v.y * hh) + hh };
+  }
+
   _advanceTutorialStep(sfx = SFX.CORRECT) {
     this._tutorialStep += 1;
     this._tutorialSpawned = false;
@@ -997,6 +1174,9 @@ export class Game {
     this._tutorialTipShown = false;
     this._tutorialWaitingForBrake = false;
     this._tutorialBillboardIntroShown = false;
+    this._tutorialBillboardNudgeAt = null;
+    this._tutorialBillboardNudgeShown = false;
+    this.ui.hideTutorialBillboardNudge();
     this.ui.hideTutorialTip();
     if (sfx) play(sfx, 0.6);
     this.ui.tutorialCheckStep(this._tutorialStep, TUTORIAL_STEPS.length);
@@ -1023,6 +1203,14 @@ export class Game {
       this._tutorialWaitingForBrake = true;
       this.ui.setStatus("Press S or ↓ now!", 30000);
       return;
+    }
+
+    if (step?.kind === "billboard") {
+      this._tutorialBillboardNudgeAt = performance.now() + 15000;
+      this._tutorialBillboardNudgeShown = false;
+    } else {
+      this._tutorialBillboardNudgeAt = null;
+      this._tutorialBillboardNudgeShown = false;
     }
 
     this._tutorialPaused = false;
@@ -1055,6 +1243,7 @@ export class Game {
   }
 
   backToMenu() {
+    this._clearXwingLaserBolts();
     this.state = "main_menu";
     this.recoveryPrompt = false;
     this.timeScale = 1;
@@ -1092,6 +1281,7 @@ export class Game {
     this.ui.showHud(false);
     this.ui.showMainMenu(true);
     this.ui.updateMenuBest(getBestScore());
+    this.ui.syncDeathStarTrenchCardVisibility();
     this._startAttractMode();
 
     if (theme && theme.billboards) {
@@ -1111,8 +1301,8 @@ export class Game {
     const theme = LEVELS[levelId];
     if (theme) {
       this.scene.background = new THREE.Color(theme.sceneBg);
-      const fogNear = levelId === "DS" ? 38 : 48;
-      const fogFar = levelId === "DS" ? 220 : 175;
+      const fogNear = levelId === "DS" ? 52 : 48;
+      const fogFar = levelId === "DS" ? 260 : 175;
       this.scene.fog = new THREE.Fog(theme.fog, fogNear, fogFar);
     }
 
@@ -1857,6 +2047,7 @@ export class Game {
     this.spawner.update(rawDt, ws, this.runTime, scale);
 
     this.player.update(effDt);
+    this._updateXwingLaserBolts(effDt);
     this._updateBombs(effDt);
     this._updateTransformSmoke(effDt);
 
@@ -2988,19 +3179,20 @@ export class Game {
 
     const dsMat = new THREE.MeshStandardMaterial({
       color: 0x4a4a55, roughness: 0.92, metalness: 0.15,
-      emissive: 0x101018, emissiveIntensity: 0.4,
+      emissive: 0x101018, emissiveIntensity: 0.35,
     });
-    const dsMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(13, 1), dsMat);
-    dsMesh.position.set(1.5, 7, -46);
-    dsMesh.scale.set(1.15, 0.38, 1);
+    const dsMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(9, 1), dsMat);
+    dsMesh.position.set(0.8, 5.2, -52);
+    dsMesh.scale.set(1.05, 0.34, 1);
     g.add(dsMesh);
 
+    /** Small thermal-flash only — huge scaled spheres read like a “sun” in the trench. */
     const boomMat = new THREE.MeshStandardMaterial({
-      color: 0xff6622, emissive: 0xff4400, emissiveIntensity: 2.2,
-      transparent: true, opacity: 0.95,
+      color: 0xff5520, emissive: 0xff3300, emissiveIntensity: 1.1,
+      transparent: true, opacity: 0.75,
     });
-    const boom = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 16), boomMat);
-    boom.position.set(7, 6, -42);
+    const boom = new THREE.Mesh(new THREE.SphereGeometry(0.38, 14, 14), boomMat);
+    boom.position.set(0.6, 1.15, -11);
     g.add(boom);
     this._dsFinaleBoom = boom;
 
@@ -3009,21 +3201,21 @@ export class Game {
     const pos = new Float32Array(n * 3);
     const vel = [];
     for (let i = 0; i < n; i++) {
-      pos[i * 3] = boom.position.x + (Math.random() - 0.5) * 0.6;
-      pos[i * 3 + 1] = boom.position.y + (Math.random() - 0.5) * 0.6;
-      pos[i * 3 + 2] = boom.position.z + (Math.random() - 0.5) * 0.6;
+      pos[i * 3] = boom.position.x + (Math.random() - 0.5) * 0.35;
+      pos[i * 3 + 1] = boom.position.y + (Math.random() - 0.5) * 0.35;
+      pos[i * 3 + 2] = boom.position.z + (Math.random() - 0.5) * 0.35;
       vel.push({
-        vx: (Math.random() - 0.5) * 10,
-        vy: (Math.random() - 0.5) * 10,
-        vz: (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6,
+        vz: (Math.random() - 0.5) * 6 - 2,
       });
     }
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     const pMat = new THREE.PointsMaterial({
-      color: 0xffcc66,
-      size: 0.15,
+      color: 0xffcc88,
+      size: 0.1,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.65,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -3053,11 +3245,12 @@ export class Game {
   _updateDeathStarFinale(dt, now) {
     const t = (now - this._orbitStartTime) / 1000;
     if (this._dsFinaleBoom) {
-      const s = 1 + Math.min(22, t * t * 11);
+      const s = 1 + Math.min(3.2, t * t * 5 + t * 0.8);
       this._dsFinaleBoom.scale.setScalar(s);
       const mat = /** @type {THREE.MeshStandardMaterial} */ (this._dsFinaleBoom.material);
       if (mat && mat.emissiveIntensity !== undefined) {
-        mat.emissiveIntensity = Math.max(0.15, 3.8 - t * 0.95);
+        mat.emissiveIntensity = Math.max(0.12, 1.15 - t * 0.55);
+        mat.opacity = Math.max(0, 0.72 - t * 0.22);
       }
     }
     if (this._dsFinaleParticles && this._dsFinaleParticles.userData.vel) {
@@ -3082,16 +3275,18 @@ export class Game {
     const elapsed = (now - this._orbitStartTime) / 1000;
     if (this.currentLevel === "DS") {
       this._updateDeathStarFinale(dt, now);
-      const angle = elapsed * 0.45;
-      const radius = 15;
-      const height = 5.5 + Math.sin(elapsed * 0.28) * 0.65;
-      const center = this.player.mesh.position;
+      const angle = elapsed * 0.42;
+      const radius = 7.2;
+      const p = this.player.mesh.position;
+      const deckY = CONFIG.PLAYER_Y + 1.1;
+      const height = deckY + 1.35 + Math.sin(elapsed * 0.32) * 0.35;
       this.camera.position.set(
-        center.x + Math.sin(angle) * radius,
-        center.y + height,
-        center.z + Math.cos(angle) * radius
+        p.x + Math.sin(angle) * radius,
+        height,
+        p.z + Math.cos(angle) * radius
       );
-      this.camera.lookAt(center.x, center.y + 0.5, center.z);
+      const lookZ = p.z - 22;
+      this.camera.lookAt(p.x * 0.25, deckY + 0.55, lookZ);
       return;
     }
     const angle = elapsed * 0.5;

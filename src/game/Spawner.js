@@ -597,7 +597,8 @@ export class Spawner {
     const z = CONFIG.SPAWN_Z - Math.random() * 10;
     const colors = RIVAL_COLORS[this._nextRivalColorIdx % RIVAL_COLORS.length];
     this._nextRivalColorIdx++;
-    const mesh = this._makeRivalMesh(colors);
+    const mesh =
+      this.levelId === "DS" ? this._makeTieMesh() : this._makeRivalMesh(colors);
     mesh.position.set(CONFIG.LANES[lane], CONFIG.PLAYER_Y, z);
     this.scene.add(mesh);
     const e = {
@@ -922,6 +923,56 @@ export class Spawner {
     glow.position.set(0, 0.42, 0.72); g.add(glow);
 
     livery.dispose(); carbon.dispose(); accent.dispose(); rubber.dispose(); rim.dispose();
+    return g;
+  }
+
+  _makeTieMesh() {
+    const g = new THREE.Group();
+    const hull = new THREE.MeshStandardMaterial({
+      color: 0x3a3c44, metalness: 0.55, roughness: 0.42,
+      emissive: 0x0a0a10, emissiveIntensity: 0.12, flatShading: true,
+    });
+    const wing = new THREE.MeshStandardMaterial({
+      color: 0x1a1c22, metalness: 0.35, roughness: 0.55,
+      emissive: 0x050508, emissiveIntensity: 0.06, flatShading: true,
+    });
+    const solar = new THREE.MeshStandardMaterial({
+      color: 0x222844, metalness: 0.25, roughness: 0.35,
+      emissive: 0x111833, emissiveIntensity: 0.2, flatShading: true,
+    });
+    const cockpit = new THREE.MeshStandardMaterial({
+      color: 0x080810, metalness: 0.6, roughness: 0.2,
+      emissive: 0x112211, emissiveIntensity: 0.15, flatShading: true,
+    });
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), hull);
+    body.scale.set(1, 0.85, 1.15);
+    body.position.set(0, 0.32, 0);
+    g.add(body);
+
+    for (const side of [-1, 1]) {
+      const w = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.04, 0.55), wing);
+      w.position.set(side * 0.52, 0.32, 0.02);
+      g.add(w);
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.045, 0.42), solar);
+      p.position.set(side * 0.52, 0.32, 0.02);
+      g.add(p);
+    }
+
+    const win = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 5), cockpit);
+    win.scale.set(1, 0.7, 1.1);
+    win.position.set(0, 0.36, -0.22);
+    g.add(win);
+
+    const pylL = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.35, 5), hull);
+    pylL.rotation.x = Math.PI / 2;
+    pylL.position.set(-0.18, 0.28, 0.38);
+    g.add(pylL);
+    const pylR = pylL.clone();
+    pylR.position.x = 0.18;
+    g.add(pylR);
+
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     return g;
   }
 

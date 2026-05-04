@@ -101,6 +101,9 @@ export class UI {
       tutorialOverlay: document.getElementById("tutorial-overlay"),
       tutorialTip: document.getElementById("tutorial-tip"),
       tutorialTipText: document.getElementById("tutorial-tip-text"),
+      tutorialBbNudge: document.getElementById("tutorial-bb-nudge"),
+      tutorialBbNudgePointer: document.getElementById("tutorial-bb-nudge-pointer"),
+      tutorialBbNudgeText: document.getElementById("tutorial-bb-nudge-text"),
       skipTutorialBtn: document.getElementById("btn-skip-tutorial"),
       tutorialBanner: document.getElementById("tutorial-banner"),
       tutorialChecklist: document.getElementById("tutorial-checklist"),
@@ -439,6 +442,32 @@ export class UI {
     tip.setAttribute("aria-hidden", "true");
   }
 
+  showTutorialBillboardNudge(message) {
+    const wrap = this.el.tutorialBbNudge;
+    if (!wrap) return;
+    if (this.el.tutorialBbNudgeText && message) {
+      this.el.tutorialBbNudgeText.textContent = message;
+    }
+    wrap.classList.remove("hidden");
+    wrap.setAttribute("aria-hidden", "false");
+  }
+
+  /** @param {{ x: number, y: number }} pos */
+  updateTutorialBillboardNudge(pos) {
+    const ptr = this.el.tutorialBbNudgePointer;
+    const wrap = this.el.tutorialBbNudge;
+    if (!ptr || !wrap || wrap.classList.contains("hidden")) return;
+    ptr.style.left = `${pos.x}px`;
+    ptr.style.top = `${pos.y}px`;
+  }
+
+  hideTutorialBillboardNudge() {
+    const wrap = this.el.tutorialBbNudge;
+    if (!wrap) return;
+    wrap.classList.add("hidden");
+    wrap.setAttribute("aria-hidden", "true");
+  }
+
   buildTutorialChecklist(steps) {
     const ul = this.el.tutorialChecklistItems;
     if (!ul) return;
@@ -521,6 +550,7 @@ export class UI {
   hideAllTutorialUI() {
     this.hideTutorialBanner();
     this.hideTutorialTip();
+    this.hideTutorialBillboardNudge();
     this.showSkipTutorial(false);
     this.showTutorialChecklist(false);
     if (this.el.tutorialCountdown) this.el.tutorialCountdown.classList.add("hidden");
@@ -1813,6 +1843,7 @@ export class UI {
   }
 
   _openLevelSelect(returnTo) {
+    this.syncDeathStarTrenchCardVisibility();
     this._levelSelectReturnTo = returnTo;
     this.el.mainMenu.classList.add("hidden");
     if (this.el.gameOver) this.el.gameOver.classList.add("hidden");

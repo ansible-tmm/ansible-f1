@@ -1683,18 +1683,24 @@ export class Player {
       const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.52), red);
       stripe.position.set(side * 1.12, 0.28, 0.05);
       g.add(stripe);
-      const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.28, 6), engineMat);
-      eng.rotation.x = Math.PI / 2;
-      eng.position.set(side * 0.95, 0.28, 0.55);
-      g.add(eng);
-      const glow = new THREE.Mesh(
-        new THREE.CircleGeometry(0.09, 6),
-        new THREE.MeshBasicMaterial({
-          color: 0xff4418, transparent: true, opacity: 0.95,
-        })
+    }
+
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xff4418, transparent: true, opacity: 0.95,
+    });
+    const engineZ = 0.62;
+    const engineXs = [-0.26, -0.09, 0.09, 0.26];
+    for (const ex of engineXs) {
+      const eng = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.075, 0.088, 0.24, 8),
+        engineMat
       );
+      eng.rotation.x = Math.PI / 2;
+      eng.position.set(ex, 0.28, engineZ);
+      g.add(eng);
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.065, 6), glowMat);
       glow.rotation.x = -Math.PI / 2;
-      glow.position.set(side * 0.95, 0.28, 0.72);
+      glow.position.set(ex, 0.28, engineZ + 0.15);
       g.add(glow);
     }
 
@@ -3853,10 +3859,11 @@ export class Player {
     if (this.carType === "xwing") {
       const rise = Math.min(1, elapsed / 5.5);
       const ease = rise * rise * (3 - 2 * rise);
-      this.mesh.position.y = CONFIG.PLAYER_Y + ease * 14;
-      this.mesh.position.z = ease * 2.2;
-      this.mesh.rotation.x = -ease * 0.35;
-      this.mesh.rotation.z = Math.sin(elapsed * 0.9) * 0.12 * ease;
+      /** Keep low over the deck on trench complete — large rise + orbit read as “floating in space”. */
+      this.mesh.position.y = CONFIG.PLAYER_Y + ease * 4.2;
+      this.mesh.position.z = ease * 1.1;
+      this.mesh.rotation.x = -ease * 0.22;
+      this.mesh.rotation.z = Math.sin(elapsed * 0.9) * 0.1 * ease;
       return;
     }
     if (this.carType !== "hippo") return;
