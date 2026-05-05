@@ -1,6 +1,63 @@
 import * as THREE from "three";
 import { CONFIG } from "../data/config.js";
 
+const _qrWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+const _qrBlackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+
+function buildQrPanel(grid, moduleSize = 0.025) {
+  const g = new THREE.Group();
+  const size = grid.length;
+  const totalSize = size * moduleSize;
+  const moduleGeo = new THREE.BoxGeometry(0.015, moduleSize, moduleSize);
+  const backing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.012, totalSize + 0.04, totalSize + 0.04),
+    _qrWhiteMat.clone()
+  );
+  g.add(backing);
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      if (grid[row][col] === "1") {
+        const m = new THREE.Mesh(moduleGeo, _qrBlackMat);
+        m.position.set(0.002, (size / 2 - row - 0.5) * moduleSize, (col - size / 2 + 0.5) * moduleSize);
+        g.add(m);
+      }
+    }
+  }
+  return g;
+}
+
+const QR_NUNO = [
+  "11111110001110101011101111111",
+  "10000010000110110110101000001",
+  "10111010111010101010001011101",
+  "10111010110001100101001011101",
+  "10111010111111001111101011101",
+  "10000010110011111000101000001",
+  "11111110001010101010101111111",
+  "00000000100010011011000000000",
+  "10111100010011100100101111100",
+  "11011001111001000011111110001",
+  "11000011011011111000000000000",
+  "00010000100000111001110101010",
+  "10001111010110000111000001100",
+  "01110100001101001111101110001",
+  "11001111111011111100110111100",
+  "10100001000111011010010010010",
+  "00100110001010100100000001100",
+  "10100000000110001011101110101",
+  "10111011101000010010010000100",
+  "10101000100100111001111010010",
+  "10010011111000011101111110111",
+  "00000000001001101000100011111",
+  "11111110001101111111101011100",
+  "10000010101111001010100010001",
+  "10111010100100100110111110100",
+  "10111010101101000110000101111",
+  "10111010101011010100111111110",
+  "10000010000000001001111101010",
+  "11111110111110011101000110100",
+];
+
 /**
  * Low-poly open-wheel race car (F1-style read from chase cam), smooth lane lerp.
  */
@@ -3144,6 +3201,15 @@ export class Player {
 
     this._riderGrp = riderGrp;
     g.add(riderGrp);
+
+    // QR code on both sides
+    const qrRight = buildQrPanel(QR_NUNO, 0.025);
+    qrRight.position.set(0.71, 0.6, 0.1);
+    g.add(qrRight);
+    const qrLeft = buildQrPanel(QR_NUNO, 0.025);
+    qrLeft.position.set(-0.71, 0.6, 0.1);
+    qrLeft.rotation.y = Math.PI;
+    g.add(qrLeft);
 
     // Underglow
     const glow = new THREE.PointLight(0x66ffcc, 0.5, 8);
