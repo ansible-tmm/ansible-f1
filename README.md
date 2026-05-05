@@ -11,7 +11,7 @@ A retro-arcade racing game built with Three.js, themed around Ansible and IT aut
 - **Move:** Arrow keys (← / →) or A / D
 - **Boost:** Arrow Up or W (manual boost when available)
 - **Brake:** Arrow Down or S
-- **Pause:** Escape or Space
+- **Pause / resume:** Esc or Backspace · **Horn / vehicle click:** Space (same as clicking the game)
 - **Horn:** Mouse click (some vehicles have special abilities instead)
 - **Dodge** Outage obstacles that drain your health
 - **Collect** Ansible Playbooks (+100 pts), Collections (+150 pts), Policy Shields, and Boost Tokens

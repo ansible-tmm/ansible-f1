@@ -1735,8 +1735,10 @@ export class UI {
     _swap("#btn-restart", "Restart Run", "Reiniciar");
     _swap("#btn-pause-levels", "Choose Level", "Elegir nivel");
     _swap("#btn-quit", "Main Menu", "Menú principal");
-    const escHint = document.querySelector("#pause-menu .pause-hint");
-    if (escHint) escHint.textContent = on ? "Esc para continuar" : "Esc to resume";
+    const escHint = document.querySelector("#pause-menu p.hint");
+    if (escHint) {
+      escHint.textContent = on ? "Esc o Retroceso para continuar" : "Esc or Backspace to resume";
+    }
 
     const goTitle = document.querySelector("#game-over h2");
     if (goTitle) goTitle.textContent = on ? "Fin del juego" : "Game Over";

@@ -399,7 +399,7 @@ export class Game {
       if (this.state === "main_menu" || this.state === "game_over") return;
 
       if (this.state === "billboard") {
-        if (e.code === "Escape" || e.code === "Space") {
+        if (e.code === "Escape" || e.code === "Backspace") {
           this.closeBillboard();
           e.preventDefault();
         }
@@ -411,7 +411,7 @@ export class Game {
         this._quizPhase === "question" &&
         this.currentQuestion
       ) {
-        if (e.code === "Escape") {
+        if (e.code === "Escape" || e.code === "Backspace") {
           this.skipQuiz();
           e.preventDefault();
           return;
@@ -425,7 +425,7 @@ export class Game {
       }
 
       if (this.state === "quiz" && this._quizPhase === "result") {
-        if (e.code === "Escape") {
+        if (e.code === "Escape" || e.code === "Backspace") {
           this._dismissResult(this._lastAnswerCorrect);
           e.preventDefault();
         }
@@ -434,7 +434,7 @@ export class Game {
 
       if (this.state === "quiz") return;
 
-      if (e.code === "Escape" || e.code === "Space") {
+      if (e.code === "Escape" || e.code === "Backspace") {
         if (this.recoveryPrompt) {
           this.onRecoveryNo();
         } else if (this.state === "paused") {
@@ -445,6 +445,12 @@ export class Game {
           this.ui.showPause(true);
         }
         e.preventDefault();
+      }
+
+      if (e.code === "Space" && this.state === "running") {
+        this._hornOrVehicleAction();
+        e.preventDefault();
+        return;
       }
 
       if (this.state !== "running" || this.recoveryPrompt) return;
@@ -880,59 +886,64 @@ export class Game {
     }
   }
 
+  /** Horn / vehicle click action — same for canvas click and Space bar while running. */
+  _hornOrVehicleAction() {
+    if (this.state !== "running") return;
+    /** Trench: always turbolasers (including during remediation — avoids horn fallback). */
+    if (this.currentLevel === "DS" && this.player.carType === "xwing") {
+      this._fireXwingBlasters();
+      return;
+    }
+    if (this.player.carType === "skateboard") {
+      this.player.skateJump();
+      play(SFX.BOOST_WHOOSH, 0.6);
+      return;
+    }
+    if (this.player.carType === "f16") {
+      this._dropBomb();
+      return;
+    }
+    if (this.player.carType === "delorean") {
+      if (this.player.startTimeTravel()) {
+        play(SFX.DELOREAN, 0.9);
+        const lines = [
+          "⚡ 88 MPH!!! ⚡",
+          "⚡ 1.21 GIGAWATTS! ⚡",
+          "⚡ GREAT SCOTT! ⚡",
+          "⚡ BACK IN TIME! ⚡",
+          "⚡ FLUX CAPACITOR<br>FLUXING! ⚡",
+          "⚡ WHERE WE'RE GOING<br>WE DON'T NEED ROADS ⚡",
+          "⚡ TEMPORAL<br>DISPLACEMENT! ⚡",
+          "⚡ HEAVY! ⚡",
+        ];
+        this.ui.showHippoCrush(lines[Math.floor(Math.random() * lines.length)]);
+      } else if (this.player.ttCooldownRemaining > 0) {
+        this.ui.setStatus(this._isScaloneta
+          ? `¡Capacitor recargando... ${Math.ceil(this.player.ttCooldownRemaining)}s!`
+          : `Flux capacitor recharging... ${Math.ceil(this.player.ttCooldownRemaining)}s`, 1000);
+      }
+      return;
+    }
+    if (this.player.carType === "hippo") {
+      play(SFX.HIPPO_MODE, 0.9);
+    } else if (this.player.carType === "timetrain") {
+      play(SFX.TRAIN_WHISTLE, 0.9);
+    } else if (this.player.carType === "ogre") {
+      this._playOgreSfx(0.9);
+    } else if (this.player.carType === "crooner") {
+      this._playCroonerSfx(0.9);
+    } else if (this.player.carType === "scaloneta") {
+      play(SFX.SCALONETA, 0.8);
+    } else if (this.currentDriver === "andrius") {
+      play(SFX.HORN_ANDRIUS, 0.8);
+    } else {
+      play(SFX.HORN, 0.8);
+    }
+  }
+
   _bindHorn() {
     this.renderer.domElement.addEventListener("click", () => {
-      if (this.state !== "running") return;
-      /** Trench: always turbolasers on click (including during remediation — avoids horn fallback). */
-      if (this.currentLevel === "DS" && this.player.carType === "xwing") {
-        this._fireXwingBlasters();
-        return;
-      }
-      if (this.player.carType === "skateboard") {
-        this.player.skateJump();
-        play(SFX.BOOST_WHOOSH, 0.6);
-        return;
-      }
-      if (this.player.carType === "f16") {
-        this._dropBomb();
-        return;
-      }
-      if (this.player.carType === "delorean") {
-        if (this.player.startTimeTravel()) {
-          play(SFX.DELOREAN, 0.9);
-          const lines = [
-            "⚡ 88 MPH!!! ⚡",
-            "⚡ 1.21 GIGAWATTS! ⚡",
-            "⚡ GREAT SCOTT! ⚡",
-            "⚡ BACK IN TIME! ⚡",
-            "⚡ FLUX CAPACITOR<br>FLUXING! ⚡",
-            "⚡ WHERE WE'RE GOING<br>WE DON'T NEED ROADS ⚡",
-            "⚡ TEMPORAL<br>DISPLACEMENT! ⚡",
-            "⚡ HEAVY! ⚡",
-          ];
-          this.ui.showHippoCrush(lines[Math.floor(Math.random() * lines.length)]);
-        } else if (this.player.ttCooldownRemaining > 0) {
-          this.ui.setStatus(this._isScaloneta
-            ? `¡Capacitor recargando... ${Math.ceil(this.player.ttCooldownRemaining)}s!`
-            : `Flux capacitor recharging... ${Math.ceil(this.player.ttCooldownRemaining)}s`, 1000);
-        }
-        return;
-      }
-      if (this.player.carType === "hippo") {
-        play(SFX.HIPPO_MODE, 0.9);
-      } else if (this.player.carType === "timetrain") {
-        play(SFX.TRAIN_WHISTLE, 0.9);
-      } else if (this.player.carType === "ogre") {
-        this._playOgreSfx(0.9);
-      } else if (this.player.carType === "crooner") {
-        this._playCroonerSfx(0.9);
-      } else if (this.player.carType === "scaloneta") {
-        play(SFX.SCALONETA, 0.8);
-      } else if (this.currentDriver === "andrius") {
-        play(SFX.HORN_ANDRIUS, 0.8);
-      } else {
-        play(SFX.HORN, 0.8);
-      }
+      this._hornOrVehicleAction();
     });
   }
 
