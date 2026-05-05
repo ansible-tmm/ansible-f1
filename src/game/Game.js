@@ -1202,8 +1202,7 @@ export class Game {
     this.recoveryPrompt = false;
     this.remediationsUsed = 0;
     this.timeScale = 1;
-    this.comboCount = 0;
-    this.comboTimer = 0;
+    this._resetComboOverlay();
     this._nearMissChecked.clear();
     this._demoCompleted.clear();
     this._clearXwingLaserBolts();
@@ -1486,6 +1485,7 @@ export class Game {
 
   backToMenu() {
     this._clearXwingLaserBolts();
+    this._resetComboOverlay();
     this.state = "main_menu";
     this.recoveryPrompt = false;
     this.timeScale = 1;
@@ -1820,6 +1820,7 @@ export class Game {
   }
 
   _gameOver() {
+    this._resetComboOverlay();
     this.state = "game_over";
     this.timeScale = 1;
     this.recoveryPrompt = false;
@@ -1850,8 +1851,16 @@ export class Game {
     }, 30000);
   }
 
+  /** Combo timer only ticks in `_updateRun`; hide overlay whenever we leave active play. */
+  _resetComboOverlay() {
+    this.comboCount = 0;
+    this.comboTimer = 0;
+    this.ui.showCombo(0);
+  }
+
   _levelComplete() {
     if (this.player) this.player._finishBreakawayEase = null;
+    this._resetComboOverlay();
     this.state = "level_complete";
     this.timeScale = 1;
     this.recoveryPrompt = false;

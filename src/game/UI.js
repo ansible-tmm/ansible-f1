@@ -740,14 +740,17 @@ export class UI {
     const el = this.el.comboDisplay;
     if (!el) return;
     if (count < 2) {
-      el.classList.add("hidden");
+      el.textContent = "";
       el.classList.remove("active");
+      el.classList.add("hidden");
+      el.setAttribute("aria-hidden", "true");
       return;
     }
     el.textContent = `COMBO x${count}`;
-    el.classList.remove("hidden", "active");
+    el.classList.remove("hidden");
     void el.offsetWidth;
     el.classList.add("active");
+    el.setAttribute("aria-hidden", "false");
   }
 
   showAchievement(name, desc) {
