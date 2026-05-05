@@ -1924,13 +1924,13 @@ export class Player {
     g.add(flame);
     this._jetFlame = flame;
 
-    // QR code on top of each wing
+    // QR code on top of each main wing
     const qrWingR = buildQrPanel(QR_ALEX, 0.012);
-    qrWingR.position.set(1.0, 0.02, 0.0);
+    qrWingR.position.set(1.2, 0.04, -0.7);
     qrWingR.rotation.z = Math.PI / 2;
     g.add(qrWingR);
     const qrWingL = buildQrPanel(QR_ALEX, 0.012);
-    qrWingL.position.set(-1.0, 0.02, 0.0);
+    qrWingL.position.set(-1.2, 0.04, -0.7);
     qrWingL.rotation.z = Math.PI / 2;
     g.add(qrWingL);
 
