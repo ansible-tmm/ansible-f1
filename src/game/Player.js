@@ -1765,12 +1765,12 @@ export class Player {
     addAxle(-1.0);
     addAxle(1.5);
 
-    // QR code on both sides of the bus
-    const qrRight = buildQrPanel(QR_LEO, 0.02);
-    qrRight.position.set(0.87, 1.15, -0.3);
+    // QR code on both sides of the bus (lower body, between white stripes)
+    const qrRight = buildQrPanel(QR_LEO, 0.012);
+    qrRight.position.set(0.87, 0.65, -0.1);
     g.add(qrRight);
-    const qrLeft = buildQrPanel(QR_LEO, 0.02);
-    qrLeft.position.set(-0.87, 1.15, -0.3);
+    const qrLeft = buildQrPanel(QR_LEO, 0.012);
+    qrLeft.position.set(-0.87, 0.65, -0.1);
     qrLeft.rotation.y = Math.PI;
     g.add(qrLeft);
 
