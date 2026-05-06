@@ -560,6 +560,8 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo19",
+        /** Farther from lane strip — curved road reads less overlap with the face */
+        x: -22,
         label: "Ansible Automation Dashboard installation",
         accent: 0xff8822,
         logo: "./assets/dashboard_installation.jpg",
@@ -570,6 +572,7 @@ export const LEVELS = {
       },
       {
         id: "demo20",
+        x: 22,
         label: "Automation Dashboard",
         accent: 0xffcc44,
         logo: "./assets/Automation_dashboard.jpg",

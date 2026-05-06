@@ -682,6 +682,34 @@ export class Track {
       color: 0x6a9a4a, roughness: 0.88, metalness: 0.05, flatShading: true,
     });
 
+    /** Automation ROI (G): shoreline + beach strip scroll with props (only coast level). */
+    const roiShore = this.levelId === "G";
+    const beachSandMat = roiShore
+      ? new THREE.MeshStandardMaterial({
+          color: 0xd8c896,
+          roughness: 0.9,
+          metalness: 0.02,
+        })
+      : null;
+    const shoreWaterMat = roiShore
+      ? new THREE.MeshStandardMaterial({
+          color: 0x1a7898,
+          roughness: 0.2,
+          metalness: 0.45,
+          emissive: 0x052028,
+          emissiveIntensity: 0.1,
+        })
+      : null;
+    const foamLineMat = roiShore
+      ? new THREE.MeshStandardMaterial({
+          color: 0xd8f4ff,
+          roughness: 0.55,
+          metalness: 0.08,
+          transparent: true,
+          opacity: 0.82,
+        })
+      : null;
+
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
       const slot = new THREE.Group();
@@ -689,21 +717,50 @@ export class Track {
       this.propsGroup.add(slot);
       this._propSlots.push(slot);
 
-      // left: cliff face dropping down (visible wall below road level)
+      // left: cliff / shoreline (G = beach + water beside the road)
       const cliffH = 6 + Math.random() * 3;
+      const cliffW = roiShore ? 11 : 12;
+      const cliffCx = roiShore ? -22.5 : -13;
       const cliff = new THREE.Mesh(
-        new THREE.BoxGeometry(12, cliffH, this._propSpacing + 0.5),
+        new THREE.BoxGeometry(cliffW, cliffH, this._propSpacing + 0.5),
         Math.random() < 0.5 ? cliffMat : cliffDarkMat
       );
-      cliff.position.set(-13, -cliffH / 2 + 0.1, 0);
+      cliff.position.set(cliffCx, -cliffH / 2 + 0.1, 0);
       slot.add(cliff);
+
+      if (roiShore) {
+        // Water parallel to the road (driver's left), then sand to the guardrail
+        const dz = this._propSpacing + 0.5;
+        const water = new THREE.Mesh(
+          new THREE.BoxGeometry(6.2, 0.14, dz),
+          shoreWaterMat
+        );
+        water.position.set(-15.6, -0.05, 0);
+        slot.add(water);
+        const beach = new THREE.Mesh(
+          new THREE.BoxGeometry(5.6, 0.12, dz),
+          beachSandMat
+        );
+        beach.position.set(-10.5, 0.045, 0);
+        slot.add(beach);
+        const foam = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, 0.07, dz - 0.15),
+          foamLineMat
+        );
+        foam.position.set(-13.35, 0.018, 0);
+        slot.add(foam);
+      }
 
       // rocky ledge along cliff top
       if (Math.random() < 0.7) {
         const ledge = new THREE.Mesh(
           new THREE.DodecahedronGeometry(0.5 + Math.random() * 0.6, 0), cliffMat
         );
-        ledge.position.set(-7.5 - Math.random() * 2, 0.15, Math.random() * 6 - 3);
+        ledge.position.set(
+          (roiShore ? -19 : -7.5) - Math.random() * 2,
+          0.15,
+          Math.random() * 6 - 3
+        );
         ledge.scale.set(1.5, 0.4, 1);
         slot.add(ledge);
       }
@@ -756,11 +813,14 @@ export class Track {
   _billboards() {
     /** Bigger faces + closer to play (higher Z) = easier to read & click */
     const BB_Z = -50;
-    const defs = this.theme.billboards.map((b, i) => ({
-      ...b,
-      x: i === 0 ? -16 : i === 1 ? 16 : 32,
-      z: BB_Z,
-    }));
+    const defs = this.theme.billboards.map((b, i) => {
+      const defaultX = i === 0 ? -16 : i === 1 ? 16 : 32;
+      return {
+        ...b,
+        x: typeof b.x === "number" && !Number.isNaN(b.x) ? b.x : defaultX,
+        z: BB_Z,
+      };
+    });
 
     /** 16:9 face matches interactive demo thumbnails; world scale is ~+15% for readability */
     const boardW = 11.2;
