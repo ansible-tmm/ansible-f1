@@ -4,6 +4,45 @@ import { LEVELS } from "../data/config.js";
 /** Trench `propsGroup` / wall scroll wrap period — deck greeble must tile at this Z period or the floor “flips” visibly. */
 const TRENCH_PROP_Z_PERIOD = 14;
 
+/** Automation ROI (G): one shared ocean shader on wide strips (scroll + curve with props). */
+const ROI_OCEAN_INNER_X = -12.45;
+const ROI_OCEAN_OUTER_X = -580;
+const ROI_OCEAN_VS = `
+  varying vec3 vWorldPos;
+  varying vec3 vLocalPos;
+  void main() {
+    vLocalPos = position;
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+const ROI_OCEAN_FS = `
+  varying vec3 vWorldPos;
+  varying vec3 vLocalPos;
+  uniform float uTime;
+
+  void main() {
+    float offshore = smoothstep(25.0, 210.0, -vLocalPos.x);
+    vec3 shoreBright = vec3(0.44, 0.89, 0.97);
+    vec3 mid = vec3(0.16, 0.55, 0.72);
+    vec3 deep = vec3(0.04, 0.24, 0.38);
+    vec3 col = mix(shoreBright, mid, offshore * 0.58);
+    col = mix(col, deep, offshore * offshore * 0.52);
+
+    float ahead = -vWorldPos.z;
+    float horizon = smoothstep(28.0, 210.0, ahead);
+    col *= mix(vec3(1.0), vec3(0.68, 0.76, 0.88), horizon * 0.62);
+
+    float w1 = sin(vWorldPos.x * 0.062 + uTime * 2.05);
+    float w2 = sin(vWorldPos.z * 0.052 + uTime * 1.7);
+    float w3 = sin((vWorldPos.x * 0.75 + vWorldPos.z) * 0.078 + uTime * 2.55);
+    float ripple = (w1 * 0.45 + w2 * 0.4 + w3 * 0.35) * 0.042;
+
+    gl_FragColor = vec4(col + ripple, 1.0);
+  }
+`;
+
 /**
  * Themed roadway, lane markers, side props, billboards, skyline, horizon, lights.
  * Accepts a level theme key ("A", "B", "C") to configure visuals.
@@ -25,6 +64,8 @@ export class Track {
     this.billboards = {};
     /** Trench floor group parented to propsGroup so it scrolls with walls (null otherwise). */
     this._roadDeck = null;
+    /** Level G ocean strips share this material; `update` advances `uTime`. */
+    this._roiOceanMat = null;
 
     this._road();
     this._laneMarkers();
@@ -691,10 +732,17 @@ export class Track {
           metalness: 0.02,
         })
       : null;
-    /** Basic + no fog: hemi ground tint + distance fog were turning water mud-brown */
-    const shoreWaterMat = roiShore
-      ? new THREE.MeshBasicMaterial({ color: 0x3cb9dc, fog: false })
-      : null;
+    if (roiShore) {
+      this._roiOceanMat = new THREE.ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: ROI_OCEAN_VS,
+        fragmentShader: ROI_OCEAN_FS,
+        fog: false,
+      });
+    } else {
+      this._roiOceanMat = null;
+    }
+
     const foamLineMat = roiShore
       ? new THREE.MeshBasicMaterial({
           color: 0xe8fbff,
@@ -725,14 +773,15 @@ export class Track {
       slot.add(cliff);
 
       if (roiShore) {
-        // Wide shallow water (reads as ocean/lagoon from chase cam), then sand to rail
+        // Ocean sheet: inner edge at beach; outer edge far past horizon (scrolls with curve)
         const dz = this._propSpacing + 0.5;
+        const oceanW = ROI_OCEAN_INNER_X - ROI_OCEAN_OUTER_X;
+        const oceanCx = (ROI_OCEAN_INNER_X + ROI_OCEAN_OUTER_X) * 0.5;
         const water = new THREE.Mesh(
-          new THREE.BoxGeometry(12.5, 0.06, dz),
-          shoreWaterMat
+          new THREE.BoxGeometry(oceanW, 0.06, dz),
+          this._roiOceanMat
         );
-        /** Cliff right ~ -30; keep water east of that; basic mat stays blue (no fog) */
-        water.position.set(-19.25, -0.04, 0);
+        water.position.set(oceanCx, -0.045, 0);
         slot.add(water);
         const beach = new THREE.Mesh(
           new THREE.BoxGeometry(5.5, 0.11, dz),
@@ -2107,6 +2156,10 @@ export class Track {
   update(dt, worldSpeed) {
     const dz = worldSpeed * dt;
 
+    if (this._roiOceanMat) {
+      this._roiOceanMat.uniforms.uTime.value += dt;
+    }
+
     if (this._rainbowMode && this._roadMat) {
       const hue = (performance.now() * 0.0003) % 1;
       this._roadMat.color.setHSL(hue, 0.7, 0.45);
@@ -2333,13 +2386,16 @@ export class Track {
   dispose() {
     this.removeFinishLine();
     this.scene.remove(this.group);
+    /** Dedupe materials — ROI ocean shares one ShaderMaterial across strips */
+    const materials = new Set();
     this.group.traverse((c) => {
       if (c.geometry) c.geometry.dispose();
       if (c.material) {
         const m = c.material;
-        if (Array.isArray(m)) m.forEach((x) => x.dispose());
-        else m.dispose();
+        if (Array.isArray(m)) m.forEach((x) => materials.add(x));
+        else materials.add(m);
       }
     });
+    materials.forEach((m) => m.dispose());
   }
 }
