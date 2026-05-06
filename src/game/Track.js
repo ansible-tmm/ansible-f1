@@ -693,11 +693,12 @@ export class Track {
       : null;
     const shoreWaterMat = roiShore
       ? new THREE.MeshStandardMaterial({
-          color: 0x1a7898,
-          roughness: 0.2,
-          metalness: 0.45,
-          emissive: 0x052028,
-          emissiveIntensity: 0.1,
+          /** Flat lagoon read — avoid glossy “neon stripe” at chase-cam angles */
+          color: 0x2f7f96,
+          roughness: 0.55,
+          metalness: 0.12,
+          emissive: 0x061820,
+          emissiveIntensity: 0.04,
         })
       : null;
     const foamLineMat = roiShore
@@ -719,8 +720,9 @@ export class Track {
 
       // left: cliff / shoreline (G = beach + water beside the road)
       const cliffH = 6 + Math.random() * 3;
-      const cliffW = roiShore ? 11 : 12;
-      const cliffCx = roiShore ? -22.5 : -13;
+      const cliffW = roiShore ? 12 : 12;
+      /** ROI: cliff farther left so a wide water sheet sits between rock and beach */
+      const cliffCx = roiShore ? -32.5 : -13;
       const cliff = new THREE.Mesh(
         new THREE.BoxGeometry(cliffW, cliffH, this._propSpacing + 0.5),
         Math.random() < 0.5 ? cliffMat : cliffDarkMat
@@ -729,25 +731,26 @@ export class Track {
       slot.add(cliff);
 
       if (roiShore) {
-        // Water parallel to the road (driver's left), then sand to the guardrail
+        // Wide shallow water (reads as ocean/lagoon from chase cam), then sand to rail
         const dz = this._propSpacing + 0.5;
         const water = new THREE.Mesh(
-          new THREE.BoxGeometry(6.2, 0.14, dz),
+          new THREE.BoxGeometry(11, 0.05, dz),
           shoreWaterMat
         );
-        water.position.set(-15.6, -0.05, 0);
+        /** Cliff right face ~ -26.5; keep water fully seaward of that */
+        water.position.set(-18.5, -0.1, 0);
         slot.add(water);
         const beach = new THREE.Mesh(
-          new THREE.BoxGeometry(5.6, 0.12, dz),
+          new THREE.BoxGeometry(6.4, 0.11, dz),
           beachSandMat
         );
-        beach.position.set(-10.5, 0.045, 0);
+        beach.position.set(-10.2, 0.035, 0);
         slot.add(beach);
         const foam = new THREE.Mesh(
-          new THREE.BoxGeometry(0.45, 0.07, dz - 0.15),
+          new THREE.BoxGeometry(0.55, 0.06, dz - 0.15),
           foamLineMat
         );
-        foam.position.set(-13.35, 0.018, 0);
+        foam.position.set(-13.45, 0.012, 0);
         slot.add(foam);
       }
 
@@ -757,7 +760,7 @@ export class Track {
           new THREE.DodecahedronGeometry(0.5 + Math.random() * 0.6, 0), cliffMat
         );
         ledge.position.set(
-          (roiShore ? -19 : -7.5) - Math.random() * 2,
+          (roiShore ? -29 : -7.5) - Math.random() * 2,
           0.15,
           Math.random() * 6 - 3
         );
