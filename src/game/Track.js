@@ -2018,7 +2018,8 @@ export class Track {
       water: [0x2255aa, 0x0a1840], coast: [0x557755, 0x2a3a2a],
       trench: [0x4a4c58, 0x2a2c38],
     };
-    if (!this._isDeathStar) {
+    /** Coast uses mesh shoreline + skyline ocean; GridHelper reads as a fake checkerboard “sea”. */
+    if (!this._isDeathStar && t.scenery !== "coast") {
       const [gc1, gc2] = gridColors[t.scenery] || [0x888888, 0x444444];
       const grid = new THREE.GridHelper(400, 80, gc1, gc2);
       grid.position.y = 0.01;
