@@ -560,8 +560,8 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo19",
-        /** Right shoulder with demo20 — left side is ocean/shore */
-        x: 15,
+        /** Set back from lane edge — reads less “stuck to” the yellow line */
+        x: 26,
         label: "Ansible Automation Dashboard installation",
         accent: 0xff8822,
         logo: "./assets/dashboard_installation.jpg",
@@ -572,8 +572,8 @@ export const LEVELS = {
       },
       {
         id: "demo20",
-        /** ~11m board width — keep centers separated so faces don’t overlap at BB_Z */
-        x: 29,
+        /** Same Z as demo19 — spaced centers clear ~11m-wide faces */
+        x: 42,
         label: "Automation Dashboard",
         accent: 0xffcc44,
         logo: "./assets/Automation_dashboard.jpg",
