@@ -740,7 +740,9 @@ export class UI {
     el.innerHTML = text;
     void el.offsetWidth;
     el.classList.add("crush");
-    setTimeout(() => el.classList.remove("crush"), 4000);
+    clearTimeout(this._hippoCrushTimer);
+    /** Match CSS hippo-crush duration (~3.8s); was 4s orphan timeout */
+    this._hippoCrushTimer = setTimeout(() => el.classList.remove("crush"), 4000);
   }
 
   showCombo(count) {

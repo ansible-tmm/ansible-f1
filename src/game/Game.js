@@ -2214,6 +2214,7 @@ export class Game {
     const ws = CONFIG.BASE_SPEED * speedMult * driverMult;
     const flowActive = now < this.automationFlowUntil;
     const { mbState, mbProgress } = this._manualBoostHud(now);
+    this.player.setBraking(this.braking && this.state === "running");
     this.ui.updateHud({
       health: this.health,
       score: this.score,
@@ -2451,6 +2452,7 @@ export class Game {
     this._applyCurve();
 
     const { mbState, mbProgress } = this._manualBoostHud(now);
+    this.player.setBraking(this.braking && this.state === "running");
     this.ui.updateHud({
       health: this.health,
       score: this.score,
@@ -2828,7 +2830,8 @@ export class Game {
 
   _cheaterPopupAllowed() {
     const now = performance.now();
-    if (now - this._lastCheaterPopupTs < 400) return false;
+    /** Wider spacing: fewer simultaneous DOM/audio bursts + overlaps feel less laggy */
+    if (now - this._lastCheaterPopupTs < 720) return false;
     this._lastCheaterPopupTs = now;
     return true;
   }
@@ -2877,9 +2880,6 @@ export class Game {
       const showPopup = this._cheaterPopupAllowed();
       if (showPopup) {
         play(SFX.OBSTACLE_HIT, 0.6);
-        this.ui.shake();
-        this.shakeUntil = performance.now() + 100;
-        this.shakeAmp = 0.15;
       }
       if (this.player.carType === "hippo") {
         this.score += 50000;
@@ -3024,9 +3024,6 @@ export class Game {
       const showPopup = this._cheaterPopupAllowed();
       if (showPopup) {
         play(SFX.OBSTACLE_HIT, 0.6);
-        this.ui.shake();
-        this.shakeUntil = performance.now() + 100;
-        this.shakeAmp = 0.15;
       }
       if (this.player.carType === "hippo") {
         this.score += 50000;

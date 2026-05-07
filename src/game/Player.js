@@ -286,6 +286,19 @@ const QR_ANDRIUS = [
   "111111101101010101100001110100010",
 ];
 
+/** Extra red lamp meshes for vehicles without shared tail materials — local positions on player group. */
+const BRAKE_FALLBACK_MOUNT = {
+  lightcycle: { y: 0.48, z: 1.46, xSep: 0.36, lampW: 0.092, lampH: 0.041 },
+  f16: { y: -0.04, z: 2.05, xSep: 0.26, lampW: 0.084, lampH: 0.036, pointDist: 4 },
+  xwing: { y: 0.31, z: 0.66, xSep: 0.44, lampW: 0.058, lampH: 0.042, lampD: 0.035, pointDist: 2.6 },
+  trex: { y: 0.92, z: 1.32, xSep: 0.22, lampW: 0.068, lampH: 0.04, pointDist: 3 },
+  ogre: { y: 0.32, z: 0.46, xSep: 0.22, lampW: 0.065, lampH: 0.038 },
+  hippo: { y: 0.78, z: 1.12, xSep: 0.38, lampW: 0.079, lampH: 0.042 },
+  skateboard: { y: 0.11, z: 1.04, xSep: 0.21, lampW: 0.058, lampH: 0.032, lampD: 0.028 },
+  bicycle: { y: 0.38, z: 0.82, xSep: 0.14 },
+  timetrain: { y: 0.62, z: 1.68, xSep: 0.52, lampW: 0.068, lampH: 0.055 },
+};
+
 /**
  * Low-poly open-wheel race car (F1-style read from chase cam), smooth lane lerp.
  */
@@ -295,6 +308,11 @@ export class Player {
     this.laneIndex = 1;
     this.targetLaneIndex = 1;
     this._smokeParticles = null;
+    /** @type {{ mat: import("three").MeshStandardMaterial, idle: number, brake: number }[]} */
+    this._brakeMatBindings = [];
+    this._brakePointLight = null;
+    this._brakePointIntensityBrake = 0.45;
+    this._brakeVisualLit = false;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.set(
@@ -314,6 +332,8 @@ export class Player {
 
   swapCar(carType) {
     if (carType === this.carType) return;
+    this._clearBrakeLightBindings();
+    this._brakeVisualLit = false;
     const pos = this.mesh.position.clone();
     const vis = this.mesh.visible;
     this.dispose();
@@ -340,63 +360,140 @@ export class Player {
     this._finishBreakawayEase = null;
   }
 
+  _clearBrakeLightBindings() {
+    this._brakeMatBindings.length = 0;
+    this._brakePointLight = null;
+  }
+
+  _registerBrakeMaterial(mat, idleEmissiveIntensity, brakeEmissiveIntensity) {
+    if (!mat || typeof mat.emissiveIntensity !== "number") return;
+    if (this._brakeMatBindings.some((b) => b.mat === mat)) return;
+    this._brakeMatBindings.push({
+      mat,
+      idle: idleEmissiveIntensity,
+      brake: brakeEmissiveIntensity,
+    });
+    mat.emissiveIntensity = this._brakeVisualLit ? brakeEmissiveIntensity : idleEmissiveIntensity;
+  }
+
+  /**
+   * Two shared red lamps + optional red point light (for chase-cam readability).
+   * @param {import("three").Group} group
+   * @param {Record<string, number>} opts
+   */
+  _mountBrakeLampsAux(group, opts) {
+    const y = opts.y ?? 0.34;
+    const z = opts.z ?? 1.92;
+    const xSep = opts.xSep ?? 0.42;
+    const lampW = opts.lampW ?? 0.088;
+    const lampH = opts.lampH ?? 0.048;
+    const lampD = opts.lampD ?? 0.042;
+    const idleEmit = opts.idleEmit ?? 0.18;
+    const brakeEmit = opts.brakeEmit ?? 2.0;
+    const pointBrake = opts.pointBrake ?? 0.42;
+    const pointDist = opts.pointDist ?? 3.6;
+    const lampMat = new THREE.MeshStandardMaterial({
+      color: 0x350806,
+      emissive: 0xff1508,
+      emissiveIntensity: idleEmit,
+      metalness: 0.15,
+      roughness: 0.5,
+    });
+    const geo = new THREE.BoxGeometry(lampW, lampH, lampD);
+    for (const sx of [-xSep, xSep]) {
+      const lamp = new THREE.Mesh(geo, lampMat);
+      lamp.position.set(sx, y, z);
+      group.add(lamp);
+    }
+    this._registerBrakeMaterial(lampMat, idleEmit, brakeEmit);
+    const pl = new THREE.PointLight(0xff2200, 0, pointDist);
+    pl.position.set(0, y, z + 0.055);
+    group.add(pl);
+    this._brakePointLight = pl;
+    this._brakePointIntensityBrake = pointBrake;
+  }
+
+  _ensureFallbackBrakeLamps(type, group) {
+    if (this._brakeMatBindings.length > 0) return;
+    const spec = BRAKE_FALLBACK_MOUNT[type];
+    if (!spec) return;
+    this._mountBrakeLampsAux(group, spec);
+  }
+
+  setBraking(on) {
+    const lit = !!on;
+    if (this._brakeVisualLit === lit) return;
+    this._brakeVisualLit = lit;
+    for (const { mat, idle, brake } of this._brakeMatBindings) {
+      mat.emissiveIntensity = lit ? brake : idle;
+    }
+    if (this._brakePointLight) {
+      this._brakePointLight.intensity = lit ? this._brakePointIntensityBrake : 0;
+    }
+  }
+
   _buildCarForType(type) {
-    if (type === "truck") return this._buildTruckMesh();
-    if (type === "lightcycle") return this._buildLightcycleMesh();
-    if (type === "delorean") return this._buildDeloreanMesh();
-    if (type === "semi_truck") return this._buildSemiTruckMesh();
-    if (type === "scaloneta") return this._buildScalonetaMesh();
-    if (type === "f16") return this._buildF16Mesh();
-    if (type === "xwing") return this._buildXWingMesh();
-    if (type === "trex") return this._buildTrexMesh();
-    if (type === "cadillac") return this._buildCadillacMesh();
-    if (type === "ogre") return this._buildOgreMesh();
-    if (type === "crooner") return this._buildCroonerMesh();
-    if (type === "timetrain") return this._buildTimeTrainMesh();
-    if (type === "f1_yellow") return this._buildF1({
+    this._clearBrakeLightBindings();
+    /** @type {import("three").Group} */
+    let g;
+    if (type === "truck") g = this._buildTruckMesh();
+    else if (type === "lightcycle") g = this._buildLightcycleMesh();
+    else if (type === "delorean") g = this._buildDeloreanMesh();
+    else if (type === "semi_truck") g = this._buildSemiTruckMesh();
+    else if (type === "scaloneta") g = this._buildScalonetaMesh();
+    else if (type === "f16") g = this._buildF16Mesh();
+    else if (type === "xwing") g = this._buildXWingMesh();
+    else if (type === "trex") g = this._buildTrexMesh();
+    else if (type === "cadillac") g = this._buildCadillacMesh();
+    else if (type === "ogre") g = this._buildOgreMesh();
+    else if (type === "crooner") g = this._buildCroonerMesh();
+    else if (type === "timetrain") g = this._buildTimeTrainMesh();
+    else if (type === "f1_yellow") g = this._buildF1({
       livery: 0xffd000, liveryEmit: 0x332800,
       accent: 0xff6600, accentEmit: 0x331100,
       rim: 0xddaa00, glow: 0xffcc00,
     });
-    if (type === "f1_pink") return this._buildF1({
+    else if (type === "f1_pink") g = this._buildF1({
       livery: 0xff69b4, liveryEmit: 0x330018,
       accent: 0xffffff, accentEmit: 0x222222,
       rim: 0xffaacc, glow: 0xff69b4,
     });
-    if (type === "f1_purple") return this._buildF1({
+    else if (type === "f1_purple") g = this._buildF1({
       livery: 0x8833cc, liveryEmit: 0x1a0033,
       accent: 0xcc44ff, accentEmit: 0x330066,
       rim: 0xaa66dd, glow: 0x9944ff,
     });
-    if (type === "f1_turquoise") return this._buildF1({
+    else if (type === "f1_turquoise") g = this._buildF1({
       livery: 0x00d4cc, liveryEmit: 0x002a28,
       accent: 0x88eeff, accentEmit: 0x113344,
       rim: 0x66ddee, glow: 0x00e5d0,
     });
-    if (type === "f1_black_gold") return this._buildF1({
+    else if (type === "f1_black_gold") g = this._buildF1({
       livery: 0x111111, liveryEmit: 0x000000,
       accent: 0xdaa520, accentEmit: 0x332200,
       rim: 0xdaa520, glow: 0xffd700,
     });
-    if (type === "f1_pink_gold") return this._buildF1({
+    else if (type === "f1_pink_gold") g = this._buildF1({
       livery: 0xff69b4, liveryEmit: 0x330018,
       accent: 0xdaa520, accentEmit: 0x332200,
       rim: 0xdaa520, glow: 0xff69b4,
     });
-    if (type === "f1_blue_white") return this._buildF1({
+    else if (type === "f1_blue_white") g = this._buildF1({
       livery: 0x00205b, liveryEmit: 0x000d26,
       accent: 0xffffff, accentEmit: 0x444444,
       rim: 0xffffff, glow: 0x0044aa,
     });
-    if (type === "f1_maroon") return this._buildF1({
+    else if (type === "f1_maroon") g = this._buildF1({
       livery: 0x660000, liveryEmit: 0x1a0000,
       accent: 0xff6600, accentEmit: 0x331100,
       rim: 0xcc5500, glow: 0x882200,
     });
-    if (type === "hippo") return this._buildHippoMesh();
-    if (type === "skateboard") return this._buildSkateboardMesh();
-    if (type === "bicycle") return this._buildBicycleMesh();
-    return this._buildF1();
+    else if (type === "hippo") g = this._buildHippoMesh();
+    else if (type === "skateboard") g = this._buildSkateboardMesh();
+    else if (type === "bicycle") g = this._buildBicycleMesh();
+    else g = this._buildF1();
+    this._ensureFallbackBrakeLamps(type, g);
+    return g;
   }
 
   _buildF1(scheme = {}) {
@@ -622,15 +719,19 @@ export class Player {
     beamWing.position.set(0, 0.38, 0.88);
     g.add(beamWing);
 
-    // FIA rain light
-    const rainLight = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.05, 0.04),
-      new THREE.MeshStandardMaterial({
-        color: accCol, emissive: accCol, emissiveIntensity: 0.8,
-      })
-    );
-    rainLight.position.set(0, 0.34, 0.96);
-    g.add(rainLight);
+    // Dual rear brake lamps + subtle red spill (dims when not braking; HUD vignette unchanged)
+    this._mountBrakeLampsAux(g, {
+      y: 0.34,
+      z: 1.01,
+      xSep: 0.5,
+      lampW: 0.098,
+      lampH: 0.052,
+      lampD: 0.046,
+      idleEmit: 0.22,
+      brakeEmit: 2.08,
+      pointBrake: 0.5,
+      pointDist: 4.2,
+    });
 
     // ── Exhaust pipe ──
     const exhaust = new THREE.Mesh(
@@ -1123,12 +1224,12 @@ export class Player {
     rBump.position.set(0, 0.17 + H, 1.28);
     g.add(rBump);
 
-    // Taillights (wide horizontal bar, classic DeLorean)
     for (const side of [-0.5, 0.5]) {
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.05), tailRed);
       tl.position.set(side, 0.3 + H, 1.28);
       g.add(tl);
     }
+    this._registerBrakeMaterial(tailRed, 0.62, 2.06);
 
     // ── BTTF2 rear louver vents (right-triangle wedge with grid slats) ──
     // Profile: flat vertical face at the rear, slopes down toward the front
@@ -1400,12 +1501,12 @@ export class Player {
     rBump.position.set(0, 0.28, 2.64);
     g.add(rBump);
 
-    // Taillights
     for (const side of [-0.6, 0.6]) {
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.06), red);
       tl.position.set(side, 0.45, 2.65);
       g.add(tl);
     }
+    this._registerBrakeMaterial(red, 0.52, 2.35);
 
     // Mud flaps
     for (const side of [-0.7, 0.7]) {
@@ -1738,12 +1839,13 @@ export class Player {
     rBump.position.set(0, 0.28, 2.16);
     g.add(rBump);
 
-    // Taillights
+    const tlMat = red.clone();
     for (const side of [-0.55, 0.55]) {
-      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.06), red.clone());
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.06), tlMat);
       tl.position.set(side, 0.5, 2.16);
       g.add(tl);
     }
+    this._registerBrakeMaterial(tlMat, 0.48, 2.22);
 
     // Wheels (2 axles)
     const addAxle = (z) => {
@@ -2260,12 +2362,12 @@ export class Player {
       g.add(hl);
     }
 
-    // Taillights
     for (const side of [-0.55, 0.55]) {
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.06), red);
       tl.position.set(side, 0.5, 1.79);
       g.add(tl);
     }
+    this._registerBrakeMaterial(red, 0.38, 2.08);
 
     // Roll bar in bed
     const rollBar = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 0.08), chrome);
@@ -2336,7 +2438,7 @@ export class Player {
     g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 
     paint.dispose(); dark.dispose(); chrome.dispose();
-    rubber.dispose(); rim.dispose(); glass.dispose(); red.dispose();
+    rubber.dispose(); rim.dispose(); glass.dispose();
 
     return g;
   }
@@ -2502,13 +2604,19 @@ export class Player {
     rBumper.position.set(0, 0.2 + H, 1.55);
     g.add(rBumper);
 
-    // Tail lights
-    const tailRed = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+    const tailLamp = new THREE.MeshStandardMaterial({
+      color: 0x660000,
+      emissive: 0xff1810,
+      emissiveIntensity: 0.35,
+      metalness: 0.18,
+      roughness: 0.42,
+    });
     for (const side of [-1, 1]) {
-      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.04), tailRed);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.04), tailLamp);
       tail.position.set(side * 0.65, 0.35 + H, 1.56);
       g.add(tail);
     }
+    this._registerBrakeMaterial(tailLamp, 0.36, 2.06);
 
     // Side trim
     for (const side of [-1, 1]) {
@@ -3089,12 +3197,12 @@ export class Player {
       finTip.rotation.x = -Math.PI / 2;
       finTip.position.set(side * 0.88, 0.72 + H, 1.8);
       g.add(finTip);
-      // Tail light — iconic bullet shape in the fin
       const tailLight = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.12, 8), tailRed);
       tailLight.rotation.x = Math.PI / 2;
       tailLight.position.set(side * 0.88, 0.5 + H, 1.82);
       g.add(tailLight);
     }
+    this._registerBrakeMaterial(tailRed, 0.52, 2.08);
 
     // Rear bumper — chrome
     const rBumper = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.1), chrome);
