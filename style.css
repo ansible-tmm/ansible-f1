@@ -2928,7 +2928,7 @@ body {
   .tutorial-checklist {
     top: auto !important;
     right: auto !important;
-    bottom: 2.5rem !important;
+    bottom: 6.5rem !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     min-width: 160px;
@@ -2961,7 +2961,10 @@ body {
   }
   .touch-pause {
     top: auto;
-    bottom: 1rem;
+    bottom: 3.5rem;
+  }
+  .finish-progress {
+    bottom: 0.8rem;
   }
 }
 
