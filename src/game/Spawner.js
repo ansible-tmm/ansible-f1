@@ -1601,7 +1601,7 @@ export class Spawner {
       z,
       active: true,
       worldBox: new THREE.Box3(),
-      hit: { w: 0.8, h: 0.9, d: 1.8 },
+      hit: { w: 1.0, h: 1.2, d: 2.2 },
       aiTimer: 999,
     };
     this._syncBox(e);
@@ -1612,143 +1612,203 @@ export class Spawner {
     const g = new THREE.Group();
 
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: bodyColor, metalness: 0.15, roughness: 0.5,
-      emissive: bodyEmissive, emissiveIntensity: 0.3,
+      color: bodyColor, metalness: 0.2, roughness: 0.45,
+      emissive: bodyEmissive, emissiveIntensity: 0.25,
     });
     const whiteMat = new THREE.MeshStandardMaterial({
-      color: 0xf8f8f0, roughness: 0.6, metalness: 0.05,
-      emissive: 0x222218, emissiveIntensity: 0.1,
+      color: 0xf5f2ea, roughness: 0.55, metalness: 0.08,
+      emissive: 0x1a1810, emissiveIntensity: 0.1,
     });
     const windowMat = new THREE.MeshStandardMaterial({
-      color: 0x88ccee, metalness: 0.5, roughness: 0.2,
-      emissive: 0x224455, emissiveIntensity: 0.3,
-      transparent: true, opacity: 0.7,
+      color: 0x334455, metalness: 0.4, roughness: 0.15,
+      emissive: 0x112233, emissiveIntensity: 0.2,
+      transparent: true, opacity: 0.75,
     });
     const chromeMat = new THREE.MeshStandardMaterial({
-      color: 0xcccccc, metalness: 0.8, roughness: 0.2,
+      color: 0xdddddd, metalness: 0.85, roughness: 0.15,
+      emissive: 0x222222, emissiveIntensity: 0.1,
     });
     const rubber = new THREE.MeshStandardMaterial({
-      color: 0x0d0d0d, metalness: 0.15, roughness: 0.92,
+      color: 0x111111, metalness: 0.1, roughness: 0.95,
     });
 
-    const bW = 1.3, bH = 1.2, bD = 2.4;
+    const bW = 1.6, bH = 1.5, bD = 3.0;
+    const baseY = 0.38;
 
-    // Lower body (colored)
-    const lower = new THREE.Mesh(new THREE.BoxGeometry(bW, bH * 0.5, bD), bodyMat);
-    lower.position.y = bH * 0.25 + 0.35;
+    // Lower body — colored panel (below the belt line)
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(bW, bH * 0.45, bD), bodyMat);
+    lower.position.y = baseY + bH * 0.225;
     g.add(lower);
 
-    // Upper body (white)
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(bW, bH * 0.5, bD), whiteMat);
-    upper.position.y = bH * 0.75 + 0.35;
+    // Upper body — white panel (above belt line)
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(bW, bH * 0.45, bD), whiteMat);
+    upper.position.y = baseY + bH * 0.675;
     g.add(upper);
+
+    // Chrome belt line trim between panels
+    const beltLine = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.02, 0.05, bD + 0.02), chromeMat);
+    beltLine.position.y = baseY + bH * 0.45;
+    g.add(beltLine);
 
     // Rounded roof
     const roof = new THREE.Mesh(
-      new THREE.CylinderGeometry(bW * 0.48, bW * 0.5, bD - 0.2, 8, 1, false, 0, Math.PI),
+      new THREE.BoxGeometry(bW - 0.1, 0.12, bD - 0.1), whiteMat.clone()
+    );
+    roof.position.y = baseY + bH * 0.9 + 0.06;
+    g.add(roof);
+    const roofRound = new THREE.Mesh(
+      new THREE.CylinderGeometry(bW * 0.46, bW * 0.48, bD - 0.3, 10, 1, false, 0, Math.PI),
       whiteMat.clone()
     );
-    roof.rotation.x = Math.PI / 2;
-    roof.rotation.z = Math.PI;
-    roof.position.y = bH + 0.35;
-    g.add(roof);
+    roofRound.rotation.x = Math.PI / 2;
+    roofRound.rotation.z = Math.PI;
+    roofRound.position.y = baseY + bH * 0.9 + 0.1;
+    g.add(roofRound);
 
-    // Front face (flat VW nose)
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.1, bH * 0.85, 0.1), whiteMat.clone());
-    nose.position.set(0, bH * 0.5 + 0.35, -(bD / 2) - 0.05);
-    g.add(nose);
+    // Front face — distinctive VW split: white upper V, colored lower
+    const frontUpper = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.05, bH * 0.4, 0.08), whiteMat.clone());
+    frontUpper.position.set(0, baseY + bH * 0.7, -(bD / 2) - 0.04);
+    g.add(frontUpper);
+    const frontLower = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.05, bH * 0.35, 0.08), bodyMat.clone());
+    frontLower.position.set(0, baseY + bH * 0.25, -(bD / 2) - 0.04);
+    g.add(frontLower);
 
-    // VW logo circle (front)
-    const logo = new THREE.Mesh(new THREE.CircleGeometry(0.18, 12), chromeMat);
-    logo.position.set(0, bH * 0.55 + 0.35, -(bD / 2) - 0.11);
-    g.add(logo);
+    // VW logo — chrome circle on front center
+    const logoBg = new THREE.Mesh(new THREE.CircleGeometry(0.16, 14), chromeMat);
+    logoBg.position.set(0, baseY + bH * 0.48, -(bD / 2) - 0.09);
+    g.add(logoBg);
 
-    // Windshield (split V shape)
-    const ws = new THREE.Mesh(new THREE.PlaneGeometry(bW * 0.7, bH * 0.4), windowMat);
-    ws.position.set(0, bH * 0.8 + 0.35, -(bD / 2) - 0.06);
-    g.add(ws);
-
-    // Side windows
+    // Large split windshield (two panes)
     for (const side of [-1, 1]) {
-      const sideWin = new THREE.Mesh(new THREE.PlaneGeometry(bD * 0.55, bH * 0.32), windowMat);
-      sideWin.position.set(side * (bW / 2 + 0.01), bH * 0.78 + 0.35, -0.2);
-      sideWin.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
-      g.add(sideWin);
+      const wsPane = new THREE.Mesh(new THREE.PlaneGeometry(bW * 0.34, bH * 0.32), windowMat);
+      wsPane.position.set(side * bW * 0.19, baseY + bH * 0.72, -(bD / 2) - 0.05);
+      g.add(wsPane);
+    }
+    // Windshield divider chrome strip
+    const wsDivider = new THREE.Mesh(new THREE.BoxGeometry(0.04, bH * 0.34, 0.03), chromeMat);
+    wsDivider.position.set(0, baseY + bH * 0.72, -(bD / 2) - 0.05);
+    g.add(wsDivider);
+
+    // Side windows — multiple panes per side (like the real T1)
+    const winTop = baseY + bH * 0.73;
+    const winH = bH * 0.28;
+    const winPanes = 4;
+    const paneW = (bD - 0.6) / winPanes;
+    const winStartZ = -(bD / 2) + 0.4;
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < winPanes; i++) {
+        const wz = winStartZ + i * paneW + paneW / 2;
+        const wp = new THREE.Mesh(new THREE.PlaneGeometry(paneW - 0.06, winH), windowMat);
+        wp.position.set(side * (bW / 2 + 0.01), winTop, wz);
+        wp.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+        g.add(wp);
+      }
+      // Chrome window trim frame
+      const frameMat = chromeMat;
+      const frameTop = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, bD - 0.5), frameMat);
+      frameTop.position.set(side * (bW / 2 + 0.015), winTop + winH / 2 + 0.02, 0);
+      g.add(frameTop);
+      const frameBot = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, bD - 0.5), frameMat);
+      frameBot.position.set(side * (bW / 2 + 0.015), winTop - winH / 2 - 0.02, 0);
+      g.add(frameBot);
     }
 
-    // Chrome bumpers
-    const fBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, 0.12, 0.08), chromeMat);
-    fBumper.position.set(0, 0.42, -(bD / 2) - 0.08);
+    // Rear window
+    const rearWin = new THREE.Mesh(new THREE.PlaneGeometry(bW * 0.5, bH * 0.25), windowMat);
+    rearWin.position.set(0, baseY + bH * 0.7, bD / 2 + 0.01);
+    rearWin.rotation.y = Math.PI;
+    g.add(rearWin);
+
+    // Chrome front bumper (curved look)
+    const fBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.15, 0.1, 0.12), chromeMat);
+    fBumper.position.set(0, baseY + 0.05, -(bD / 2) - 0.1);
     g.add(fBumper);
-    const rBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, 0.12, 0.08), chromeMat);
-    rBumper.position.set(0, 0.42, bD / 2 + 0.04);
+    // Chrome rear bumper
+    const rBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.15, 0.1, 0.12), chromeMat);
+    rBumper.position.set(0, baseY + 0.05, bD / 2 + 0.06);
     g.add(rBumper);
 
-    // Headlights (round)
+    // Round headlights
     const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
-    for (const side of [-0.4, 0.4]) {
-      const hl = new THREE.Mesh(new THREE.CircleGeometry(0.09, 8), headlightMat);
-      hl.position.set(side, 0.55, -(bD / 2) - 0.12);
+    for (const side of [-0.5, 0.5]) {
+      const hlRim = new THREE.Mesh(new THREE.CircleGeometry(0.12, 10), chromeMat);
+      hlRim.position.set(side, baseY + bH * 0.3, -(bD / 2) - 0.09);
+      g.add(hlRim);
+      const hl = new THREE.Mesh(new THREE.CircleGeometry(0.09, 10), headlightMat);
+      hl.position.set(side, baseY + bH * 0.3, -(bD / 2) - 0.1);
       g.add(hl);
     }
 
-    // Taillights (round red)
+    // Round taillights
     const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
-    for (const side of [-0.45, 0.45]) {
+    for (const side of [-0.5, 0.5]) {
       const tl = new THREE.Mesh(new THREE.CircleGeometry(0.08, 8), tailMat);
-      tl.position.set(side, 0.55, bD / 2 + 0.05);
+      tl.position.set(side, baseY + bH * 0.35, bD / 2 + 0.07);
       tl.rotation.y = Math.PI;
       g.add(tl);
     }
 
-    // Wheels
+    // Wheels with chrome hubcaps
     const addWheel = (x, z) => {
-      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.18, 10), rubber);
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 12), rubber);
       tire.rotation.z = Math.PI / 2;
-      tire.position.set(x, 0.25, z);
+      tire.position.set(x, 0.3, z);
       g.add(tire);
-      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.19, 8), chromeMat);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.21, 10), chromeMat);
       hub.rotation.z = Math.PI / 2;
-      hub.position.set(x, 0.25, z);
+      hub.position.set(x, 0.3, z);
       g.add(hub);
     };
-    addWheel(-0.7, -0.7); addWheel(0.7, -0.7);
-    addWheel(-0.7, 0.7); addWheel(0.7, 0.7);
+    addWheel(-0.85, -0.85); addWheel(0.85, -0.85);
+    addWheel(-0.85, 0.85); addWheel(0.85, 0.85);
 
-    // Roof rack
-    const rackMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8, metalness: 0.1 });
-    const rackBar = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.2, 0.04, 0.06), rackMat);
-    rackBar.position.y = bH + 0.58;
-    rackBar.position.z = -0.5;
-    g.add(rackBar);
-    const rackBar2 = rackBar.clone();
-    rackBar2.position.z = 0.5;
-    g.add(rackBar2);
-    for (const side of [-(bW / 2 - 0.2), bW / 2 - 0.2]) {
-      const rackLeg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.04), rackMat);
-      rackLeg.position.set(side, bH + 0.52, -0.5);
-      g.add(rackLeg);
-      const rackLeg2 = rackLeg.clone();
-      rackLeg2.position.z = 0.5;
-      g.add(rackLeg2);
+    // Roof rack — black metal
+    const rackMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7, metalness: 0.4 });
+    const rackH = baseY + bH * 0.9 + 0.2;
+    for (const rz of [-0.6, 0.6]) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.3, 0.04, 0.05), rackMat);
+      bar.position.set(0, rackH, rz);
+      g.add(bar);
+    }
+    for (const rx of [-(bW / 2 - 0.25), bW / 2 - 0.25]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 1.3), rackMat);
+      rail.position.set(rx, rackH, 0);
+      g.add(rail);
+    }
+    for (const rx of [-(bW / 2 - 0.25), bW / 2 - 0.25]) {
+      for (const rz of [-0.6, 0.6]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.04), rackMat);
+        leg.position.set(rx, rackH - 0.08, rz);
+        g.add(leg);
+      }
     }
 
-    // Surfboard on roof
+    // Surfboard — colorful, flat elongated shape
+    const surfColors = [0xff6644, 0x4488ff, 0xffaa22, 0x44ddaa, 0xff44aa];
+    const surfColor = surfColors[Math.floor(Math.random() * surfColors.length)];
     const boardMat = new THREE.MeshStandardMaterial({
-      color: 0xffee88, roughness: 0.5, metalness: 0.05,
-      emissive: 0x332200, emissiveIntensity: 0.15,
+      color: surfColor, roughness: 0.4, metalness: 0.05,
+      emissive: surfColor, emissiveIntensity: 0.1,
     });
-    const boardShape = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.03, 0.03, 2.0, 6), boardMat
-    );
-    boardShape.rotation.x = Math.PI / 2;
-    boardShape.position.set(0.15, bH + 0.65, 0);
-    boardShape.scale.set(3.5, 1, 1);
-    g.add(boardShape);
-    // Surfboard fin
-    const finMat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.4, metalness: 0.1 });
-    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.15), finMat);
-    fin.position.set(0.15, bH + 0.72, 0.7);
+    // Board body — elongated rounded shape
+    const board = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 2.0, 4, 8), boardMat);
+    board.rotation.x = Math.PI / 2;
+    board.position.set(0.12, rackH + 0.14, 0);
+    board.scale.set(1.6, 1, 1);
+    g.add(board);
+    // Stripe down the board
+    const stripeMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, roughness: 0.3, metalness: 0.0,
+    });
+    const stripe = new THREE.Mesh(new THREE.CapsuleGeometry(0.03, 1.8, 3, 6), stripeMat);
+    stripe.rotation.x = Math.PI / 2;
+    stripe.position.set(0.12, rackH + 0.18, 0);
+    stripe.scale.set(1.2, 1, 1);
+    g.add(stripe);
+    // Fin
+    const finMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5, metalness: 0.2 });
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.14), finMat);
+    fin.position.set(0.12, rackH + 0.22, 0.8);
     g.add(fin);
 
     bodyMat.dispose(); whiteMat.dispose(); windowMat.dispose();
