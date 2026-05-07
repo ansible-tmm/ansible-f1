@@ -153,7 +153,10 @@ export class UI {
     this.syncDeathStarTrenchCardVisibility();
     this._drawLevelPreviews();
     this._syncSummitDockVisibility();
+    this._mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
   }
+
+  get isMobile() { return this._mobile; }
 
   /** Death Star trench: no scripted tutorial or “How to play” from the main menu. */
   _rebuildMainMenuNavButtons() {
@@ -487,9 +490,14 @@ export class UI {
   }
 
   buildTutorialChecklist(steps) {
+    this._tutorialSteps = steps;
     const ul = this.el.tutorialChecklistItems;
     if (!ul) return;
     ul.innerHTML = "";
+    if (this._mobile) {
+      this._renderMobileTutorialStep(0);
+      return;
+    }
     steps.forEach((step, i) => {
       const li = document.createElement("li");
       li.className = "tutorial-checklist-item" + (i === 0 ? " active" : "");
@@ -497,6 +505,18 @@ export class UI {
       li.innerHTML = `<span class="check-box"></span><span class="check-label">${step.label}</span>`;
       ul.appendChild(li);
     });
+  }
+
+  _renderMobileTutorialStep(stepIndex) {
+    const ul = this.el.tutorialChecklistItems;
+    if (!ul || !this._tutorialSteps) return;
+    const total = this._tutorialSteps.length;
+    const done = stepIndex >= total;
+    const label = done ? "Tutorial complete!" : this._tutorialSteps[stepIndex].label;
+    const num = done ? total : stepIndex + 1;
+    ul.innerHTML =
+      `<li class="tutorial-checklist-item active"><span class="check-box"></span><span class="check-label">${label}</span></li>` +
+      `<div class="tutorial-progress">${num} / ${total}</div>`;
   }
 
   showTutorialChecklist(visible) {
@@ -508,6 +528,10 @@ export class UI {
   }
 
   tutorialCheckStep(stepIndex, totalSteps) {
+    if (this._mobile) {
+      this._renderMobileTutorialStep(stepIndex);
+      return;
+    }
     const ul = this.el.tutorialChecklistItems;
     if (!ul) return;
     const items = ul.querySelectorAll(".tutorial-checklist-item");

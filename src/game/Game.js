@@ -1271,7 +1271,7 @@ export class Game {
     if (now < this._tutorialSpawnDelay) return;
 
     if (step.kind === "billboard") {
-      if (this.currentLevel === "DS") {
+      if (this.currentLevel === "DS" || this.ui.isMobile) {
         this._advanceTutorialStep(null);
         return;
       }
