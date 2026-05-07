@@ -168,12 +168,13 @@ export class Track {
 
   _road() {
     const t = this.theme;
-    /** Developer experience (C): no asphalt berm past yellow lines — terrain meets road at ±6 */
+    /** No asphalt berm past yellow lines — terrain meets road at ±6 */
     const desertNarrowRoad =
       this.levelId === "C" && t.scenery === "desert" && !this._isDeathStar;
-    this._roadHalfWidth = desertNarrowRoad ? 6 : 11;
-    const roadPlaneW = desertNarrowRoad ? 12 : 22;
-    const curvedRoadW = desertNarrowRoad ? (24 * roadPlaneW) / 22 : 24;
+    const narrowRoad = desertNarrowRoad || ((this.levelId === "D" || this.levelId === "F") && !this._isDeathStar);
+    this._roadHalfWidth = narrowRoad ? 6 : 11;
+    const roadPlaneW = narrowRoad ? 12 : 22;
+    const curvedRoadW = narrowRoad ? (24 * roadPlaneW) / 22 : 24;
 
     const roadMat = new THREE.MeshStandardMaterial({
       color: t.road, metalness: t.scenery === "trench" ? 0.35 : 0.15,
@@ -299,7 +300,7 @@ export class Track {
             ? 46
             : gw / 2 + this._roadHalfWidth;
         const groundY =
-          desertNarrowRoad ? -0.003 : -0.02;
+          narrowRoad ? -0.003 : -0.02;
         const gSegX = desertNarrowRoad ? 18 : 1;
         const gSegZ = desertNarrowRoad ? 64 : 1;
         const groundL = new THREE.Mesh(
@@ -1684,18 +1685,18 @@ export class Track {
     const massifs = [
       {
         x: -54, z: 10, ry: -0.28, layers: [
-          { r: 20, h: 15, y: 0, m: shadow },
-          { r: 14, h: 13, y: 10, m: rock },
-          { r: 9, h: 10, y: 21, m: sunlit },
-          { r: 5.5, h: 8, y: 28, m: rim },
+          { r: 22, h: 14, y: 0, m: shadow },
+          { r: 16, h: 11, y: 10, m: rock },
+          { r: 11, h: 8, y: 19, m: sunlit },
+          { r: 7, h: 5, y: 26, m: rim },
         ],
       },
       {
         x: 62, z: -2, ry: 0.22, layers: [
-          { r: 22, h: 17, y: 0, m: rock },
-          { r: 15, h: 15, y: 12, m: sunlit },
-          { r: 10, h: 11, y: 24, m: rim },
-          { r: 5.5, h: 8, y: 32, m: rim },
+          { r: 24, h: 15, y: 0, m: rock },
+          { r: 17, h: 12, y: 11, m: sunlit },
+          { r: 12, h: 8, y: 21, m: rim },
+          { r: 8, h: 5, y: 28, m: rim },
         ],
       },
     ];
@@ -1707,12 +1708,12 @@ export class Track {
 
     /** No pencil spires near frame edges — only mid-distance peaks, stocky silhouette */
     const spires = [
-      { x: -42, z: -16, r: 9.5, h: 22, ry: -0.3 },
-      { x: 50, z: -14, r: 10, h: 24, ry: 0.26 },
+      { x: -42, z: -16, r: 13, h: 16, ry: -0.3 },
+      { x: 50, z: -14, r: 14, h: 18, ry: 0.26 },
     ];
     for (const s of spires) {
       addCone(sunlit, s.x, 0, s.z, s.r, s.h, s.ry);
-      addCone(shadow, s.x + 1.4, s.h * 0.28, s.z - 1.8, s.r * 0.52, s.h * 0.35, s.ry + 0.15, 0.08);
+      addCone(shadow, s.x + 1.4, s.h * 0.28, s.z - 1.8, s.r * 0.6, s.h * 0.3, s.ry + 0.15, 0.08);
     }
 
     /** Center “pass”: only low berms — keeps vanishing point open */
@@ -1756,7 +1757,6 @@ export class Track {
     /** Edge crags: squat so they don’t read as round tree crowns */
     const crags = [
       { x: -104, z: 2, sc: 5.5 },
-      { x: 32, z: 8, sc: 6.2 },
       { x: 110, z: -4, sc: 4.8 },
     ];
     for (const c of crags) {
@@ -1764,10 +1764,9 @@ export class Track {
         new THREE.IcosahedronGeometry(c.sc, 0),
         rock
       );
-      d.position.set(c.x, c.sc * 0.45, c.z);
+      d.position.set(c.x, c.sc * 0.35, c.z);
       d.rotation.set(0.22, c.x * 0.01, -0.15);
-      const edge = Math.abs(c.x) > 95 ? 1.55 : 1.2;
-      d.scale.set(edge, 0.55, edge * 0.95);
+      d.scale.set(1.6, 0.45, 1.5);
       skylineGroup.add(d);
     }
   }

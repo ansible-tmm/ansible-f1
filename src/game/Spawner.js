@@ -81,6 +81,25 @@ export class Spawner {
   }
 
   /**
+   * Cheaply remove an obstacle or rival without cloning debris geometry.
+   * Returns world position so caller can spawn a particle burst instead.
+   * @param {{ mesh: THREE.Object3D, active: boolean }} e
+   * @returns {THREE.Vector3}
+   */
+  explodeCheater(e) {
+    if (!e?.mesh) return new THREE.Vector3();
+    const pos = e.mesh.position.clone();
+    e.active = false;
+    const oi = this.obstacles.indexOf(e);
+    if (oi >= 0) this.obstacles.splice(oi, 1);
+    const ri = this.rivals.indexOf(e);
+    if (ri >= 0) this.rivals.splice(ri, 1);
+    if (e.mesh.parent === this.scene) this.scene.remove(e.mesh);
+    this._disposeMeshTree(e.mesh);
+    return pos;
+  }
+
+  /**
    * Clone mesh geometry + materials so disposing the obstacle tree does not invalidate debris (shared brickGeo, etc.).
    * @param {THREE.Mesh} part
    * @returns {THREE.Mesh}

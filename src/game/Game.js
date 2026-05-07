@@ -2556,8 +2556,8 @@ export class Game {
   }
 
   /**
-   * VO + overlays same frame as the smash; debris now spawns in Spawner synchronously so no “dead”
-   * frame between obstacle removal and particles. Crooner clips are in global `preload(Object.values(SFX))`.
+   * VO + overlays; queued after the hit handler so lite debris clears the stack first. Crooner skips
+   * shared obstacle-hit.wav (parent branch) — only VO, less decode contention.
    */
   _croonerSmashFeedback() {
     const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
@@ -2752,6 +2752,32 @@ export class Game {
     this._explosions = [];
   }
 
+  /** Cheap particle burst for cheater-mode smashes — no geometry cloning. */
+  _spawnCheaterBurst(pos) {
+    const count = 48;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const velocities = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      velocities[i * 3] = (Math.random() - 0.5) * 9;
+      velocities[i * 3 + 1] = Math.random() * 6 + 2;
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 9;
+    }
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0xff8822,
+      size: 0.28,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const points = new THREE.Points(geo, mat);
+    points.position.copy(pos);
+    this.scene.add(points);
+    this._explosions.push({ points, velocities, count, age: 0 });
+  }
+
   _explodeBomb(pos) {
     play(SFX.OBSTACLE_HIT, 0.9);
     this.ui.shake();
@@ -2896,9 +2922,10 @@ export class Game {
     }
     /** DS stays “cheater” for leaderboards only — trench hits use normal damage below. */
     if (this._isCheater() && this.currentLevel !== "DS") {
-      this.spawner.explodeObstacle(e);
+      const pos = this.spawner.explodeCheater(e);
+      this._spawnCheaterBurst(pos);
       const showPopup = this._cheaterPopupAllowed();
-      if (showPopup) {
+      if (showPopup && this.player.carType !== "crooner") {
         play(SFX.OBSTACLE_HIT, 0.6);
       }
       if (this.player.carType === "hippo") {
@@ -3037,9 +3064,10 @@ export class Game {
       return;
     }
     if (this._isCheater() && this.currentLevel !== "DS") {
-      this.spawner.explodeRival(e);
+      const pos = this.spawner.explodeCheater(e);
+      this._spawnCheaterBurst(pos);
       const showPopup = this._cheaterPopupAllowed();
-      if (showPopup) {
+      if (showPopup && this.player.carType !== "crooner") {
         play(SFX.OBSTACLE_HIT, 0.6);
       }
       if (this.player.carType === "hippo") {

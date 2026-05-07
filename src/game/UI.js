@@ -716,11 +716,13 @@ export class UI {
   showPickupPopup(text) {
     const el = this.el.pickupPopup;
     if (!el) return;
-    el.classList.remove("show");
-    el.textContent = text;
-    void el.offsetWidth;
-    el.classList.add("show");
-    setTimeout(() => el.classList.remove("show"), 1700);
+    requestAnimationFrame(() => {
+      el.classList.remove("show");
+      el.textContent = text;
+      void el.offsetWidth;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 1700);
+    });
   }
 
   showHippoAnnounce() {
@@ -736,13 +738,14 @@ export class UI {
   showHippoCrush(text) {
     const el = this.el.hippoAnnounce;
     if (!el) return;
-    el.classList.remove("show", "crush");
-    el.innerHTML = text;
-    void el.offsetWidth;
-    el.classList.add("crush");
-    clearTimeout(this._hippoCrushTimer);
-    /** Match CSS hippo-crush duration (~3.8s); was 4s orphan timeout */
-    this._hippoCrushTimer = setTimeout(() => el.classList.remove("crush"), 4000);
+    requestAnimationFrame(() => {
+      el.classList.remove("show", "crush");
+      el.innerHTML = text;
+      void el.offsetWidth;
+      el.classList.add("crush");
+      clearTimeout(this._hippoCrushTimer);
+      this._hippoCrushTimer = setTimeout(() => el.classList.remove("crush"), 4000);
+    });
   }
 
   showCombo(count) {
