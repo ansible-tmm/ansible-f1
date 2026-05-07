@@ -2964,6 +2964,9 @@ export class Game {
     const dmg = CONFIG.OBSTACLE_DAMAGE;
     this.health -= dmg;
     this.obstaclesHit += 1;
+    if (performance.now() < this.boostUntil) {
+      this.boostUntil = 0;
+    }
     play(SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
     this.ui.showDamagePopup(dmg);
@@ -3057,6 +3060,9 @@ export class Game {
     const dmg = isBus ? CONFIG.BUS_DAMAGE : CONFIG.OBSTACLE_DAMAGE;
     this.health -= dmg;
     this.obstaclesHit += 1;
+    if (performance.now() < this.boostUntil) {
+      this.boostUntil = 0;
+    }
     play(SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
     this.ui.showDamagePopup(dmg);
