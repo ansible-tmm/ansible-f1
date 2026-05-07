@@ -2966,8 +2966,13 @@ body {
   .finish-progress {
     bottom: 0.8rem;
   }
-  .boost-bar {
+  .tt-cooldown-bar {
     display: none !important;
+  }
+  .boost-bar {
+    top: auto;
+    bottom: 1.8rem;
+    font-size: 0.55rem;
   }
 }
 
