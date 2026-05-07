@@ -2560,9 +2560,6 @@ export class Game {
    * shared obstacle-hit.wav (parent branch) — only VO, less decode contention.
    */
   _croonerSmashFeedback() {
-    const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
-    this.ui.showPickupPopup("+50,000");
-    this.ui.showHippoCrush(line);
     this._playCroonerSfx(0.7);
   }
 
