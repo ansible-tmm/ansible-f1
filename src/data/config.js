@@ -325,24 +325,14 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo4",
-        label: "Workflow orchestration",
+        label: "Automation orchestrator",
         accent: 0x44bb66,
-        embed: null,
-        embedTitle: "Workflow orchestration — booth demos",
-      },
-      {
-        id: "demo5",
-        label: "Built to Automate track",
-        accent: 0xddaa22,
-        embed: null,
-        embedTitle: "Built to Automate track",
-      },
-      {
-        id: "demo6",
-        label: "Arcade links coming soon",
-        accent: 0x8866dd,
-        embed: null,
-        embedTitle: "Interactive arcade flows — publishing soon",
+        logo: "./assets/automation_orchestrator_arcade.png",
+        embed:
+          "https://demo.arcade.software/raKv3vTXd9wPndiAUpEJ?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle:
+          "Automation orchestrator — multimodal automation with Ansible Automation Platform",
+        logoObjectFit: "cover",
       },
     ],
   },
@@ -441,6 +431,16 @@ export const LEVELS = {
           "https://demo.arcade.software/WSh5uLpMzwN5Eb4ojTK7?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
         embedTitle:
           "Multilayered Policy enforcement with Ansible Automation Platform",
+        logoObjectFit: "cover",
+      },
+      {
+        id: "demo13",
+        label: "Zero Trust with AAP",
+        accent: 0x88aa66,
+        logo: "./assets/zero_trust_with_aap_arcade.png",
+        embed:
+          "https://demo.arcade.software/IW69tA3kUgJdtNaOWZB1?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Zero Trust with Ansible Automation Platform",
         logoObjectFit: "cover",
       },
     ],
