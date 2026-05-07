@@ -2966,6 +2966,9 @@ body {
   .finish-progress {
     bottom: 0.8rem;
   }
+  .boost-bar {
+    display: none !important;
+  }
 }
 
 /* ─── Interactive tutorial ─── */
