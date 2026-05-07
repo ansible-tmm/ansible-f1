@@ -41,6 +41,7 @@ export class Spawner {
     this.busTimer = 0;
     this.gatorTimer = 0;
     this.sheepTimer = 0;
+    this.vwBusTimer = 0;
     this._nextRivalColorIdx = 0;
     this.levelId = "A";
     this.scriptedMode = false;
@@ -61,6 +62,7 @@ export class Spawner {
     this.busTimer = 0;
     this.gatorTimer = 0;
     this.sheepTimer = 0;
+    this.vwBusTimer = 0;
     this.attractMode = false;
   }
 
@@ -222,6 +224,16 @@ export class Spawner {
       if (!hasSheep && this.sheepTimer > 12 && elapsedRunSeconds > 6) {
         this.sheepTimer = 0;
         this._spawnSheep();
+      }
+    }
+
+    // VW Bus: Level E (Network & infrastructure / coast) only
+    if (this.levelId === "E") {
+      this.vwBusTimer += dt * timeScale;
+      const hasVW = this.rivals.some((r) => r.subtype === "VW_BUS");
+      if (!hasVW && this.vwBusTimer > 14 && elapsedRunSeconds > 6) {
+        this.vwBusTimer = 0;
+        this._spawnVWBus();
       }
     }
 
@@ -731,7 +743,7 @@ export class Spawner {
       const r = this.rivals[i];
       if (!r.active) continue;
 
-      const isBus = r.subtype === "SCHOOL_BUS";
+      const isBus = r.subtype === "SCHOOL_BUS" || r.subtype === "VW_BUS";
       r.mesh.position.z += dz - (isBus ? busDz : rivalDz);
       r.z = r.mesh.position.z;
 
@@ -1557,6 +1569,190 @@ export class Spawner {
 
     bodyMat.dispose(); trimMat.dispose(); windowMat.dispose();
     rubber.dispose(); bumperMat.dispose();
+    return g;
+  }
+
+  // ─── VW Bus (Level E — Network & infrastructure / coast) ───
+
+  _vwBusColors = [
+    { body: 0x44bbcc, emissive: 0x114433 },
+    { body: 0xff6644, emissive: 0x441100 },
+    { body: 0xffcc22, emissive: 0x443300 },
+    { body: 0x66cc55, emissive: 0x113311 },
+    { body: 0xcc66dd, emissive: 0x331133 },
+    { body: 0xff8855, emissive: 0x442200 },
+    { body: 0x5588ff, emissive: 0x112244 },
+  ];
+
+  _spawnVWBus() {
+    const lane = Math.floor(Math.random() * 3);
+    const z = CONFIG.SPAWN_Z - 10;
+    const colorIdx = Math.floor(Math.random() * this._vwBusColors.length);
+    const mesh = this._makeVWBusMesh(this._vwBusColors[colorIdx]);
+    mesh.position.set(CONFIG.LANES[lane], 0, z);
+    this.scene.add(mesh);
+    const e = {
+      id: nextId(),
+      kind: "rival",
+      subtype: "VW_BUS",
+      lane,
+      targetLane: lane,
+      mesh,
+      z,
+      active: true,
+      worldBox: new THREE.Box3(),
+      hit: { w: 0.8, h: 0.9, d: 1.8 },
+      aiTimer: 999,
+    };
+    this._syncBox(e);
+    this.rivals.push(e);
+  }
+
+  _makeVWBusMesh({ body: bodyColor, emissive: bodyEmissive }) {
+    const g = new THREE.Group();
+
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: bodyColor, metalness: 0.15, roughness: 0.5,
+      emissive: bodyEmissive, emissiveIntensity: 0.3,
+    });
+    const whiteMat = new THREE.MeshStandardMaterial({
+      color: 0xf8f8f0, roughness: 0.6, metalness: 0.05,
+      emissive: 0x222218, emissiveIntensity: 0.1,
+    });
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x88ccee, metalness: 0.5, roughness: 0.2,
+      emissive: 0x224455, emissiveIntensity: 0.3,
+      transparent: true, opacity: 0.7,
+    });
+    const chromeMat = new THREE.MeshStandardMaterial({
+      color: 0xcccccc, metalness: 0.8, roughness: 0.2,
+    });
+    const rubber = new THREE.MeshStandardMaterial({
+      color: 0x0d0d0d, metalness: 0.15, roughness: 0.92,
+    });
+
+    const bW = 1.3, bH = 1.2, bD = 2.4;
+
+    // Lower body (colored)
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(bW, bH * 0.5, bD), bodyMat);
+    lower.position.y = bH * 0.25 + 0.35;
+    g.add(lower);
+
+    // Upper body (white)
+    const upper = new THREE.Mesh(new THREE.BoxGeometry(bW, bH * 0.5, bD), whiteMat);
+    upper.position.y = bH * 0.75 + 0.35;
+    g.add(upper);
+
+    // Rounded roof
+    const roof = new THREE.Mesh(
+      new THREE.CylinderGeometry(bW * 0.48, bW * 0.5, bD - 0.2, 8, 1, false, 0, Math.PI),
+      whiteMat.clone()
+    );
+    roof.rotation.x = Math.PI / 2;
+    roof.rotation.z = Math.PI;
+    roof.position.y = bH + 0.35;
+    g.add(roof);
+
+    // Front face (flat VW nose)
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.1, bH * 0.85, 0.1), whiteMat.clone());
+    nose.position.set(0, bH * 0.5 + 0.35, -(bD / 2) - 0.05);
+    g.add(nose);
+
+    // VW logo circle (front)
+    const logo = new THREE.Mesh(new THREE.CircleGeometry(0.18, 12), chromeMat);
+    logo.position.set(0, bH * 0.55 + 0.35, -(bD / 2) - 0.11);
+    g.add(logo);
+
+    // Windshield (split V shape)
+    const ws = new THREE.Mesh(new THREE.PlaneGeometry(bW * 0.7, bH * 0.4), windowMat);
+    ws.position.set(0, bH * 0.8 + 0.35, -(bD / 2) - 0.06);
+    g.add(ws);
+
+    // Side windows
+    for (const side of [-1, 1]) {
+      const sideWin = new THREE.Mesh(new THREE.PlaneGeometry(bD * 0.55, bH * 0.32), windowMat);
+      sideWin.position.set(side * (bW / 2 + 0.01), bH * 0.78 + 0.35, -0.2);
+      sideWin.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2;
+      g.add(sideWin);
+    }
+
+    // Chrome bumpers
+    const fBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, 0.12, 0.08), chromeMat);
+    fBumper.position.set(0, 0.42, -(bD / 2) - 0.08);
+    g.add(fBumper);
+    const rBumper = new THREE.Mesh(new THREE.BoxGeometry(bW + 0.1, 0.12, 0.08), chromeMat);
+    rBumper.position.set(0, 0.42, bD / 2 + 0.04);
+    g.add(rBumper);
+
+    // Headlights (round)
+    const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+    for (const side of [-0.4, 0.4]) {
+      const hl = new THREE.Mesh(new THREE.CircleGeometry(0.09, 8), headlightMat);
+      hl.position.set(side, 0.55, -(bD / 2) - 0.12);
+      g.add(hl);
+    }
+
+    // Taillights (round red)
+    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+    for (const side of [-0.45, 0.45]) {
+      const tl = new THREE.Mesh(new THREE.CircleGeometry(0.08, 8), tailMat);
+      tl.position.set(side, 0.55, bD / 2 + 0.05);
+      tl.rotation.y = Math.PI;
+      g.add(tl);
+    }
+
+    // Wheels
+    const addWheel = (x, z) => {
+      const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.18, 10), rubber);
+      tire.rotation.z = Math.PI / 2;
+      tire.position.set(x, 0.25, z);
+      g.add(tire);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.19, 8), chromeMat);
+      hub.rotation.z = Math.PI / 2;
+      hub.position.set(x, 0.25, z);
+      g.add(hub);
+    };
+    addWheel(-0.7, -0.7); addWheel(0.7, -0.7);
+    addWheel(-0.7, 0.7); addWheel(0.7, 0.7);
+
+    // Roof rack
+    const rackMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8, metalness: 0.1 });
+    const rackBar = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.2, 0.04, 0.06), rackMat);
+    rackBar.position.y = bH + 0.58;
+    rackBar.position.z = -0.5;
+    g.add(rackBar);
+    const rackBar2 = rackBar.clone();
+    rackBar2.position.z = 0.5;
+    g.add(rackBar2);
+    for (const side of [-(bW / 2 - 0.2), bW / 2 - 0.2]) {
+      const rackLeg = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.04), rackMat);
+      rackLeg.position.set(side, bH + 0.52, -0.5);
+      g.add(rackLeg);
+      const rackLeg2 = rackLeg.clone();
+      rackLeg2.position.z = 0.5;
+      g.add(rackLeg2);
+    }
+
+    // Surfboard on roof
+    const boardMat = new THREE.MeshStandardMaterial({
+      color: 0xffee88, roughness: 0.5, metalness: 0.05,
+      emissive: 0x332200, emissiveIntensity: 0.15,
+    });
+    const boardShape = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 2.0, 6), boardMat
+    );
+    boardShape.rotation.x = Math.PI / 2;
+    boardShape.position.set(0.15, bH + 0.65, 0);
+    boardShape.scale.set(3.5, 1, 1);
+    g.add(boardShape);
+    // Surfboard fin
+    const finMat = new THREE.MeshStandardMaterial({ color: 0x2255aa, roughness: 0.4, metalness: 0.1 });
+    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.12, 0.15), finMat);
+    fin.position.set(0.15, bH + 0.72, 0.7);
+    g.add(fin);
+
+    bodyMat.dispose(); whiteMat.dispose(); windowMat.dispose();
+    chromeMat.dispose(); rubber.dispose();
     return g;
   }
 

@@ -3057,7 +3057,8 @@ export class Game {
       }
       return;
     }
-    const isBus = e.subtype === "SCHOOL_BUS";
+    const isBus = e.subtype === "SCHOOL_BUS" || e.subtype === "VW_BUS";
+    const isVW = e.subtype === "VW_BUS";
     this.spawner.explodeRival(e);
     if (this.shield) {
       this.shield = false;
@@ -3066,7 +3067,7 @@ export class Game {
       this.ui.setStatus(
         this._isScaloneta
           ? (isBus ? "¡Choque de colectivo — escudo absorbió el golpe!" : "¡Auto rival — escudo absorbió el golpe!")
-          : (isBus ? "School bus hit — shield absorbed the crash!" : "Rival car hit — shield absorbed the crash!"),
+          : (isVW ? "VW bus hit — shield absorbed the crash!" : isBus ? "School bus hit — shield absorbed the crash!" : "Rival car hit — shield absorbed the crash!"),
         CONFIG.STATUS_HIT_MS
       );
       return;
@@ -3088,7 +3089,9 @@ export class Game {
     this.ui.setStatus(
       this._isScaloneta
         ? (isBus ? `¡Choque de colectivo! −${dmg} salud. Estás en ${rhp}.` : `¡Choque rival! −${dmg} salud. Estás en ${rhp}.`)
-        : (isBus ? `School bus crash! −${dmg} health. You're at ${rhp}.` : `Rival car crash! −${dmg} health. You're at ${rhp}.`),
+        : (isVW ? `VW bus crash! −${dmg} health. You're at ${rhp}.`
+          : isBus ? `School bus crash! −${dmg} health. You're at ${rhp}.`
+          : `Rival car crash! −${dmg} health. You're at ${rhp}.`),
       CONFIG.STATUS_HIT_MS
     );
 
