@@ -623,12 +623,43 @@ export class Track {
     const sandMat = new THREE.MeshStandardMaterial({
       color: 0xd4c090, roughness: 0.92, metalness: 0.05,
     });
+    /** Network & infra (E): continuous beach between palms and open water (GridHelper horizon). */
+    const beachWideMat = new THREE.MeshStandardMaterial({
+      color: 0xdcbe90, roughness: 0.9, metalness: 0.02,
+    });
+    const beachWetMat = new THREE.MeshStandardMaterial({
+      color: 0xc9a972, roughness: 0.88, metalness: 0.03,
+    });
+    const isInfraOcean = this.levelId === "E";
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
       const slot = new THREE.Group();
       slot.position.z = z;
       this.propsGroup.add(slot);
       this._propSlots.push(slot);
+
+      if (isInfraOcean) {
+        const dz = this._propSpacing + 0.5;
+        /** Inner edge seaward of back-row palms (~±17); outer spans toward horizon grid */
+        const innerAbs = 19.8;
+        const outerAbs = 58;
+        const stripW = outerAbs - innerAbs;
+        const cx = innerAbs + stripW / 2;
+        for (const side of [-1, 1]) {
+          const wide = new THREE.Mesh(
+            new THREE.BoxGeometry(stripW, 0.08, dz),
+            beachWideMat
+          );
+          wide.position.set(side * cx, -0.01, 0);
+          slot.add(wide);
+          const wet = new THREE.Mesh(
+            new THREE.BoxGeometry(stripW * 0.22, 0.06, dz - 0.2),
+            beachWetMat
+          );
+          wet.position.set(side * (outerAbs - stripW * 0.11), -0.02, 0);
+          slot.add(wet);
+        }
+      }
 
       for (const side of [-1, 1]) {
         const x = side * (8 + Math.random() * 5);
