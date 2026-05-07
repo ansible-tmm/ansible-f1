@@ -2957,6 +2957,7 @@ export class Game {
       return;
     }
     const isGator = e.subtype === "GATOR";
+    const isSheep = e.subtype === "SHEEP";
     if (this.shield) {
       this.spawner.explodeObstacle(e);
       this.shield = false;
@@ -2965,7 +2966,7 @@ export class Game {
       this.ui.setStatus(
         this._isScaloneta
           ? (isGator ? "¡Cocodrilo aplastado — escudo lo bloqueó!" : "¡Obstáculo — escudo lo bloqueó! (Escudo gastado)")
-          : (isGator ? "Gator smashed -- shield blocked it!" : "Obstacle hit -- shield blocked it! (Shield used up)"),
+          : (isSheep ? "Sheep bounced off the shield!" : isGator ? "Gator smashed -- shield blocked it!" : "Obstacle hit -- shield blocked it! (Shield used up)"),
         CONFIG.STATUS_HIT_MS
       );
       return;
@@ -2985,12 +2986,12 @@ export class Game {
     this.shakeUntil = performance.now() + (isGator ? 300 : 200);
     this.shakeAmp = isGator ? 0.45 : 0.35;
     const hp = Math.max(0, Math.floor(this.health));
-    this.ui.setStatus(
-      this._isScaloneta
-        ? (isGator ? `¡Ataque de cocodrilo! -${dmg} salud. Estás en ${hp}.` : `¡Obstáculo! -${dmg} salud (Corte). Estás en ${hp}.`)
-        : (isGator ? `Gator attack! -${dmg} health. You're at ${hp}.` : `Obstacle hit! -${dmg} health (Outage). You're at ${hp}.`),
-      CONFIG.STATUS_HIT_MS
-    );
+    const msg = this._isScaloneta
+      ? (isGator ? `¡Ataque de cocodrilo! -${dmg} salud. Estás en ${hp}.` : `¡Obstáculo! -${dmg} salud (Corte). Estás en ${hp}.`)
+      : (isSheep ? `Sheep hit! -${dmg} health. You're at ${hp}.`
+        : isGator ? `Gator attack! -${dmg} health. You're at ${hp}.`
+        : `Obstacle hit! -${dmg} health (Outage). You're at ${hp}.`);
+    this.ui.setStatus(msg, CONFIG.STATUS_HIT_MS);
 
     if (this.health <= 0) {
       this._gameOver();

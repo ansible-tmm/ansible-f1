@@ -40,6 +40,7 @@ export class Spawner {
     this.rivalTimer = 0;
     this.busTimer = 0;
     this.gatorTimer = 0;
+    this.sheepTimer = 0;
     this._nextRivalColorIdx = 0;
     this.levelId = "A";
     this.scriptedMode = false;
@@ -59,6 +60,7 @@ export class Spawner {
     this.rivalTimer = 0;
     this.busTimer = 0;
     this.gatorTimer = 0;
+    this.sheepTimer = 0;
     this.attractMode = false;
   }
 
@@ -210,6 +212,16 @@ export class Spawner {
       if (!hasGator && this.gatorTimer > 15 && elapsedRunSeconds > 8) {
         this.gatorTimer = 0;
         this._spawnGator();
+      }
+    }
+
+    // Sheep: Level B (Workflow Orchestration / alpine) only
+    if (this.levelId === "B") {
+      this.sheepTimer += dt * timeScale;
+      const hasSheep = this.obstacles.some((o) => o.subtype === "SHEEP");
+      if (!hasSheep && this.sheepTimer > 12 && elapsedRunSeconds > 6) {
+        this.sheepTimer = 0;
+        this._spawnSheep();
       }
     }
 
@@ -1300,6 +1312,102 @@ export class Spawner {
     }
 
     skin.dispose(); belly.dispose(); dark.dispose();
+    return g;
+  }
+
+  // ─── Sheep (Level B — Workflow Orchestration / alpine) ───
+
+  _spawnSheep() {
+    const lane = Math.floor(Math.random() * 3);
+    const z = CONFIG.SPAWN_Z - Math.random() * 4;
+    const mesh = this._makeSheepMesh();
+    mesh.position.set(CONFIG.LANES[lane], 0, z);
+    this.scene.add(mesh);
+    const e = {
+      id: nextId(),
+      kind: "obstacle",
+      subtype: "SHEEP",
+      lane,
+      mesh,
+      z,
+      active: true,
+      worldBox: new THREE.Box3(),
+      hit: { w: 0.8, h: 0.6, d: 0.7 },
+      flashT: 0,
+    };
+    this._syncBox(e);
+    this.obstacles.push(e);
+  }
+
+  _makeSheepMesh() {
+    const g = new THREE.Group();
+
+    const wool = new THREE.MeshStandardMaterial({
+      color: 0xf5f0e8, roughness: 0.95, metalness: 0.0,
+      emissive: 0x444038, emissiveIntensity: 0.15,
+    });
+    const face = new THREE.MeshStandardMaterial({
+      color: 0x2a2018, roughness: 0.85, metalness: 0.05,
+      emissive: 0x0a0804, emissiveIntensity: 0.2,
+    });
+    const legMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1510, roughness: 0.9, metalness: 0.05,
+    });
+
+    // Fluffy body — sphere cluster
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), wool);
+    body.scale.set(1.1, 0.9, 1.3);
+    body.position.set(0, 0.5, 0);
+    g.add(body);
+
+    // Wool tufts
+    for (let i = 0; i < 5; i++) {
+      const tuft = new THREE.Mesh(new THREE.SphereGeometry(0.2 + Math.random() * 0.08, 6, 5), wool);
+      tuft.position.set(
+        (Math.random() - 0.5) * 0.5,
+        0.55 + Math.random() * 0.15,
+        (Math.random() - 0.5) * 0.6
+      );
+      g.add(tuft);
+    }
+
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 7, 5), face);
+    head.position.set(0, 0.6, -0.55);
+    g.add(head);
+
+    // Ears
+    for (const side of [-0.15, 0.15]) {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 5, 4), face);
+      ear.position.set(side, 0.65, -0.45);
+      g.add(ear);
+    }
+
+    // Eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111100 });
+    for (const side of [-0.08, 0.08]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 5, 4), eyeMat);
+      eye.position.set(side, 0.62, -0.72);
+      g.add(eye);
+    }
+
+    // Legs
+    const legPositions = [
+      { x: -0.25, z: -0.25 }, { x: 0.25, z: -0.25 },
+      { x: -0.25, z: 0.25 }, { x: 0.25, z: 0.25 },
+    ];
+    for (const lp of legPositions) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.35, 6), legMat);
+      leg.position.set(lp.x, 0.18, lp.z);
+      g.add(leg);
+    }
+
+    // Tail puff
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 5, 4), wool);
+    tail.position.set(0, 0.5, 0.5);
+    g.add(tail);
+
+    wool.dispose(); face.dispose(); legMat.dispose();
     return g;
   }
 

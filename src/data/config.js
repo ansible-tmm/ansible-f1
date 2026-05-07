@@ -61,7 +61,7 @@ export const CONFIG = {
 
   BOOST_DURATION: 2.8,
   /** Seconds added to an active boost when collecting a playbook/collection */
-  BOOST_EXTEND_ON_PICKUP: 1.2,
+  BOOST_EXTEND_ON_PICKUP: 1.0,
   /** Speed multiplier during boost */
   BOOST_SPEED_MULT: 1.85,
 
