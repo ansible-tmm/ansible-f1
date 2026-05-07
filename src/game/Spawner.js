@@ -779,79 +779,78 @@ export class Spawner {
     e.active = false;
     const idx = this.rivals.indexOf(e);
     if (idx >= 0) this.rivals.splice(idx, 1);
+
+    const debrisGroup = new THREE.Group();
+    debrisGroup.position.copy(pos);
+
+    for (const part of parts) {
+      const p = this._meshForDebrisPart(part);
+      p.position.set(
+        (Math.random() - 0.5) * 0.5,
+        Math.random() * 0.3,
+        (Math.random() - 0.5) * 0.5
+      );
+      debrisGroup.add(p);
+    }
+
+    const velocities = [];
+    for (let i = 0; i < debrisGroup.children.length; i++) {
+      velocities.push(new THREE.Vector3(
+        (Math.random() - 0.5) * 12,
+        3 + Math.random() * 8,
+        (Math.random() - 0.5) * 10
+      ));
+    }
+
+    this.scene.add(debrisGroup);
+
     if (root.parent === this.scene) this.scene.remove(root);
+    this._disposeMeshTree(root);
 
-    requestAnimationFrame(() => {
-      const debrisGroup = new THREE.Group();
-      debrisGroup.position.copy(pos);
-      this.scene.add(debrisGroup);
-
-      for (const part of parts) {
-        const p = this._meshForDebrisPart(part);
-        p.position.set(
-          (Math.random() - 0.5) * 0.5,
-          Math.random() * 0.3,
-          (Math.random() - 0.5) * 0.5
-        );
-        debrisGroup.add(p);
-      }
-
-      const velocities = [];
-      for (let i = 0; i < debrisGroup.children.length; i++) {
-        velocities.push(new THREE.Vector3(
-          (Math.random() - 0.5) * 12,
-          3 + Math.random() * 8,
-          (Math.random() - 0.5) * 10
-        ));
-      }
-
-      let elapsed = 0;
-      const animate = () => {
-        elapsed += 0.016;
-        if (elapsed > 1.2) {
-          this.scene.remove(debrisGroup);
-          debrisGroup.traverse((c) => {
-            if (c.geometry) c.geometry.dispose();
-            if (c.material) {
-              if (Array.isArray(c.material)) c.material.forEach((m) => m.dispose());
-              else c.material.dispose();
-            }
-          });
-          return;
-        }
-        const children = debrisGroup.children;
-        for (let i = 0; i < children.length; i++) {
-          const v = velocities[i];
-          if (!v) continue;
-          children[i].position.x += v.x * 0.016;
-          children[i].position.y += v.y * 0.016;
-          children[i].position.z += v.z * 0.016;
-          v.y -= 15 * 0.016; // gravity
-          children[i].rotation.x += 5 * 0.016;
-          children[i].rotation.z += 3 * 0.016;
-        }
-        const fade = 1 - elapsed / 1.2;
+    let elapsed = 0;
+    const animate = () => {
+      elapsed += 0.016;
+      if (elapsed > 1.2) {
+        this.scene.remove(debrisGroup);
         debrisGroup.traverse((c) => {
-          if (c.isMesh && c.material && c.material.opacity !== undefined) {
-            if (Array.isArray(c.material)) {
-              for (const m of c.material) {
-                if (m) {
-                  m.transparent = true;
-                  m.opacity = fade;
-                }
-              }
-            } else {
-              c.material.transparent = true;
-              c.material.opacity = fade;
-            }
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach((m) => m.dispose());
+            else c.material.dispose();
           }
         });
-        requestAnimationFrame(animate);
-      };
+        return;
+      }
+      const children = debrisGroup.children;
+      for (let i = 0; i < children.length; i++) {
+        const v = velocities[i];
+        if (!v) continue;
+        children[i].position.x += v.x * 0.016;
+        children[i].position.y += v.y * 0.016;
+        children[i].position.z += v.z * 0.016;
+        v.y -= 15 * 0.016; // gravity
+        children[i].rotation.x += 5 * 0.016;
+        children[i].rotation.z += 3 * 0.016;
+      }
+      const fade = 1 - elapsed / 1.2;
+      debrisGroup.traverse((c) => {
+        if (c.isMesh && c.material && c.material.opacity !== undefined) {
+          if (Array.isArray(c.material)) {
+            for (const m of c.material) {
+              if (m) {
+                m.transparent = true;
+                m.opacity = fade;
+              }
+            }
+          } else {
+            c.material.transparent = true;
+            c.material.opacity = fade;
+          }
+        }
+      });
       requestAnimationFrame(animate);
-
-      this._disposeMeshTree(root);
-    });
+    };
+    requestAnimationFrame(animate);
   }
 
   explodeObstacle(e) {
@@ -866,75 +865,74 @@ export class Spawner {
     e.active = false;
     const oi = this.obstacles.indexOf(e);
     if (oi >= 0) this.obstacles.splice(oi, 1);
+
+    const debrisGroup = new THREE.Group();
+    debrisGroup.position.copy(pos);
+
+    for (const part of parts) {
+      const p = this._meshForDebrisPart(part);
+      p.position.set(
+        (Math.random() - 0.5) * 0.8,
+        Math.random() * 0.4,
+        (Math.random() - 0.5) * 0.8
+      );
+      debrisGroup.add(p);
+    }
+
+    const velocities = [];
+    for (let i = 0; i < debrisGroup.children.length; i++) {
+      velocities.push(new THREE.Vector3(
+        (Math.random() - 0.5) * 14,
+        2 + Math.random() * 7,
+        (Math.random() - 0.5) * 12
+      ));
+    }
+
+    this.scene.add(debrisGroup);
+
     if (root.parent === this.scene) this.scene.remove(root);
+    this._disposeMeshTree(root);
 
-    requestAnimationFrame(() => {
-      const debrisGroup = new THREE.Group();
-      debrisGroup.position.copy(pos);
-      this.scene.add(debrisGroup);
-
-      for (const part of parts) {
-        const p = this._meshForDebrisPart(part);
-        p.position.set(
-          (Math.random() - 0.5) * 0.8,
-          Math.random() * 0.4,
-          (Math.random() - 0.5) * 0.8
-        );
-        debrisGroup.add(p);
-      }
-
-      const velocities = [];
-      for (let i = 0; i < debrisGroup.children.length; i++) {
-        velocities.push(new THREE.Vector3(
-          (Math.random() - 0.5) * 14,
-          2 + Math.random() * 7,
-          (Math.random() - 0.5) * 12
-        ));
-      }
-
-      let elapsed = 0;
-      const animate = () => {
-        elapsed += 0.016;
-        if (elapsed > 1.0) {
-          this.scene.remove(debrisGroup);
-          debrisGroup.traverse((c) => {
-            if (c.geometry) c.geometry.dispose();
-            if (c.material) {
-              if (Array.isArray(c.material)) c.material.forEach((m) => m.dispose());
-              else c.material.dispose();
-            }
-          });
-          return;
-        }
-        const children = debrisGroup.children;
-        for (let i = 0; i < children.length; i++) {
-          const v = velocities[i];
-          if (!v) continue;
-          children[i].position.x += v.x * 0.016;
-          children[i].position.y += v.y * 0.016;
-          children[i].position.z += v.z * 0.016;
-          v.y -= 18 * 0.016;
-          children[i].rotation.x += 6 * 0.016;
-          children[i].rotation.z += 4 * 0.016;
-        }
-        const fade = 1 - elapsed / 1.0;
+    let elapsed = 0;
+    const animate = () => {
+      elapsed += 0.016;
+      if (elapsed > 1.0) {
+        this.scene.remove(debrisGroup);
         debrisGroup.traverse((c) => {
-          if (c.isMesh && c.material) {
-            if (Array.isArray(c.material)) {
-              for (const m of c.material) {
-                if (m) m.opacity = fade;
-              }
-            } else {
-              c.material.opacity = fade;
-            }
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach((m) => m.dispose());
+            else c.material.dispose();
           }
         });
-        requestAnimationFrame(animate);
-      };
+        return;
+      }
+      const children = debrisGroup.children;
+      for (let i = 0; i < children.length; i++) {
+        const v = velocities[i];
+        if (!v) continue;
+        children[i].position.x += v.x * 0.016;
+        children[i].position.y += v.y * 0.016;
+        children[i].position.z += v.z * 0.016;
+        v.y -= 18 * 0.016;
+        children[i].rotation.x += 6 * 0.016;
+        children[i].rotation.z += 4 * 0.016;
+      }
+      const fade = 1 - elapsed / 1.0;
+      debrisGroup.traverse((c) => {
+        if (c.isMesh && c.material) {
+          if (Array.isArray(c.material)) {
+            for (const m of c.material) {
+              if (m) m.opacity = fade;
+            }
+          } else {
+            c.material.opacity = fade;
+          }
+        }
+      });
       requestAnimationFrame(animate);
-
-      this._disposeMeshTree(root);
-    });
+    };
+    requestAnimationFrame(animate);
   }
 
   _makeRivalMesh(colors) {

@@ -1627,38 +1627,75 @@ export class Track {
       m.rotation.z = rz;
       skylineGroup.add(m);
     };
+    /** Wide low mesa buttress — horizontal bulk reads as desert ridge, not a tapering tree */
+    const addMesaSlab = (mat, cx, y0, cz, rx, rz, hy, ry) => {
+      const m = new THREE.Mesh(
+        new THREE.CylinderGeometry(rx, rx * 1.06, hy, seg, 1),
+        mat
+      );
+      m.position.set(cx, y0 + hy * 0.5, cz);
+      m.rotation.y = ry;
+      m.scale.set(1, 1, rz / rx);
+      skylineGroup.add(m);
+    };
 
-    /** Tall massifs only on left/right — center stays low so the road reads toward open sky, not a wall */
-    const massifs = [
+    /**
+     * Flank silhouettes stay wide/low (mesa), not stacks of narrowing cones (= evergreens in the corners).
+     * Inner massifs stay a bit peakier — away from the extreme left/right frame.
+     */
+    const flankMassifs = [
       {
-        x: -86, z: -4, ry: 0.38, layers: [
-          { r: 22, h: 22, y: 0, m: shadow },
-          { r: 17, h: 20, y: 14, m: rock },
-          { r: 12, h: 17, y: 26, m: sunlit },
-          { r: 7, h: 12, y: 38, m: rim },
+        x: -90, z: -2, ry: 0.32, slabs: [
+          { rx: 26, rz: 10, hy: 9, y0: 0, m: shadow },
+          { rx: 21, rz: 9, hy: 8, y0: 9, m: rock },
+          { rx: 15, rz: 8, hy: 6, y0: 17, m: sunlit },
         ],
+        wings: [{ dx: -18, dz: -4 }, { dx: 12, dz: -2 }],
       },
       {
+        x: 94, z: 6, ry: -0.34, slabs: [
+          { rx: 24, rz: 9, hy: 8, y0: 0, m: shadow },
+          { rx: 18, rz: 8, hy: 7, y0: 8, m: rock },
+          { rx: 13, rz: 7, hy: 6, y0: 15, m: sunlit },
+        ],
+        wings: [{ dx: 14, dz: -3 }, { dx: -14, dz: -2 }],
+      },
+    ];
+    for (const fm of flankMassifs) {
+      for (const S of fm.slabs) {
+        addMesaSlab(S.m, fm.x, S.y0, fm.z, S.rx, S.rz, S.hy, fm.ry);
+      }
+      for (const w of fm.wings) {
+        const wy = 5 + Math.abs(w.dx) * 0.04;
+        addMesaSlab(
+          rock,
+          fm.x + w.dx,
+          0,
+          fm.z + w.dz,
+          13,
+          10,
+          wy,
+          fm.ry + (w.dx < 0 ? -0.12 : 0.1)
+        );
+      }
+    }
+
+    /** Inner ridges: stacked cones OK here — breadth reads from camera, height less “tree tapered” */
+    const massifs = [
+      {
         x: -54, z: 10, ry: -0.28, layers: [
-          { r: 19, h: 19, y: 0, m: shadow },
-          { r: 15, h: 16, y: 12, m: rock },
-          { r: 11, h: 14, y: 23, m: sunlit },
-          { r: 6, h: 10, y: 33, m: rim },
+          { r: 20, h: 15, y: 0, m: shadow },
+          { r: 14, h: 13, y: 10, m: rock },
+          { r: 9, h: 10, y: 21, m: sunlit },
+          { r: 5.5, h: 8, y: 28, m: rim },
         ],
       },
       {
         x: 62, z: -2, ry: 0.22, layers: [
-          { r: 23, h: 24, y: 0, m: rock },
-          { r: 18, h: 21, y: 16, m: sunlit },
-          { r: 13, h: 16, y: 31, m: rim },
-          { r: 5.5, h: 9, y: 42, m: rim },
-        ],
-      },
-      {
-        x: 94, z: 6, ry: -0.42, layers: [
-          { r: 17, h: 18, y: 0, m: shadow },
-          { r: 14, h: 15, y: 12, m: rock },
-          { r: 10, h: 13, y: 23, m: sunlit },
+          { r: 22, h: 17, y: 0, m: rock },
+          { r: 15, h: 15, y: 12, m: sunlit },
+          { r: 10, h: 11, y: 24, m: rim },
+          { r: 5.5, h: 8, y: 32, m: rim },
         ],
       },
     ];
@@ -1668,16 +1705,14 @@ export class Track {
       }
     }
 
-    /** Jagged spires (offset from centerline) */
+    /** No pencil spires near frame edges — only mid-distance peaks, stocky silhouette */
     const spires = [
-      { x: -72, z: -14, r: 6, h: 26, ry: 0.5 },
-      { x: -38, z: -18, r: 7, h: 32, ry: -0.35 },
-      { x: 48, z: -16, r: 7.5, h: 34, ry: 0.3 },
-      { x: 78, z: -12, r: 6, h: 28, ry: -0.25 },
+      { x: -42, z: -16, r: 9.5, h: 22, ry: -0.3 },
+      { x: 50, z: -14, r: 10, h: 24, ry: 0.26 },
     ];
     for (const s of spires) {
       addCone(sunlit, s.x, 0, s.z, s.r, s.h, s.ry);
-      addCone(shadow, s.x + 1.2, 8, s.z - 1.5, s.r * 0.45, s.h * 0.4, s.ry + 0.2, 0.12);
+      addCone(shadow, s.x + 1.4, s.h * 0.28, s.z - 1.8, s.r * 0.52, s.h * 0.35, s.ry + 0.15, 0.08);
     }
 
     /** Center “pass”: only low berms — keeps vanishing point open */
@@ -1690,12 +1725,12 @@ export class Track {
       addCone(rock, s.x, 0, s.z, s.r, s.h, (s.x % 7) * 0.06);
     }
 
-    /** Hard edge fins for breakup (not smooth domes) */
+    /** Slabs at frame edges: short + broad so they read as rock strata, not tall trunks */
     const fins = [
-      { x: -98, y: 8, z: -28, sx: 2.2, sy: 18, sz: 7, ry: 0.35 },
-      { x: -66, y: 14, z: -22, sx: 2.5, sy: 22, sz: 8, ry: -0.2 },
-      { x: 40, y: 16, z: -20, sx: 2.4, sy: 24, sz: 9, ry: 0.28 },
-      { x: 82, y: 12, z: -24, sx: 2.1, sy: 20, sz: 7, ry: -0.32 },
+      { x: -98, y: 7, z: -28, sx: 4.2, sy: 11, sz: 9, ry: 0.32 },
+      { x: -66, y: 10, z: -22, sx: 3.8, sy: 14, sz: 8, ry: -0.18 },
+      { x: 40, y: 12, z: -20, sx: 3.6, sy: 15, sz: 9, ry: 0.24 },
+      { x: 82, y: 8, z: -24, sx: 4, sy: 12, sz: 8, ry: -0.28 },
     ];
     for (const f of fins) {
       const b = new THREE.Mesh(
@@ -1706,8 +1741,8 @@ export class Track {
       skylineGroup.add(b);
     }
     const wedges = [
-      { x: -100, y: 9, z: -34, sx: 8, sy: 14, sz: 12, ry: 0.2 },
-      { x: -78, y: 6, z: -40, sx: 6, sy: 11, sz: 9, ry: -0.15 },
+      { x: -100, y: 7, z: -34, sx: 10, sy: 10, sz: 12, ry: 0.2 },
+      { x: -78, y: 5, z: -40, sx: 8, sy: 8, sz: 9, ry: -0.15 },
     ];
     for (const q of wedges) {
       const w = new THREE.Mesh(
@@ -1718,7 +1753,7 @@ export class Track {
       skylineGroup.add(w);
     }
 
-    /** Secondary chunky crags */
+    /** Edge crags: squat so they don’t read as round tree crowns */
     const crags = [
       { x: -104, z: 2, sc: 5.5 },
       { x: 32, z: 8, sc: 6.2 },
@@ -1729,8 +1764,10 @@ export class Track {
         new THREE.IcosahedronGeometry(c.sc, 0),
         rock
       );
-      d.position.set(c.x, c.sc * 0.6, c.z);
+      d.position.set(c.x, c.sc * 0.45, c.z);
       d.rotation.set(0.22, c.x * 0.01, -0.15);
+      const edge = Math.abs(c.x) > 95 ? 1.55 : 1.2;
+      d.scale.set(edge, 0.55, edge * 0.95);
       skylineGroup.add(d);
     }
   }

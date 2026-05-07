@@ -2556,16 +2556,14 @@ export class Game {
   }
 
   /**
-   * Obstacle-hit branch: obstacle-hit.wav fires in parent (`showPopup`). Stagger VO + crush DOM so we
-   * do not start two clips + innerHTML bursts on the same frame (first-hit jank).
+   * VO + overlays same frame as the smash; debris now spawns in Spawner synchronously so no “dead”
+   * frame between obstacle removal and particles. Crooner clips are in global `preload(Object.values(SFX))`.
    */
   _croonerSmashFeedback() {
+    const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
     this.ui.showPickupPopup("+50,000");
-    requestAnimationFrame(() => {
-      const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
-      this.ui.showHippoCrush(line);
-    });
-    setTimeout(() => this._playCroonerSfx(0.72), 115);
+    this.ui.showHippoCrush(line);
+    this._playCroonerSfx(0.7);
   }
 
   _ogreSmashLines = [
