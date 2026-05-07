@@ -403,16 +403,6 @@ export const LEVELS = {
     music: "./assets/audio/bgm-swamp.m4a",
     billboards: [
       {
-        id: "demo10",
-        label: "Security Automation with AAP",
-        accent: 0x66aa44,
-        logo: "./assets/security_automation_with_aap_arcade.png",
-        embed:
-          "https://demo.arcade.software/kS1DsZIb5aqO9s5rvw7T?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
-        embedTitle: "Security Automation with AAP",
-        logoObjectFit: "cover",
-      },
-      {
         id: "demo11",
         label: "Ansible secrets + Vault",
         accent: 0xaacc22,
