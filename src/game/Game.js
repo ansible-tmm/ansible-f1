@@ -66,6 +66,7 @@ const SFX = {
   TRAIN_EXPLOSION: "./assets/audio/train-explosion.m4a",
   TRAIN_FINALE: "./assets/audio/train-finale.m4a",
   SCALONETA: "./assets/audio/scaloneta.m4a",
+  TREX_ROAR: "./assets/audio/trex-roar.m4a",
   OGRE_GRUNT_1: "./assets/audio/ogre-grunt-1.mp4",
   OGRE_GRUNT_2: "./assets/audio/ogre-grunt-2.mp4",
   CROONER_1: "./assets/audio/decal.m4a",
@@ -509,11 +510,11 @@ export class Game {
           play(SFX.BOOST_WHOOSH, 0.9);
           this._secretBuffer = "";
         }
-        if (this.currentDriver === "anshul" && this.player.carType !== "trex" && this._secretBuffer.endsWith("leavemealone")) {
+        if (this.currentDriver === "anshul" && this.player.carType !== "trex" && this._secretBuffer.endsWith("demodemodemo")) {
           this._spawnTransformSmoke();
           this.player.swapCar("trex");
           this.ui.showHippoCrush("🦖 T-REX MODE 🦖");
-          play(SFX.OBSTACLE_HIT, 0.9);
+          play(SFX.TREX_ROAR, 0.9);
           this._secretBuffer = "";
         }
         if (this.currentDriver === "remy" && this.player.carType !== "ogre" && this._secretBuffer.endsWith("quest")) {
@@ -577,7 +578,7 @@ export class Game {
       andrius: { car: "semi_truck", label: "🚛 CHUNKY MODE 🚛",        sfx: SFX.HORN_ANDRIUS },
       leo:     { car: "scaloneta",  label: "🇦🇷 LA SCALONETA 🇦🇷",      sfx: SFX.SCALONETA, extra: () => this.ui.setScalonetaHud(true) },
       alex:    { car: "f16",        label: "✈️ TOP GUN MODE ✈️",        sfx: SFX.BOOST_WHOOSH },
-      anshul:  { car: "trex",       label: "🦖 T-REX MODE 🦖",         sfx: SFX.OBSTACLE_HIT },
+      anshul:  { car: "trex",       label: "🦖 T-REX MODE 🦖",         sfx: SFX.TREX_ROAR },
       remy:    { car: "ogre",       label: "🧌 OGRE MODE 🧌",          sfx: null, extra: () => { this._playOgreSfx(0.9); this.track.setCastle(true); startBgm(QUEST_BGM, 0.15); } },
       justin:  { car: "crooner",    label: "🎤 THE DRIVING<br>CROONER 🎤", sfx: null, extra: () => this._playCroonerSfx(0.9) },
       roger:   { car: "timetrain",  label: "🚂 TIME TRAIN<br>MODE 🚂",  sfx: SFX.TRAIN_WHISTLE, extra: () => { this._trainHitCount = 0; } },
@@ -928,6 +929,8 @@ export class Game {
     }
     if (this.player.carType === "hippo") {
       play(SFX.HIPPO_MODE, 0.9);
+    } else if (this.player.carType === "trex") {
+      play(SFX.TREX_ROAR, 0.9);
     } else if (this.player.carType === "timetrain") {
       play(SFX.TRAIN_WHISTLE, 0.9);
     } else if (this.player.carType === "ogre") {
@@ -2935,6 +2938,8 @@ export class Game {
           play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
         } else if (this.player.carType === "scaloneta") {
           play(SFX.SCALONETA, 0.6);
+        } else if (this.player.carType === "trex") {
+          play(SFX.TREX_ROAR, 0.7);
         } else if (this.player.carType === "ogre") {
           this._playOgreSfx(0.8);
         } else if (this.player.carType === "crooner") {
@@ -3032,6 +3037,8 @@ export class Game {
           play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
         } else if (this.player.carType === "scaloneta") {
           play(SFX.SCALONETA, 0.6);
+        } else if (this.player.carType === "trex") {
+          play(SFX.TREX_ROAR, 0.7);
         } else if (this.player.carType === "ogre") {
           this._playOgreSfx(0.8);
         } else if (this.player.carType === "crooner") {
