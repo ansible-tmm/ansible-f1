@@ -640,12 +640,12 @@ export class Track {
 
       if (isInfraOcean) {
         const dz = this._propSpacing + 0.5;
-        /** Flush to road apron (deck is 22u wide → ±11): road → beach → ocean grid — not water → beach. */
-        const innerAbs = 11.25;
-        const outerAbs = 58;
+        /** Thin shoulder sand: starts just past edge strips (±5.8); ends before open water grid (deck ±11). */
+        const innerAbs = 6.05;
+        const outerAbs = 12.4;
         const stripW = outerAbs - innerAbs;
         const cx = innerAbs + stripW / 2;
-        /** Above GridHelper at y≈0.01 so sand wins over blue lines */
+        /** Above GridHelper at y≈0.01 */
         const beachY = 0.038;
         for (const side of [-1, 1]) {
           const wide = new THREE.Mesh(
@@ -655,10 +655,10 @@ export class Track {
           wide.position.set(side * cx, beachY, 0);
           slot.add(wide);
           const wet = new THREE.Mesh(
-            new THREE.BoxGeometry(stripW * 0.22, 0.07, dz - 0.2),
+            new THREE.BoxGeometry(Math.max(1.1, stripW * 0.35), 0.07, dz - 0.2),
             beachWetMat
           );
-          wet.position.set(side * (outerAbs - stripW * 0.11), beachY - 0.006, 0);
+          wet.position.set(side * (outerAbs - stripW * 0.22), beachY - 0.006, 0);
           slot.add(wet);
         }
       }
