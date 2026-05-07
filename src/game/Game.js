@@ -2917,17 +2917,19 @@ export class Game {
     if (this.player.isAirborne) {
       this.spawner.explodeObstacle(e);
       this.ui.setStatus(this._isScaloneta ? "🛹 ¡Saltó por encima!" : "🛹 Jumped right over it!", 1200);
-      play(SFX.OBSTACLE_HIT, 0.4);
+      play(isSheep ? SFX.SHEEP_BAH : SFX.OBSTACLE_HIT, 0.4);
       return;
     }
     if (this.player.isTimeTravelInvisible) {
       this.spawner.explodeObstacle(e);
+      if (isSheep) play(SFX.SHEEP_BAH, 0.6);
       return;
     }
     /** DS stays “cheater” for leaderboards only — trench hits use normal damage below. */
     if (this._isCheater() && this.currentLevel !== "DS") {
       const pos = this.spawner.explodeCheater(e);
       this._spawnCheaterBurst(pos);
+      if (isSheep) play(SFX.SHEEP_BAH, 0.8);
       const showPopup = this._cheaterPopupAllowed();
       if (showPopup && this.player.carType !== "crooner") {
         play(SFX.OBSTACLE_HIT, 0.6);
@@ -2964,6 +2966,7 @@ export class Game {
       this.shield = false;
       this.player.setShieldActive(false);
       play(SFX.SHIELD_HIT, 0.7);
+      if (isSheep) play(SFX.SHEEP_BAH, 0.8);
       this.ui.setStatus(
         this._isScaloneta
           ? (isGator ? "¡Cocodrilo aplastado — escudo lo bloqueó!" : "¡Obstáculo — escudo lo bloqueó! (Escudo gastado)")
