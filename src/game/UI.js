@@ -263,7 +263,25 @@ export class UI {
           if (this.onBillboardClose) this.onBillboardClose();
         }
       });
+      this.el.billboardOverlay.addEventListener("mousemove", () => {
+        if (!this.el.billboardOverlay.classList.contains("hidden") &&
+            document.activeElement && document.activeElement.tagName === "IFRAME") {
+          document.body.focus();
+        }
+      });
     }
+
+    const escCloseBillboard = (e) => {
+      if (e.code === "Escape" && this.el.billboardOverlay &&
+          !this.el.billboardOverlay.classList.contains("hidden")) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onBillboardClose) this.onBillboardClose();
+        return true;
+      }
+      return false;
+    };
+    window.addEventListener("keydown", (e) => { escCloseBillboard(e); }, true);
 
     document.addEventListener("keydown", (e) => {
       if (e.code === "Escape" && this.el.tutorialOverlay &&
@@ -273,13 +291,7 @@ export class UI {
         this._closeTutorialToMenu();
         return;
       }
-      if (e.code === "Escape" && this.el.billboardOverlay &&
-          !this.el.billboardOverlay.classList.contains("hidden")) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.onBillboardClose) this.onBillboardClose();
-        return;
-      }
+      if (escCloseBillboard(e)) return;
       if (e.code === "Escape" && this._menuEscapeBack()) {
         e.preventDefault();
         e.stopPropagation();
