@@ -593,8 +593,9 @@ export const LEVELS = {
     pathSegment: "AAP-101",
     name: "Red Hat Ansible 101",
     subtitle: "Operator / ops quickstart",
-    road:     0x2a2a30,
-    roadEmissive: 0x040408,
+    /** Lighter asphalt than old near-black so dark cars stay visible on night Durham */
+    road:     0x5a5e6a,
+    roadEmissive: 0x161a24,
     edge:     0x1a1a2e,
     edgeEmissive: 0x110022,
     laneMarker: 0xffcc00,

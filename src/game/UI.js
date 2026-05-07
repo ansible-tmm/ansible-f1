@@ -1966,7 +1966,7 @@ export class UI {
       { road: "#445566", edge: "#3388aa", lane: "#ffffff", side: "#2266aa", sky: "#4488bb", scenery: "water" },
       { road: "#667788", edge: "#8899aa", lane: "#ccddff", side: "#dde8f0", sky: "#aabbcc", scenery: "snow" },
       { road: "#555555", edge: "#cc8844", lane: "#ffdd44", side: "#8a9a5a", sky: "#6699cc", scenery: "coast" },
-      { road: "#2a2a30", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
+      { road: "#5a5e6a", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
       { road: "#4a4c54", edge: "#5a5c64", lane: "#9aa0a8", side: "#383a42", sky: "#050508", scenery: "trench" },
     ];
 
