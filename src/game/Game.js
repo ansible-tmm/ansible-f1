@@ -528,6 +528,7 @@ export class Game {
         if (this.currentDriver === "justin" && this.player.carType !== "crooner" && this._secretBuffer.endsWith("crooner")) {
           this._spawnTransformSmoke();
           this.player.swapCar("crooner");
+          this._primeCroonerSfxBuffers();
           this.ui.showHippoCrush("🎤 THE DRIVING<br>CROONER 🎤");
           this._playCroonerSfx(0.9);
           this._secretBuffer = "";
@@ -587,6 +588,7 @@ export class Game {
     if (!s || ct === s.car) return;
     this._spawnTransformSmoke();
     this.player.swapCar(s.car);
+    if (s.car === "crooner") this._primeCroonerSfxBuffers();
     if (d === "nuno") { this.ui.showHippoAnnounce(); } else { this.ui.showHippoCrush(s.label); }
     if (s.sfx) play(s.sfx, 0.9);
     if (s.extra) s.extra();
@@ -1140,6 +1142,7 @@ export class Game {
     this.ui.showPause(false);
     this.ui.showHud(true);
     this.ui.setScalonetaHud(this._isScaloneta);
+    if (this.player.carType === "crooner") this._primeCroonerSfxBuffers();
     if (isDs) {
       this.ui.hideAllTutorialUI();
       this.ui.showSkipTutorial(false);
@@ -1517,6 +1520,7 @@ export class Game {
     if (d && this.player.carType !== d.car) {
       this.player.swapCar(d.car);
     }
+    if (this.player.carType === "crooner") this._primeCroonerSfxBuffers();
     this.ui.setScalonetaHud(false);
     this._rainbowRoad = false;
     this.track.setRainbow(false);
@@ -1580,6 +1584,7 @@ export class Game {
     this.currentDriver = driverId;
     setLastDriver(driverId);
     this.player.swapCar(d.car);
+    if (d.car === "crooner") this._primeCroonerSfxBuffers();
     this.ui.setActiveDriver(driverId);
   }
 
@@ -2541,9 +2546,26 @@ export class Game {
   }
 
   _croonerSfxPool = [SFX.CROONER_1, SFX.CROONER_2, SFX.CROONER_3, SFX.CROONER_4, SFX.CROONER_5];
+  /** Decode crooner VO clips early so the first smash is not stacked with obstacle-hit decode work. */
+  _primeCroonerSfxBuffers() {
+    preload(this._croonerSfxPool).catch(() => {});
+  }
   _playCroonerSfx(vol = 0.8) {
     const clip = this._croonerSfxPool[Math.floor(Math.random() * this._croonerSfxPool.length)];
     play(clip, vol);
+  }
+
+  /**
+   * Obstacle-hit branch: obstacle-hit.wav fires in parent (`showPopup`). Stagger VO + crush DOM so we
+   * do not start two clips + innerHTML bursts on the same frame (first-hit jank).
+   */
+  _croonerSmashFeedback() {
+    this.ui.showPickupPopup("+50,000");
+    requestAnimationFrame(() => {
+      const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
+      this.ui.showHippoCrush(line);
+    });
+    setTimeout(() => this._playCroonerSfx(0.72), 115);
   }
 
   _ogreSmashLines = [
@@ -2925,10 +2947,7 @@ export class Game {
       } else if (this.player.carType === "crooner") {
         this.score += 50000;
         if (showPopup) {
-          this._playCroonerSfx(0.8);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
-          this.ui.showHippoCrush(line);
+          this._croonerSmashFeedback();
         }
       } else if (this.player.carType === "timetrain") {
         this.score += 50000;
@@ -3069,10 +3088,7 @@ export class Game {
       } else if (this.player.carType === "crooner") {
         this.score += 50000;
         if (showPopup) {
-          this._playCroonerSfx(0.8);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._croonerSmashLines[Math.floor(Math.random() * this._croonerSmashLines.length)];
-          this.ui.showHippoCrush(line);
+          this._croonerSmashFeedback();
         }
       } else if (this.player.carType === "timetrain") {
         this.score += 50000;

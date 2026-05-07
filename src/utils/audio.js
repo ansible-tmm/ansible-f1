@@ -1,5 +1,7 @@
 let ctx = null;
 const buffers = {};
+/** Coalesce parallel loadBuffer(url) so preload + first play never decode the same file twice. */
+const _bufferLoadPromises = {};
 let unlocked = false;
 
 let _sfxMuted = false;
@@ -27,12 +29,22 @@ window.addEventListener("keydown", unlock, { once: true });
 
 async function loadBuffer(url) {
   if (buffers[url]) return buffers[url];
-  const c = getContext();
-  const res = await fetch(url);
-  const arr = await res.arrayBuffer();
-  const buf = await c.decodeAudioData(arr);
-  buffers[url] = buf;
-  return buf;
+  if (_bufferLoadPromises[url]) return _bufferLoadPromises[url];
+
+  const p = (async () => {
+    try {
+      const c = getContext();
+      const res = await fetch(url);
+      const arr = await res.arrayBuffer();
+      const buf = await c.decodeAudioData(arr);
+      buffers[url] = buf;
+      return buf;
+    } finally {
+      delete _bufferLoadPromises[url];
+    }
+  })();
+  _bufferLoadPromises[url] = p;
+  return p;
 }
 
 export async function preload(urls) {

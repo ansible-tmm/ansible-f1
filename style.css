@@ -2179,7 +2179,7 @@ body {
   left: 50%;
   transform: translate(-50%, 0) scale(0);
   font-family: "Orbitron", sans-serif;
-  font-size: 5rem;
+  font-size: 4.35rem;
   font-weight: 900;
   color: #ffdd00;
   text-shadow:
@@ -2236,7 +2236,7 @@ body {
 
 .hippo-announce.crush {
   animation: hippo-crush 3.8s ease-out forwards;
-  font-size: 3.85rem;
+  font-size: 3.35rem;
   color: #ff4400;
   text-shadow:
     0 0 20px rgba(255, 200, 0, 0.9),
@@ -2641,14 +2641,14 @@ body {
 @media (max-width: 768px), (pointer: coarse) {
   .hippo-announce {
     bottom: 9%;
-    font-size: 2.2rem;
+    font-size: 1.95rem;
     letter-spacing: 0.08em;
   }
   .hippo-announce.show {
     animation: hippo-smash-mobile 2s ease-out forwards;
   }
   .hippo-announce.crush {
-    font-size: 1.8rem;
+    font-size: 1.58rem;
     animation: hippo-crush-mobile 2.5s ease-out forwards;
   }
   @keyframes hippo-smash-mobile {
