@@ -2926,24 +2926,37 @@ body {
 /* ─── Mobile tutorial checklist + pause repositioning ─── */
 @media (max-width: 768px), (pointer: coarse) {
   .tutorial-checklist {
-    top: auto;
-    right: auto;
-    bottom: 5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 200px;
-    max-width: 260px;
+    top: auto !important;
+    right: auto !important;
+    bottom: 2.5rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    min-width: 160px;
+    max-width: 220px;
     text-align: center;
     animation: none;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
   }
   .tutorial-checklist-header {
+    font-size: 0.5rem;
+    margin-bottom: 0.3rem;
+    padding-bottom: 0.25rem;
+  }
+  .tutorial-checklist-item {
+    font-size: 0.6rem;
+    padding: 0.2rem 0;
+  }
+  .btn-skip-tutorial {
     font-size: 0.55rem;
+    padding: 0.3rem 0.6rem;
+    margin-top: 0.3rem;
   }
   .tutorial-progress {
     font-family: "Press Start 2P", monospace;
-    font-size: 0.5rem;
+    font-size: 0.45rem;
     color: rgba(0, 255, 204, 0.7);
-    margin-top: 0.4rem;
+    margin-top: 0.3rem;
     letter-spacing: 0.06em;
   }
   .touch-pause {
