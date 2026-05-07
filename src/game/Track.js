@@ -66,6 +66,8 @@ export class Track {
     this._roadDeck = null;
     /** Level G ocean strips share this material; `update` advances `uTime`. */
     this._roiOceanMat = null;
+    /** Desert sand texture ref for scroll animation. */
+    this._desertSandMap = null;
 
     this._road();
     this._laneMarkers();
@@ -144,6 +146,8 @@ export class Track {
     roughness.repeat.set(7, 11);
 
     this._devDesertSandTex = { map, roughness };
+    this._desertSandMap = map;
+    this._desertSandRoughnessMap = roughness;
     return this._devDesertSandTex;
   }
 
@@ -2665,6 +2669,12 @@ export class Track {
 
   update(dt, worldSpeed) {
     const dz = worldSpeed * dt;
+
+    if (this._desertSandMap) {
+      const sandScroll = (worldSpeed * dt) / 400 * 11;
+      this._desertSandMap.offset.y += sandScroll;
+      if (this._desertSandRoughnessMap) this._desertSandRoughnessMap.offset.y += sandScroll;
+    }
 
     if (this._roiOceanMat) {
       this._roiOceanMat.uniforms.uTime.value += dt;
