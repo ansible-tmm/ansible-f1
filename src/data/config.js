@@ -414,10 +414,13 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo10",
-        label: "Security automation with AAP",
+        label: "Security Automation with AAP",
         accent: 0x66aa44,
-        embed: "https://interact.redhat.com/share/kS1DsZIb5aqO9s5rvw7T",
-        embedTitle: "Red Hat Ansible Automation Platform for security automation",
+        logo: "./assets/security_automation_with_aap_arcade.png",
+        embed:
+          "https://demo.arcade.software/kS1DsZIb5aqO9s5rvw7T?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
+        embedTitle: "Security Automation with AAP",
+        logoObjectFit: "cover",
       },
       {
         id: "demo11",
@@ -431,11 +434,14 @@ export const LEVELS = {
       },
       {
         id: "demo12",
-        label: "Vault & Ansible integration",
+        label: "Multilayered Policy enforcement",
         accent: 0x44aa88,
+        logo: "./assets/multilayered_policy_enforcement_aap_arcade.png",
         embed:
           "https://demo.arcade.software/WSh5uLpMzwN5Eb4ojTK7?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
-        embedTitle: "Vault & Ansible — Arcade flow",
+        embedTitle:
+          "Multilayered Policy enforcement with Ansible Automation Platform",
+        logoObjectFit: "cover",
       },
     ],
   },
