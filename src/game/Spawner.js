@@ -1650,20 +1650,12 @@ export class Spawner {
     beltLine.position.y = baseY + bH * 0.45;
     g.add(beltLine);
 
-    // Rounded roof
+    // Flat roof with slight thickness
     const roof = new THREE.Mesh(
-      new THREE.BoxGeometry(bW - 0.1, 0.12, bD - 0.1), whiteMat.clone()
+      new THREE.BoxGeometry(bW - 0.05, 0.1, bD - 0.05), whiteMat.clone()
     );
-    roof.position.y = baseY + bH * 0.9 + 0.06;
+    roof.position.y = baseY + bH * 0.9 + 0.05;
     g.add(roof);
-    const roofRound = new THREE.Mesh(
-      new THREE.CylinderGeometry(bW * 0.46, bW * 0.48, bD - 0.3, 10, 1, false, 0, Math.PI),
-      whiteMat.clone()
-    );
-    roofRound.rotation.x = Math.PI / 2;
-    roofRound.rotation.z = Math.PI;
-    roofRound.position.y = baseY + bH * 0.9 + 0.1;
-    g.add(roofRound);
 
     // Front face — distinctive VW split: white upper V, colored lower
     const frontUpper = new THREE.Mesh(new THREE.BoxGeometry(bW - 0.05, bH * 0.4, 0.08), whiteMat.clone());
@@ -1713,10 +1705,9 @@ export class Spawner {
       g.add(frameBot);
     }
 
-    // Rear window
-    const rearWin = new THREE.Mesh(new THREE.PlaneGeometry(bW * 0.5, bH * 0.25), windowMat);
-    rearWin.position.set(0, baseY + bH * 0.7, bD / 2 + 0.01);
-    rearWin.rotation.y = Math.PI;
+    // Rear window — slightly inset box so it's visible from behind
+    const rearWin = new THREE.Mesh(new THREE.BoxGeometry(bW * 0.5, bH * 0.25, 0.04), windowMat);
+    rearWin.position.set(0, baseY + bH * 0.7, bD / 2 + 0.03);
     g.add(rearWin);
 
     // Chrome front bumper (curved look)
