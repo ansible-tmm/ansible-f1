@@ -15,6 +15,9 @@ function nextId() {
   return _id;
 }
 
+/** Death Star TIE rivals hover above the trench deck (not wheel height). */
+const DS_TIE_FLIGHT_Y = CONFIG.PLAYER_Y + 0.5;
+
 const RIVAL_COLORS = [
   { livery: 0xff4422, accent: 0xffaa00, emissive: 0x301000, glow: 0xff6600 },
   { livery: 0xeedd00, accent: 0x222222, emissive: 0x302800, glow: 0xffee44 },
@@ -40,6 +43,8 @@ export class Spawner {
     this._nextRivalColorIdx = 0;
     this.levelId = "A";
     this.scriptedMode = false;
+    /** Main-menu attract loop: fewer score pickups so the demo isn’t cluttered. */
+    this.attractMode = false;
   }
 
   reset() {
@@ -54,11 +59,12 @@ export class Spawner {
     this.rivalTimer = 0;
     this.busTimer = 0;
     this.gatorTimer = 0;
+    this.attractMode = false;
   }
 
-  _removeEntity(e) {
-    if (e.mesh.parent === this.scene) this.scene.remove(e.mesh);
-    e.mesh.traverse((c) => {
+  _disposeMeshTree(mesh) {
+    if (!mesh) return;
+    mesh.traverse((c) => {
       if (c.geometry) c.geometry.dispose();
       if (c.material) {
         const m = c.material;
@@ -66,6 +72,53 @@ export class Spawner {
         else m.dispose();
       }
     });
+  }
+
+  _removeEntity(e) {
+    if (!e.mesh) return;
+    if (e.mesh.parent === this.scene) this.scene.remove(e.mesh);
+    this._disposeMeshTree(e.mesh);
+  }
+
+  /**
+   * Cheaply remove an obstacle or rival without cloning debris geometry.
+   * Returns world position so caller can spawn a particle burst instead.
+   * @param {{ mesh: THREE.Object3D, active: boolean }} e
+   * @returns {THREE.Vector3}
+   */
+  explodeCheater(e) {
+    if (!e?.mesh) return new THREE.Vector3();
+    const pos = e.mesh.position.clone();
+    e.active = false;
+    const oi = this.obstacles.indexOf(e);
+    if (oi >= 0) this.obstacles.splice(oi, 1);
+    const ri = this.rivals.indexOf(e);
+    if (ri >= 0) this.rivals.splice(ri, 1);
+    if (e.mesh.parent === this.scene) this.scene.remove(e.mesh);
+    this._disposeMeshTree(e.mesh);
+    return pos;
+  }
+
+  /**
+   * Clone mesh geometry + materials so disposing the obstacle tree does not invalidate debris (shared brickGeo, etc.).
+   * @param {THREE.Mesh} part
+   * @returns {THREE.Mesh}
+   */
+  _meshForDebrisPart(part) {
+    const p = part.clone();
+    if (p.geometry) p.geometry = p.geometry.clone();
+    if (p.material) {
+      if (Array.isArray(p.material)) {
+        p.material = p.material.map((m) => m.clone());
+        for (const m of p.material) {
+          if (m) m.transparent = true;
+        }
+      } else {
+        p.material = p.material.clone();
+        p.material.transparent = true;
+      }
+    }
+    return p;
   }
 
   /**
@@ -118,7 +171,11 @@ export class Spawner {
       }
     }
 
-    if (this.pickupTimer >= pickupInterval) {
+    let effPickupInterval = pickupInterval;
+    if (this.attractMode) effPickupInterval *= 1.85;
+    /** Death Star trench only: ~half as many shield / boost / playbook pickups (obstacles unchanged). */
+    if (this.levelId === "DS") effPickupInterval *= 2;
+    if (this.pickupTimer >= effPickupInterval) {
       this.pickupTimer = 0;
       this._spawnPickup(elapsedRunSeconds, warm);
     }
@@ -240,7 +297,13 @@ export class Spawner {
 
     let roll = Math.random();
     let type;
-    if (roll < (warm ? 0.15 : 0.25)) {
+    if (this.attractMode) {
+      if (roll < 0.22) type = "BOOST_TOKEN";
+      else if (roll < 0.48) type = "POLICY_SHIELD";
+      else if (roll < 0.58) type = "PLAYBOOK";
+      else if (roll < 0.68) type = "CERTIFIED_COLLECTION";
+      else type = Math.random() < 0.55 ? "POLICY_SHIELD" : "BOOST_TOKEN";
+    } else if (roll < (warm ? 0.15 : 0.25)) {
       type = "BOOST_TOKEN";
     } else if (roll < 0.50) {
       type = "PLAYBOOK";
@@ -272,7 +335,8 @@ export class Spawner {
   }
 
   _addObstacle(type, lane, z) {
-    const mesh = this._makeObstacleMesh();
+    const mesh =
+      this.levelId === "DS" ? this._makeTrenchObstacleMesh() : this._makeObstacleMesh();
     const x = CONFIG.LANES[lane];
     mesh.position.set(x, 0.0, z);
     this.scene.add(mesh);
@@ -378,6 +442,98 @@ export class Spawner {
     warn.position.set(0, wallH + 0.14, wallD / 2 + 0.04);
     g.add(warn);
 
+    return g;
+  }
+
+  /** Imperial trench greeble — same footprint as brick wall for collisions. */
+  _makeTrenchObstacleMesh() {
+    const g = new THREE.Group();
+    const wallW = 1.8, wallH = 1.3, wallD = 0.55;
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x6e737e, roughness: 0.8, metalness: 0.42,
+      emissive: 0x1a1e28, emissiveIntensity: 0.12, flatShading: true,
+    });
+    const darkMat = new THREE.MeshStandardMaterial({
+      color: 0x565b66, roughness: 0.86, metalness: 0.48,
+      emissive: 0x101418, emissiveIntensity: 0.1, flatShading: true,
+    });
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(wallW * 0.98, wallH * 0.88, wallD * 0.42),
+      panelMat
+    );
+    base.position.set(0, wallH * 0.46, -wallD * 0.06);
+    g.add(base);
+    const cols = 4;
+    const rows = 3;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const px = (col - (cols - 1) / 2) * (wallW / cols);
+        const py = 0.28 + row * (wallH / rows);
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(wallW / cols - 0.08, wallH / rows - 0.06, wallD * 0.62),
+          Math.random() < 0.4 ? darkMat : panelMat
+        );
+        panel.position.set(px, py, wallD * 0.12);
+        g.add(panel);
+      }
+    }
+    for (let i = 0; i < 4; i++) {
+      const rib = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, wallH * 0.82, wallD * 0.88),
+        darkMat
+      );
+      rib.position.set(-wallW * 0.38 + i * (wallW / 3.2), wallH / 2, 0.02);
+      g.add(rib);
+    }
+    const turBase = new THREE.Mesh(
+      new THREE.BoxGeometry(0.64, 0.22, 0.48),
+      darkMat
+    );
+    turBase.position.set(0, wallH + 0.13, 0);
+    g.add(turBase);
+    const gunMat = new THREE.MeshStandardMaterial({
+      color: 0x4a505c, roughness: 0.62, metalness: 0.72, flatShading: true,
+    });
+    const gunY = wallH + 0.3;
+    const gunZ = wallD * 0.34;
+    for (const gx of [-0.17, 0.17]) {
+      const breech = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.095, 0.12, 6),
+        gunMat
+      );
+      breech.rotation.x = Math.PI / 2;
+      breech.position.set(gx, gunY, gunZ - 0.06);
+      g.add(breech);
+      const barrel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.056, 0.068, 0.88, 6),
+        gunMat
+      );
+      barrel.rotation.x = Math.PI / 2;
+      barrel.position.set(gx, gunY, gunZ + 0.38);
+      g.add(barrel);
+      const muzzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.056, 0.06, 5),
+        new THREE.MeshStandardMaterial({
+          color: 0x2e3238, roughness: 0.55, metalness: 0.85, flatShading: true,
+        })
+      );
+      muzzle.rotation.x = Math.PI / 2;
+      muzzle.position.set(gx, gunY, gunZ + 0.82);
+      g.add(muzzle);
+    }
+    const warn = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52, 0.11, 0.07),
+      new THREE.MeshStandardMaterial({
+        color: 0xb81810,
+        emissive: 0xff2208,
+        emissiveIntensity: 0.95,
+        roughness: 0.4,
+        metalness: 0.25,
+        flatShading: true,
+      })
+    );
+    warn.position.set(0, wallH + 0.14, wallD / 2 + 0.045);
+    g.add(warn);
     return g;
   }
 
@@ -529,8 +685,10 @@ export class Spawner {
     const z = CONFIG.SPAWN_Z - Math.random() * 10;
     const colors = RIVAL_COLORS[this._nextRivalColorIdx % RIVAL_COLORS.length];
     this._nextRivalColorIdx++;
-    const mesh = this._makeRivalMesh(colors);
-    mesh.position.set(CONFIG.LANES[lane], CONFIG.PLAYER_Y, z);
+    const mesh =
+      this.levelId === "DS" ? this._makeTieMesh() : this._makeRivalMesh(colors);
+    const y0 = this.levelId === "DS" ? DS_TIE_FLIGHT_Y : CONFIG.PLAYER_Y;
+    mesh.position.set(CONFIG.LANES[lane], y0, z);
     this.scene.add(mesh);
     const e = {
       id: nextId(),
@@ -542,7 +700,10 @@ export class Spawner {
       z,
       active: true,
       worldBox: new THREE.Box3(),
-      hit: { w: 0.7, h: 0.6, d: 2.0 },
+      hit:
+        this.levelId === "DS"
+          ? { w: 1.75, h: 1.05, d: 0.58 }
+          : { w: 0.7, h: 0.6, d: 2.0 },
       aiTimer: 0,
     };
     this._syncBox(e);
@@ -573,7 +734,12 @@ export class Spawner {
           r.aiTimer = 0.4 + Math.random() * 0.3;
           this._rivalDodge(r);
         }
-        r.mesh.position.y = CONFIG.PLAYER_Y + Math.sin(performance.now() * 0.003 + r.id) * 0.03;
+        const flyY =
+          this.levelId === "DS"
+            ? DS_TIE_FLIGHT_Y
+            : CONFIG.PLAYER_Y;
+        r.mesh.position.y =
+          flyY + Math.sin(performance.now() * 0.003 + r.id) * 0.04;
       } else {
         // Bus plows through obstacles in its lane
         this._busSmashObstacles(r);
@@ -622,19 +788,22 @@ export class Spawner {
 
   explodeRival(e) {
     if (!e || !e.mesh) return;
-    const pos = e.mesh.position.clone();
+    const root = e.mesh;
+    const pos = root.position.clone();
     const parts = [];
-    e.mesh.traverse((c) => {
+    root.traverse((c) => {
       if (c.isMesh) parts.push(c);
     });
 
-    // Detach parts and scatter them
+    e.active = false;
+    const idx = this.rivals.indexOf(e);
+    if (idx >= 0) this.rivals.splice(idx, 1);
+
     const debrisGroup = new THREE.Group();
     debrisGroup.position.copy(pos);
-    this.scene.add(debrisGroup);
 
     for (const part of parts) {
-      const p = part.clone();
+      const p = this._meshForDebrisPart(part);
       p.position.set(
         (Math.random() - 0.5) * 0.5,
         Math.random() * 0.3,
@@ -643,7 +812,6 @@ export class Spawner {
       debrisGroup.add(p);
     }
 
-    // Animate debris flying outward
     const velocities = [];
     for (let i = 0; i < debrisGroup.children.length; i++) {
       velocities.push(new THREE.Vector3(
@@ -652,6 +820,11 @@ export class Spawner {
         (Math.random() - 0.5) * 10
       ));
     }
+
+    this.scene.add(debrisGroup);
+
+    if (root.parent === this.scene) this.scene.remove(root);
+    this._disposeMeshTree(root);
 
     let elapsed = 0;
     const animate = () => {
@@ -681,39 +854,42 @@ export class Spawner {
       const fade = 1 - elapsed / 1.2;
       debrisGroup.traverse((c) => {
         if (c.isMesh && c.material && c.material.opacity !== undefined) {
-          c.material.transparent = true;
-          c.material.opacity = fade;
+          if (Array.isArray(c.material)) {
+            for (const m of c.material) {
+              if (m) {
+                m.transparent = true;
+                m.opacity = fade;
+              }
+            }
+          } else {
+            c.material.transparent = true;
+            c.material.opacity = fade;
+          }
         }
       });
       requestAnimationFrame(animate);
     };
     requestAnimationFrame(animate);
-
-    // Remove the original rival
-    e.active = false;
-    const idx = this.rivals.indexOf(e);
-    if (idx >= 0) this.rivals.splice(idx, 1);
-    this._removeEntity(e);
   }
 
   explodeObstacle(e) {
-    if (!e || !e.mesh) return;
-    const pos = e.mesh.position.clone();
+    if (!e?.mesh) return;
+    const root = e.mesh;
+    const pos = root.position.clone();
     const parts = [];
-    e.mesh.traverse((c) => {
+    root.traverse((c) => {
       if (c.isMesh) parts.push(c);
     });
 
+    e.active = false;
+    const oi = this.obstacles.indexOf(e);
+    if (oi >= 0) this.obstacles.splice(oi, 1);
+
     const debrisGroup = new THREE.Group();
     debrisGroup.position.copy(pos);
-    this.scene.add(debrisGroup);
 
     for (const part of parts) {
-      const p = part.clone();
-      if (p.material) {
-        p.material = p.material.clone();
-        p.material.transparent = true;
-      }
+      const p = this._meshForDebrisPart(part);
       p.position.set(
         (Math.random() - 0.5) * 0.8,
         Math.random() * 0.4,
@@ -730,6 +906,11 @@ export class Spawner {
         (Math.random() - 0.5) * 12
       ));
     }
+
+    this.scene.add(debrisGroup);
+
+    if (root.parent === this.scene) this.scene.remove(root);
+    this._disposeMeshTree(root);
 
     let elapsed = 0;
     const animate = () => {
@@ -759,17 +940,18 @@ export class Spawner {
       const fade = 1 - elapsed / 1.0;
       debrisGroup.traverse((c) => {
         if (c.isMesh && c.material) {
-          c.material.opacity = fade;
+          if (Array.isArray(c.material)) {
+            for (const m of c.material) {
+              if (m) m.opacity = fade;
+            }
+          } else {
+            c.material.opacity = fade;
+          }
         }
       });
       requestAnimationFrame(animate);
     };
     requestAnimationFrame(animate);
-
-    e.active = false;
-    const oi = this.obstacles.indexOf(e);
-    if (oi >= 0) this.obstacles.splice(oi, 1);
-    this._removeEntity(e);
   }
 
   _makeRivalMesh(colors) {
@@ -854,6 +1036,109 @@ export class Spawner {
     glow.position.set(0, 0.42, 0.72); g.add(glow);
 
     livery.dispose(); carbon.dispose(); accent.dispose(); rubber.dispose(); rim.dispose();
+    return g;
+  }
+
+  _makeTieMesh() {
+    const g = new THREE.Group();
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x8599a6,
+      metalness: 0.5,
+      roughness: 0.52,
+      emissive: 0x455059,
+      emissiveIntensity: 0.07,
+      flatShading: true,
+    });
+    const solarMat = new THREE.MeshStandardMaterial({
+      color: 0x050608,
+      metalness: 0.22,
+      roughness: 0.88,
+      emissive: 0x020304,
+      emissiveIntensity: 0.04,
+      flatShading: true,
+    });
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0xaeb6c4,
+      metalness: 0.48,
+      roughness: 0.44,
+      emissive: 0x5a6570,
+      emissiveIntensity: 0.06,
+      flatShading: true,
+    });
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x040508,
+      metalness: 0.65,
+      roughness: 0.18,
+      emissive: 0x0c1814,
+      emissiveIntensity: 0.12,
+      flatShading: true,
+    });
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: 0x661010,
+      metalness: 0.45,
+      roughness: 0.55,
+      emissive: 0x441010,
+      emissiveIntensity: 0.35,
+      flatShading: true,
+    });
+
+    /** Ball cockpit — faces roughly −Z “forward” down the trench. */
+    const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.21, 1), hullMat);
+    body.scale.set(1, 1.02, 1.12);
+    body.position.set(0, 0, 0);
+    g.add(body);
+
+    const win = new THREE.Mesh(
+      new THREE.SphereGeometry(0.085, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.48),
+      glassMat
+    );
+    win.rotation.x = 0.42;
+    win.position.set(0, 0.04, -0.17);
+    g.add(win);
+
+    const port = new THREE.Mesh(new THREE.SphereGeometry(0.028, 5, 4), accentMat);
+    port.position.set(0.16, 0.08, -0.05);
+    g.add(port);
+
+    const RHex = 0.5;
+    const wingThick = 0.055;
+    const xWing = 0.78;
+    for (const side of [-1, 1]) {
+      const sx = side * xWing;
+      /** Vertical hex “solar” panel: cylinder axis X → hex profile in YZ (classic TIE silhouette). */
+      const panel = new THREE.Mesh(
+        new THREE.CylinderGeometry(RHex, RHex, wingThick, 6),
+        solarMat
+      );
+      panel.rotation.z = Math.PI / 2;
+      panel.position.set(sx, 0, 0.02);
+      g.add(panel);
+
+      /** Pylon from cockpit to wing root. */
+      const strut = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 0.1, 0.13),
+        frameMat
+      );
+      strut.position.set(side * 0.43, 0, 0.02);
+      g.add(strut);
+
+      /** Corner frame blocks on hex vertices (read as frame + greeble). */
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+        const vy = RHex * 0.9 * Math.cos(a);
+        const vz = RHex * 0.9 * Math.sin(a);
+        const bolt = new THREE.Mesh(
+          new THREE.BoxGeometry(0.065, 0.08, 0.08),
+          frameMat
+        );
+        bolt.position.set(sx + side * 0.034, vy, vz);
+        g.add(bolt);
+      }
+    }
+
+    g.traverse((o) => {
+      if (o.isMesh) o.castShadow = true;
+    });
     return g;
   }
 

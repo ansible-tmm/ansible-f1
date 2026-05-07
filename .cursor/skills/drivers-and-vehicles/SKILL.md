@@ -67,7 +67,7 @@ Existing custom meshes to reference:
 - `_buildSkateboardMesh()` — Matt's secret skateboard with articulated rider
 - `_buildScalonetaMesh()` — Leo's secret Argentina flag bus (scaloneta unlock)
 - `_buildF16Mesh()` — Alex's secret F-16 fighter jet (topgun unlock) with jet flame particles
-- `_buildTrexMesh()` — Anshul's secret T-Rex (leavemealone unlock) with animated legs, tail, and jaw
+- `_buildTrexMesh()` — Anshul's secret T-Rex (demodemodemo unlock) with animated legs, tail, and jaw
 - `_buildCadillacMesh()` — Aubrey's secret pink Cadillac convertible (hollywood unlock) with tail fins and whitewall tires
 - `_buildOgreMesh()` — Remy's secret ogre (quest unlock) with club, tusks, animated legs and arms
 - `_buildCroonerMesh()` — Justin's secret Driving Crooner sedan (crooner unlock) with fedora/cigar window decals and crooner figure
@@ -121,7 +121,7 @@ if (this.currentDriver === "mydriver" &&
 }
 ```
 
-The buffer is 12 characters to accommodate the longest keyword ("leavemealone"). If you add a longer keyword, increase the `slice(-N)` value.
+The buffer is 12 characters to accommodate the longest keyword ("demodemodemo"). If you add a longer keyword, increase the `slice(-N)` value.
 
 ### Transform smoke effect
 
@@ -158,7 +158,7 @@ This means each player has to type the secret code themselves — it doesn't per
 | Matt | `matt` | `skateboard` | No — scores count | Click to jump (airborne invincibility) |
 | Leo | `scaloneta` | `scaloneta` | Yes — no leaderboard | Full Spanish UI, Argentine catchphrases, custom SFX |
 | Alex | `topgun` | `f16` | Yes — no leaderboard | Hovers above track, flies over everything, click to drop bombs |
-| Anshul | `leavemealone` | `trex` | Yes — no leaderboard | Stomping legs/tail/jaw animation, smashes everything for +50k |
+| Anshul | `demodemodemo` | `trex` | Yes — no leaderboard | Stomping legs/tail/jaw animation, smashes everything for +50k, custom roar SFX |
 | Aubrey | `hollywood` | `cadillac` | Yes — no leaderboard | Pink Cadillac convertible, rainbow road, Hollywood smash lines |
 | Remy | `quest` | `ogre` | Yes — no leaderboard | Green ogre with club, castle skyline, ogre/Shrek smash lines |
 | Justin | `crooner` | `crooner` | Yes — no leaderboard | Dark sedan with fedora/cigar window decals, ITYSL Driving Crooner quotes |

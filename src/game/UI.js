@@ -1,4 +1,4 @@
-import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS } from "../utils/storage.js";
+import { getLeaderboard, loadAchievements, ACHIEVEMENT_DEFS, getDeathStarTrenchUnlocked } from "../utils/storage.js";
 import { fetchGlobalLeaderboard } from "../utils/firebase.js";
 import * as THREE from "three";
 import { LEVELS, DRIVERS, getSummitBoothThemeUrl } from "../data/config.js";
@@ -101,6 +101,9 @@ export class UI {
       tutorialOverlay: document.getElementById("tutorial-overlay"),
       tutorialTip: document.getElementById("tutorial-tip"),
       tutorialTipText: document.getElementById("tutorial-tip-text"),
+      tutorialBbNudge: document.getElementById("tutorial-bb-nudge"),
+      tutorialBbNudgePointer: document.getElementById("tutorial-bb-nudge-pointer"),
+      tutorialBbNudgeText: document.getElementById("tutorial-bb-nudge-text"),
       skipTutorialBtn: document.getElementById("btn-skip-tutorial"),
       tutorialBanner: document.getElementById("tutorial-banner"),
       tutorialChecklist: document.getElementById("tutorial-checklist"),
@@ -147,8 +150,44 @@ export class UI {
     this._populateCountrySelect();
     this._bindButtons();
     this._syncLevelCardLabels();
+    this.syncDeathStarTrenchCardVisibility();
     this._drawLevelPreviews();
     this._syncSummitDockVisibility();
+    this._mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+  }
+
+  get isMobile() { return this._mobile; }
+
+  /** Death Star trench: no scripted tutorial or “How to play” from the main menu. */
+  _rebuildMainMenuNavButtons() {
+    const hp = document.getElementById("btn-how-to-play");
+    const hideHowTo = this._summitLinkLevelId === "DS";
+    if (hp) {
+      hp.classList.toggle("hidden", hideHowTo);
+      hp.setAttribute("aria-hidden", hideHowTo ? "true" : "false");
+    }
+    const ids = [
+      "btn-start",
+      "btn-choose-level-menu",
+      "btn-choose-driver",
+    ];
+    if (!hideHowTo) ids.push("btn-how-to-play");
+    ids.push("btn-highscores", "btn-achievements");
+    this._menuBtns = ids.map((id) => document.getElementById(id)).filter(Boolean);
+    if (this._menuIdx >= this._menuBtns.length) this._menuIdx = 0;
+    this._updateMenuFocus();
+  }
+
+  syncDeathStarTrenchCardVisibility() {
+    const card = document.querySelector(".level-card-ds");
+    if (!card) return;
+    const on = getDeathStarTrenchUnlocked();
+    card.classList.toggle("hidden", !on);
+    card.setAttribute("aria-hidden", on ? "false" : "true");
+  }
+
+  refreshLevelSelectPreviews() {
+    this._drawLevelPreviews();
   }
 
   _syncLevelCardLabels() {
@@ -239,6 +278,11 @@ export class UI {
         e.preventDefault();
         e.stopPropagation();
         if (this.onBillboardClose) this.onBillboardClose();
+        return;
+      }
+      if (e.code === "Escape" && this._menuEscapeBack()) {
+        e.preventDefault();
+        e.stopPropagation();
       }
     }, true);
 
@@ -273,16 +317,7 @@ export class UI {
       }
     });
 
-    this._menuBtns = [
-      document.getElementById("btn-start"),
-      document.getElementById("btn-choose-level-menu"),
-      document.getElementById("btn-choose-driver"),
-      document.getElementById("btn-how-to-play"),
-      document.getElementById("btn-highscores"),
-      document.getElementById("btn-achievements"),
-    ].filter(Boolean);
-    this._menuIdx = 0;
-    this._updateMenuFocus();
+    this._rebuildMainMenuNavButtons();
 
     window.addEventListener("keydown", (e) => {
       if (!this._isMainMenuActive()) return;
@@ -350,6 +385,7 @@ export class UI {
     this.onSaveScoreLc = h.onSaveScoreLc;
     this.onSkipTutorial = h.onSkipTutorial;
     this.onTutorialGotIt = h.onTutorialGotIt;
+    this.onAttractScoresHidden = h.onAttractScoresHidden;
   }
 
   showMainMenu(visible) {
@@ -363,6 +399,7 @@ export class UI {
   }
 
   _openTutorial() {
+    if (this._summitLinkLevelId === "DS") return;
     if (!this.el.tutorialOverlay || !this.el.mainMenu) return;
     this.el.mainMenu.classList.add("hidden");
     this.el.tutorialOverlay.classList.remove("hidden");
@@ -426,10 +463,41 @@ export class UI {
     tip.setAttribute("aria-hidden", "true");
   }
 
+  showTutorialBillboardNudge(message) {
+    const wrap = this.el.tutorialBbNudge;
+    if (!wrap) return;
+    if (this.el.tutorialBbNudgeText && message) {
+      this.el.tutorialBbNudgeText.textContent = message;
+    }
+    wrap.classList.remove("hidden");
+    wrap.setAttribute("aria-hidden", "false");
+  }
+
+  /** @param {{ x: number, y: number }} pos */
+  updateTutorialBillboardNudge(pos) {
+    const ptr = this.el.tutorialBbNudgePointer;
+    const wrap = this.el.tutorialBbNudge;
+    if (!ptr || !wrap || wrap.classList.contains("hidden")) return;
+    ptr.style.left = `${pos.x}px`;
+    ptr.style.top = `${pos.y}px`;
+  }
+
+  hideTutorialBillboardNudge() {
+    const wrap = this.el.tutorialBbNudge;
+    if (!wrap) return;
+    wrap.classList.add("hidden");
+    wrap.setAttribute("aria-hidden", "true");
+  }
+
   buildTutorialChecklist(steps) {
+    this._tutorialSteps = steps;
     const ul = this.el.tutorialChecklistItems;
     if (!ul) return;
     ul.innerHTML = "";
+    if (this._mobile) {
+      this._renderMobileTutorialStep(0);
+      return;
+    }
     steps.forEach((step, i) => {
       const li = document.createElement("li");
       li.className = "tutorial-checklist-item" + (i === 0 ? " active" : "");
@@ -437,6 +505,18 @@ export class UI {
       li.innerHTML = `<span class="check-box"></span><span class="check-label">${step.label}</span>`;
       ul.appendChild(li);
     });
+  }
+
+  _renderMobileTutorialStep(stepIndex) {
+    const ul = this.el.tutorialChecklistItems;
+    if (!ul || !this._tutorialSteps) return;
+    const total = this._tutorialSteps.length;
+    const done = stepIndex >= total;
+    const label = done ? "Tutorial complete!" : this._tutorialSteps[stepIndex].label;
+    const num = done ? total : stepIndex + 1;
+    ul.innerHTML =
+      `<li class="tutorial-checklist-item active"><span class="check-box"></span><span class="check-label">${label}</span></li>` +
+      `<div class="tutorial-progress">${num} / ${total}</div>`;
   }
 
   showTutorialChecklist(visible) {
@@ -448,6 +528,10 @@ export class UI {
   }
 
   tutorialCheckStep(stepIndex, totalSteps) {
+    if (this._mobile) {
+      this._renderMobileTutorialStep(stepIndex);
+      return;
+    }
     const ul = this.el.tutorialChecklistItems;
     if (!ul) return;
     const items = ul.querySelectorAll(".tutorial-checklist-item");
@@ -508,6 +592,7 @@ export class UI {
   hideAllTutorialUI() {
     this.hideTutorialBanner();
     this.hideTutorialTip();
+    this.hideTutorialBillboardNudge();
     this.showSkipTutorial(false);
     this.showTutorialChecklist(false);
     if (this.el.tutorialCountdown) this.el.tutorialCountdown.classList.add("hidden");
@@ -522,7 +607,8 @@ export class UI {
     const dock = document.getElementById("summit-booth-back-wrap");
     if (!dock) return;
     const show = this._isMainMenuActive();
-    dock.classList.toggle("hidden", !show);
+    const isDs = this._summitLinkLevelId === "DS";
+    dock.classList.toggle("hidden", !show || isDs);
   }
 
   _isMainMenuActive() {
@@ -581,6 +667,7 @@ export class UI {
     } else {
       this.el.attractScores.classList.add("hidden");
       if (this._shouldShowMainMenu) this.el.mainMenu.classList.remove("hidden");
+      if (this.onAttractScoresHidden) this.onAttractScoresHidden();
     }
     this._syncSummitDockVisibility();
   }
@@ -653,11 +740,13 @@ export class UI {
   showPickupPopup(text) {
     const el = this.el.pickupPopup;
     if (!el) return;
-    el.classList.remove("show");
-    el.textContent = text;
-    void el.offsetWidth;
-    el.classList.add("show");
-    setTimeout(() => el.classList.remove("show"), 1700);
+    requestAnimationFrame(() => {
+      el.classList.remove("show");
+      el.textContent = text;
+      void el.offsetWidth;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 1700);
+    });
   }
 
   showHippoAnnounce() {
@@ -673,25 +762,31 @@ export class UI {
   showHippoCrush(text) {
     const el = this.el.hippoAnnounce;
     if (!el) return;
-    el.classList.remove("show", "crush");
-    el.innerHTML = text;
-    void el.offsetWidth;
-    el.classList.add("crush");
-    setTimeout(() => el.classList.remove("crush"), 4000);
+    requestAnimationFrame(() => {
+      el.classList.remove("show", "crush");
+      el.innerHTML = text;
+      void el.offsetWidth;
+      el.classList.add("crush");
+      clearTimeout(this._hippoCrushTimer);
+      this._hippoCrushTimer = setTimeout(() => el.classList.remove("crush"), 4000);
+    });
   }
 
   showCombo(count) {
     const el = this.el.comboDisplay;
     if (!el) return;
     if (count < 2) {
-      el.classList.add("hidden");
+      el.textContent = "";
       el.classList.remove("active");
+      el.classList.add("hidden");
+      el.setAttribute("aria-hidden", "true");
       return;
     }
     el.textContent = `COMBO x${count}`;
-    el.classList.remove("hidden", "active");
+    el.classList.remove("hidden");
     void el.offsetWidth;
     el.classList.add("active");
+    el.setAttribute("aria-hidden", "false");
   }
 
   showAchievement(name, desc) {
@@ -1005,7 +1100,7 @@ export class UI {
   renderQuizQuestion(q) {
     this.resetQuizOverlay();
     if (!this.el.quizPrompt || !this.el.quizOpts) return;
-    this.el.quizPrompt.textContent = q.prompt;
+    this.el.quizPrompt.textContent = q.prompt ?? q.question ?? "";
     this.el.quizOpts.innerHTML = "";
     q.options.forEach((opt, i) => {
       const b = document.createElement("button");
@@ -1032,14 +1127,27 @@ export class UI {
     if (this.el.goCorrect) this.el.goCorrect.textContent = String(stats.correct);
   }
 
-  /** Reset game over screen to entry mode (name input visible, leaderboard hidden). */
-  resetGameOver(lastName, lastCountry) {
+  /**
+   * Reset game over screen to entry mode (name input visible, leaderboard hidden).
+   * @param {object} [options]
+   * @param {boolean} [options.hideNameEntry] — Death Star / no-leaderboard runs: hide name, country, Save.
+   */
+  resetGameOver(lastName, lastCountry, options = {}) {
+    const hideNameEntry = options.hideNameEntry === true;
     if (this.el.goEntry) this.el.goEntry.classList.remove("hidden");
     if (this.el.goLeaderboard) this.el.goLeaderboard.classList.add("hidden");
     if (this.el.goRankBanner) this.el.goRankBanner.classList.add("hidden");
+    if (this.el.goEntry) {
+      const label = this.el.goEntry.querySelector(".go-name-label");
+      const row = this.el.goEntry.querySelector(".go-name-row");
+      if (label) label.classList.toggle("hidden", hideNameEntry);
+      if (row) row.classList.toggle("hidden", hideNameEntry);
+    }
     if (this.el.goNameInput) {
       this.el.goNameInput.value = lastName || "";
-      setTimeout(() => this.el.goNameInput.focus(), 80);
+      if (!hideNameEntry) {
+        setTimeout(() => this.el.goNameInput.focus(), 80);
+      }
     }
     if (this.el.goCountry) {
       this.el.goCountry.value = lastCountry || "US";
@@ -1092,7 +1200,11 @@ export class UI {
     if (this.el.lcPickups) this.el.lcPickups.textContent = String(stats.pickups);
     if (this.el.lcCorrect) this.el.lcCorrect.textContent = String(stats.correct);
     if (isCheater) {
-      if (cheaterType === "hippo") {
+      if (cheaterType === "deathstar") {
+        if (this.el.lcTitle) this.el.lcTitle.textContent = "Trench run complete";
+        if (this.el.lcMessage) this.el.lcMessage.textContent =
+          "The Force was with you — but trench runs stay off the leaderboard. Use the automation, Luke.";
+      } else if (cheaterType === "hippo") {
         if (this.el.lcTitle) this.el.lcTitle.textContent = "🦛 Hippo Mode Complete!";
         if (this.el.lcMessage) this.el.lcMessage.textContent =
           "Sorry, hippo mode can't be on the leaderboard. Stop cheating!";
@@ -1199,6 +1311,8 @@ export class UI {
     }
     this._preloadedIframes = {};
     if (!billboards) return;
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) return;
 
     for (const bb of billboards) {
       if (!bb.embed) continue;
@@ -1244,7 +1358,20 @@ export class UI {
       return;
     }
 
-    if (embed) {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (embed && isMobile) {
+      window.open(embed, "_blank");
+      const logoHtml = logo
+        ? `<img class="billboard-placeholder-logo" src="${logo}" alt="${label}" />`
+        : `<div class="billboard-placeholder-icon">&#9881;</div>`;
+      this.el.billboardContent.innerHTML =
+        `<div class="billboard-placeholder">` +
+        logoHtml +
+        `<h3>${label}</h3>` +
+        `<p>Demo opened in a new tab.</p>` +
+        `<p class="billboard-placeholder-hint">Close this panel to resume the game.</p>` +
+        `</div>`;
+    } else if (embed) {
       const preloaded = this._preloadedIframes && this._preloadedIframes[embed];
       if (preloaded) {
         preloaded.style.cssText = "";
@@ -1399,6 +1526,57 @@ export class UI {
       this.el.menuAchievements.classList.add("hidden");
     }
     this._toggleMenuButtons(true);
+  }
+
+  /**
+   * Escape from submenus (same as clicking Back): one step at a time, before Game pause handling.
+   * @returns {boolean} true if this keypress was consumed
+   */
+  _menuEscapeBack() {
+    if (this.el.levelSelect &&
+        !this.el.levelSelect.classList.contains("hidden")) {
+      this._closeLevelSelect();
+      return true;
+    }
+
+    if (this.isDriverSelectVisible()) {
+      if (this.el.driverDetail &&
+          !this.el.driverDetail.classList.contains("hidden")) {
+        this.el.driverDetail.classList.add("hidden");
+        if (this.el.driverCards) this.el.driverCards.classList.remove("compact");
+        this._stopCarPreview();
+        return true;
+      }
+      this._closeDriverSelect();
+      return true;
+    }
+
+    const menuLb = document.getElementById("menu-leaderboard");
+    if (menuLb && !menuLb.classList.contains("hidden")) {
+      this._hideMenuLeaderboard();
+      return true;
+    }
+
+    if (this.el.menuAchievements &&
+        !this.el.menuAchievements.classList.contains("hidden")) {
+      this._hideMenuAchievements();
+      return true;
+    }
+
+    if (this.el.attractScores &&
+        !this.el.attractScores.classList.contains("hidden")) {
+      this.showAttractScores(false);
+      return true;
+    }
+
+    if (this.el.godzillaScore &&
+        !this.el.godzillaScore.classList.contains("hidden")) {
+      this.hideGodzillaScore();
+      if (this.onMenu) this.onMenu();
+      return true;
+    }
+
+    return false;
   }
 
   _openDriverSelect(returnTo) {
@@ -1659,8 +1837,10 @@ export class UI {
     _swap("#btn-restart", "Restart Run", "Reiniciar");
     _swap("#btn-pause-levels", "Choose Level", "Elegir nivel");
     _swap("#btn-quit", "Main Menu", "Menú principal");
-    const escHint = document.querySelector("#pause-menu .pause-hint");
-    if (escHint) escHint.textContent = on ? "Esc para continuar" : "Esc to resume";
+    const escHint = document.querySelector("#pause-menu p.hint");
+    if (escHint) {
+      escHint.textContent = on ? "Esc o Retroceso para continuar" : "Esc or Backspace to resume";
+    }
 
     const goTitle = document.querySelector("#game-over h2");
     if (goTitle) goTitle.textContent = on ? "Fin del juego" : "Game Over";
@@ -1772,6 +1952,8 @@ export class UI {
     }
     this._summitLinkLevelId = levelId;
     this._refreshSummitBoothLink();
+    this._syncSummitDockVisibility();
+    this._rebuildMainMenuNavButtons();
   }
 
   _refreshSummitBoothLink() {
@@ -1780,6 +1962,7 @@ export class UI {
     const lead = document.getElementById("summit-booth-lead");
     if (!link || !wrap || !lead) return;
     const id = this._summitLinkLevelId;
+    if (id === "DS") return;
     const lvl = LEVELS[id];
     const url = getSummitBoothThemeUrl(id);
     if (!url || !lvl) return;
@@ -1793,6 +1976,7 @@ export class UI {
   }
 
   _openLevelSelect(returnTo) {
+    this.syncDeathStarTrenchCardVisibility();
     this._levelSelectReturnTo = returnTo;
     this.el.mainMenu.classList.add("hidden");
     if (this.el.gameOver) this.el.gameOver.classList.add("hidden");
@@ -1826,7 +2010,8 @@ export class UI {
       { road: "#445566", edge: "#3388aa", lane: "#ffffff", side: "#2266aa", sky: "#4488bb", scenery: "water" },
       { road: "#667788", edge: "#8899aa", lane: "#ccddff", side: "#dde8f0", sky: "#aabbcc", scenery: "snow" },
       { road: "#555555", edge: "#cc8844", lane: "#ffdd44", side: "#8a9a5a", sky: "#6699cc", scenery: "coast" },
-      { road: "#2a2a30", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
+      { road: "#5a5e6a", edge: "#1a1a2e", lane: "#ffcc00", side: "#1a2218", sky: "#182840", scenery: "durham" },
+      { road: "#4a4c54", edge: "#5a5c64", lane: "#9aa0a8", side: "#383a42", sky: "#050508", scenery: "trench" },
     ];
 
     const W = 148, H = 100;
@@ -1968,6 +2153,23 @@ export class UI {
       ctx.fillRect(W * 0.6, 22, 14, 10);
       ctx.fillStyle = "#0044aa";
       ctx.fillRect(W * 0.61, 20, 12, 3);
+    } else if (s === "trench") {
+      ctx.fillStyle = "#3a3a44";
+      ctx.fillRect(2, midY - 8, 5, 36);
+      ctx.fillRect(W - 7, midY - 8, 5, 36);
+      ctx.fillStyle = "#555560";
+      for (let z = 0; z < 4; z++) {
+        ctx.fillRect(8 + z * 6, midY + z * 4, 2, 14);
+        ctx.fillRect(W - 14 - z * 6, midY + z * 4, 2, 14);
+      }
+      ctx.fillStyle = "#2a2a32";
+      ctx.beginPath();
+      ctx.arc(W * 0.5, 10, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff6622";
+      ctx.beginPath();
+      ctx.arc(W * 0.72, 16, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 

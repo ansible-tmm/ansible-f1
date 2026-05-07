@@ -15,6 +15,7 @@
           "AAP-on-cloud",
           "Metrics-and-telemetry",
           "AAP-101",
+          "Death-Star-Trench",
         ];
         function computeBaseHref(pathname) {
           var p = pathname.replace(/\/+$/, "") || "/";
@@ -35,6 +36,17 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Built to Automate</title>
+    <link rel="icon" href="./assets/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./assets/favicon.png" />
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YZ9858WG76"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-YZ9858WG76');
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -91,6 +103,14 @@
           <button type="button" id="btn-tutorial-got-it" class="btn primary btn-small">Got it!</button>
         </div>
         <div class="tutorial-tip-arrow"></div>
+      </div>
+      <!-- After ~15s on billboard tutorial step: non-blocking hint + pointer (pointer-events none) -->
+      <div id="tutorial-bb-nudge" class="tutorial-bb-nudge hidden" aria-hidden="true">
+        <div class="tutorial-bb-nudge-dim" aria-hidden="true"></div>
+        <div id="tutorial-bb-nudge-pointer" class="tutorial-bb-nudge-pointer" aria-hidden="true">👆</div>
+        <div class="tutorial-bb-nudge-bar">
+          <p id="tutorial-bb-nudge-text" class="tutorial-bb-nudge-text">Click a billboard to continue the tutorial</p>
+        </div>
       </div>
       <!-- skip button moved inside tutorial-checklist below -->
       <div id="tutorial-banner" class="tutorial-banner hidden" aria-hidden="true">
@@ -262,13 +282,7 @@
         </div>
 
         <ul class="help">
-          <li>Move: ← / → or A / D</li>
-          <li>
-            <strong>Health</strong> is your run meter: hits lower it; recover with
-            remediation quizzes when offered.
-          </li>
-          <li>Collect pickups · Dodge outages</li>
-          <li>Answer fast questions for boosts &amp; recovery</li>
+          <li>Move: ← / → or A / D · Space = horn (like click) · Esc / Backspace = pause</li>
         </ul>
       </div>
 
@@ -287,6 +301,8 @@
                 <li><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> — change lanes</li>
                 <li><kbd>W</kbd> or <kbd>↑</kbd> — boost (cooldown bar)</li>
                 <li><kbd>S</kbd> or <kbd>↓</kbd> — brake</li>
+                <li><kbd>Space</kbd> — horn / vehicle action (same as clicking the game)</li>
+                <li><kbd>Esc</kbd> or <kbd>Backspace</kbd> — pause · same keys to resume</li>
                 <li><strong>Touch:</strong> swipe left/right to steer · swipe up for boost · tap screen halves to move</li>
               </ul>
             </section>
@@ -344,7 +360,7 @@
         <button type="button" id="btn-choose-level-pause" class="btn">Choose Level</button>
         <button type="button" id="btn-choose-driver-pause" class="btn">Choose Driver</button>
         <button type="button" id="btn-menu-pause" class="btn">Main Menu</button>
-        <p class="hint">Esc to resume</p>
+        <p class="hint">Esc or Backspace to resume</p>
       </div>
 
       <div id="game-over" class="overlay panel hidden">
@@ -528,6 +544,11 @@
             <canvas class="level-preview" width="180" height="120"></canvas>
             <div class="level-card-label">Red Hat Ansible 101</div>
             <div class="level-card-sub">Operator / ops quickstart</div>
+          </button>
+          <button type="button" class="level-card level-card-ds hidden" data-level="DS" aria-hidden="true">
+            <canvas class="level-preview" width="180" height="120"></canvas>
+            <div class="level-card-label">Death Star Trench</div>
+            <div class="level-card-sub">May the Fourth be with you</div>
           </button>
         </div>
         <button type="button" id="btn-level-back" class="btn" style="margin-top:1rem">Back</button>

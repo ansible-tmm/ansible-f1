@@ -11,7 +11,7 @@ A retro-arcade racing game built with Three.js, themed around Ansible and IT aut
 - **Move:** Arrow keys (← / →) or A / D
 - **Boost:** Arrow Up or W (manual boost when available)
 - **Brake:** Arrow Down or S
-- **Pause:** Escape or Space
+- **Pause / resume:** Esc or Backspace · **Horn / vehicle click:** Space (same as clicking the game)
 - **Horn:** Mouse click (some vehicles have special abilities instead)
 - **Dodge** Outage obstacles that drain your health
 - **Collect** Ansible Playbooks (+100 pts), Collections (+150 pts), Policy Shields, and Boost Tokens
@@ -48,11 +48,13 @@ Some drivers have hidden alternate vehicles that transform the gameplay. Type th
 | Matthew Packer | `matt` | 🛹 Skate Mode | Skateboard rider with backwards cap and flannel. Click to jump — while airborne you're invincible and pass through obstacles. |
 | Leo Gallego | `scaloneta` | 🇦🇷 La Scaloneta | Argentina flag-themed Mercedes-Benz LO 1114 bus. Indestructible. Crushes everything for +50,000 pts with Argentine catchphrases. Entire UI flips to Spanish. Custom sound effect. Scores don't count on the leaderboard. |
 | Alex Walczyk | `topgun` | ✈️ Top Gun Mode | F-16 fighter jet that hovers above the track. Flies over all obstacles and cars. Click to drop bombs that explode on impact — anything caught in the blast radius is destroyed for +50,000 pts with Top Gun callouts. Scores don't count on the leaderboard. |
-| Anshul Behl | `leavemealone` | 🦖 T-Rex Mode | A T-Rex stomps down the road with animated legs, swaying tail, and snapping jaw. Indestructible — smashes everything for +50,000 pts with Jurassic Park-themed callouts. Scores don't count on the leaderboard. |
+| Anshul Behl | `demodemodemo` | 🦖 T-Rex Mode | A T-Rex stomps down the road with animated legs, swaying tail, and snapping jaw. Indestructible — smashes everything for +50,000 pts with a custom "demo demo demo" roar SFX on every hit and horn press. Scores don't count on the leaderboard. |
 | Aubrey Trotter | `hollywood` | 🌟 Hollywood Mode | Pink 1959 Cadillac Eldorado convertible with tail fins and whitewall tires. Road turns into a rainbow. Indestructible — smashes everything for +50,000 pts with Hollywood/movie-themed callouts. Scores don't count on the leaderboard. |
 | Remy Duplantis | `quest` | 🧌 Ogre Mode | A hulking green ogre with a spiked club, tusks, and loincloth — despite Remy's hatred of all things fantasy. Skyline transforms into a medieval castle. Indestructible — smashes everything for +50,000 pts with ogre/Shrek-themed callouts. Scores don't count on the leaderboard. |
 | Justin Braun | `crooner` | 🎤 Driving Crooner | A dark town-car sedan with the famous fedora & cigar window decals from *I Think You Should Leave*. The Driving Crooner figure sits inside wearing a fedora. Indestructible — smashes everything for +50,000 pts with ITYSL quotes ("I gotta make money on this!", "It's simply too good!"). Scores don't count on the leaderboard. |
 | Roger Lopez | `crossfit` | 🚂 Time Train Mode | The Jules Verne time-traveling locomotive from *Back to the Future Part III*. Hovers above the track with blue glow pads, flux capacitor on the smokebox, Mr. Fusion on the cab, time circuit displays, and a steam-puffing smokestack. Indestructible — smashes everything for +50,000 pts with BTTF quotes. Scores don't count on the leaderboard. |
+
+**Global unlock (keyboard):** Type `starwars` anywhere the rolling secret buffer applies (same pattern as `godzilla` — including from the main menu). This unlocks the hidden **Death Star Trench** level for the current browser tab only (refresh or choosing another track locks it again until you type `starwars` once more). It switches the active theme to the trench; every driver flies an X-wing there; obstacles and finish line match the trench aesthetic; clearing the run plays a short space finale instead of the usual crowd celebration. Scores do not count on the leaderboard.
 
 ## Special Vehicle Abilities
 

@@ -1,6 +1,304 @@
 import * as THREE from "three";
 import { CONFIG } from "../data/config.js";
 
+const _qrWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+const _qrBlackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+
+function buildQrPanel(grid, moduleSize = 0.025) {
+  const g = new THREE.Group();
+  const size = grid.length;
+  const totalSize = size * moduleSize;
+  const moduleGeo = new THREE.BoxGeometry(0.015, moduleSize, moduleSize);
+  const backing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.012, totalSize + 0.04, totalSize + 0.04),
+    _qrWhiteMat.clone()
+  );
+  g.add(backing);
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      if (grid[row][col] === "1") {
+        const m = new THREE.Mesh(moduleGeo, _qrBlackMat);
+        m.position.set(0.002, (size / 2 - row - 0.5) * moduleSize, (col - size / 2 + 0.5) * moduleSize);
+        g.add(m);
+      }
+    }
+  }
+  return g;
+}
+
+const QR_NUNO = [
+  "11111110001110101011101111111",
+  "10000010000110110110101000001",
+  "10111010111010101010001011101",
+  "10111010110001100101001011101",
+  "10111010111111001111101011101",
+  "10000010110011111000101000001",
+  "11111110001010101010101111111",
+  "00000000100010011011000000000",
+  "10111100010011100100101111100",
+  "11011001111001000011111110001",
+  "11000011011011111000000000000",
+  "00010000100000111001110101010",
+  "10001111010110000111000001100",
+  "01110100001101001111101110001",
+  "11001111111011111100110111100",
+  "10100001000111011010010010010",
+  "00100110001010100100000001100",
+  "10100000000110001011101110101",
+  "10111011101000010010010000100",
+  "10101000100100111001111010010",
+  "10010011111000011101111110111",
+  "00000000001001101000100011111",
+  "11111110001101111111101011100",
+  "10000010101111001010100010001",
+  "10111010100100100110111110100",
+  "10111010101101000110000101111",
+  "10111010101011010100111111110",
+  "10000010000000001001111101010",
+  "11111110111110011101000110100",
+];
+
+const QR_ANSHUL = [
+  "11111110111001100110001111111",
+  "10000010111011101111001000001",
+  "10111010110101110011001011101",
+  "10111010001111011101101011101",
+  "10111010101011100011001011101",
+  "10000010010011100100101000001",
+  "11111110001010101010101111111",
+  "00000000011001101010100000000",
+  "10011101100010101101100010111",
+  "00101100101000010011000110110",
+  "01011011100101111100100100100",
+  "11100000010100100101101001001",
+  "01010111100100001010101100001",
+  "01111001101010111110011111111",
+  "01001110010001011101111110101",
+  "11000000111000100010101010101",
+  "01001011100011011000100101000",
+  "10101101011010110111110010110",
+  "11001011001011010011111101001",
+  "11101000110011011000001011100",
+  "11010011100010101100111111110",
+  "00000000110111111110100011000",
+  "11111110100110010001101011000",
+  "10000010110110010100100010000",
+  "10111010101111110001111111010",
+  "10111010100101111111110100001",
+  "10111010011001010001110110111",
+  "10000010010111010001000101101",
+  "11111110111100100011100010000",
+];
+
+const QR_ROGER = [
+  "11111110010000101011101111111",
+  "10000010011011011110101000001",
+  "10111010101000011010001011101",
+  "10111010111001100101001011101",
+  "10111010110111000111101011101",
+  "10000010111111111000101000001",
+  "11111110001010101010101111111",
+  "00000000110010111011000000000",
+  "10111100010011100100101111100",
+  "01100100001010001011111110001",
+  "01110110100001111000000000000",
+  "01101001010100111001110101010",
+  "10101110011111100111000001100",
+  "00110100110110001111101110001",
+  "11101110000000110100110111100",
+  "11010000001010111010010010010",
+  "11011011010111111100000001100",
+  "11000101110100101011101110101",
+  "10101011011001011110010000100",
+  "10001000010110001001111010010",
+  "10101110000010000101111110111",
+  "00000000011001000110100011111",
+  "11111110000011110101101011100",
+  "10000010111101001000100010000",
+  "10111010111100111100111110111",
+  "10111010100100001110000101111",
+  "10111010101110011000111111110",
+  "10000010010100101001111101010",
+  "11111110100000000111000110100",
+];
+
+const QR_HICHAM = [
+  "11111110110110100110001111111",
+  "10000010110111101111001000001",
+  "10111010111001010011001011101",
+  "10111010010101011101101011101",
+  "10111010101001100011001011101",
+  "10000010011110000100101000001",
+  "11111110001010101010101111111",
+  "00000000010001001010100000000",
+  "10011101101010101101100010111",
+  "01100001000000110011000110110",
+  "01100110001001111100100100100",
+  "01111001001100100101101001001",
+  "10000010011110001010101100001",
+  "10000000110000111110011111111",
+  "00110011001001011101111110101",
+  "01101000110010100010101010101",
+  "00001110011101011000100101000",
+  "11101101010110010111110010110",
+  "11000010110111110011111101001",
+  "11010000100011011000001011100",
+  "11000111001000101100111111110",
+  "00000000110101111110100011000",
+  "11111110100100010001101011000",
+  "10000010110000110100100010000",
+  "10111010110011110001111111010",
+  "10111010100110111111110100001",
+  "10111010010000110001110110111",
+  "10000010001110110001000101101",
+  "11111110111110100011100010000",
+];
+
+const QR_LEO = [
+  "11111110100101001011101111111",
+  "10000010111110001000001000001",
+  "10111010000001000001001011101",
+  "10111010111001100101001011101",
+  "10111010001010110001001011101",
+  "10000010001001100011101000001",
+  "11111110001010101010101111111",
+  "00000000101000001101100000000",
+  "10110101011010111111101001011",
+  "11001100001111001011111110001",
+  "11100010111001001110110110110",
+  "01001101010111100010101110001",
+  "11111010110000000111000001100",
+  "10101101001011111001011000111",
+  "11100010010010101111101100111",
+  "10001101001101011010010010010",
+  "00101110101000001010110111010",
+  "01001100100101010000110101110",
+  "10100011100000011110010000100",
+  "00001101000000011111001100100",
+  "01001010111101011110111111100",
+  "00000000000001100110100011111",
+  "11111110110101000011101011010",
+  "10000010100110010011100011010",
+  "10111010010110111100111110100",
+  "10111010101110111000110011001",
+  "10111010101011000011100100101",
+  "10000010011011001001111101010",
+  "11111110101101010001110000010",
+];
+
+const QR_AUBREY = [
+  "11111110001000001011101111111",
+  "10000010000110011110101000001",
+  "10111010110110111010001011101",
+  "10111010111011100101001011101",
+  "10111010101000100111101011101",
+  "10000010110110111000101000001",
+  "11111110001010101010101111111",
+  "00000000110010111011000000000",
+  "10111100001111100100101111100",
+  "11101000011010001011111110001",
+  "11110011000101011000000000000",
+  "00100101011000011001110101010",
+  "10101010011101100111000001100",
+  "01001000101100101111101110001",
+  "01111111101111010100110111100",
+  "01100101100100011010010010010",
+  "10111010001011111100000001100",
+  "11010101010010001011101110101",
+  "10011010111110111110010000100",
+  "10011000100010101001111010010",
+  "10101010110101100101111110111",
+  "00000000010101100110100011111",
+  "11111110010000010101101011100",
+  "10000010111010101000100010011",
+  "10111010101110011100111110111",
+  "10111010111110001110000101111",
+  "10111010100010011000111111110",
+  "10000010001001001001111101010",
+  "11111110101001100111000110100",
+];
+
+const QR_ALEX = [
+  "11111110011000001011101111111",
+  "10000010010110011110101000001",
+  "10111010111110111010001011101",
+  "10111010100111100101001011101",
+  "10111010101111000111101011101",
+  "10000010101000111000101000001",
+  "11111110001010101010101111111",
+  "00000000110000011011000000000",
+  "10111100011111100100101111100",
+  "10000000101000001011111110001",
+  "10001110000000111000000000000",
+  "00000000101100111001110101010",
+  "10110110001111100111000001100",
+  "00100001110011101111101110001",
+  "01011011111000010100110111100",
+  "11001101000110011010010010010",
+  "10111011100000011100000001100",
+  "10010100011011001011101110101",
+  "10110111000111111110010000100",
+  "10011001101001001001111010010",
+  "10110010000100100101111110111",
+  "00000000011100000110100011111",
+  "11111110011010010101101011100",
+  "10000010100010101000100010010",
+  "10111010101010011100111110111",
+  "10111010111000101110000101111",
+  "10111010110011011000111111110",
+  "10000010010111101001111101010",
+  "11111110110011100111000110100",
+];
+
+const QR_ANDRIUS = [
+  "111111100001100000111111001111111",
+  "100000100001000110101100101000001",
+  "101110101001001110010110001011101",
+  "101110101011100000100100101011101",
+  "101110101110111111001110001011101",
+  "100000101110011000110101101000001",
+  "111111100010101010101010101111111",
+  "000000001010001010011101000000000",
+  "101111000001111001011011101111100",
+  "000100011101011011111011001101101",
+  "110010110100111111000010110010110",
+  "101010001110110011111001000011100",
+  "001111101011101010011111110111010",
+  "011111011101110100100100111001011",
+  "100110110101011111101000011111110",
+  "001010010101001100100101111011100",
+  "100011111010011101000010110110001",
+  "010000001111000010111101001101111",
+  "100100100010011110101100000110110",
+  "001011011110001000000110101111111",
+  "111111110110001100100100010111011",
+  "110110001111011111001011001001001",
+  "100011111101100000010100010001110",
+  "101010001100011010111110011100111",
+  "101011101110110001010010111110001",
+  "000000000011000011111010100010101",
+  "111111100100010101000011101010100",
+  "100000101100110011111001100011101",
+  "101110101010001010011110111111010",
+  "101110101010111100100000010011001",
+  "101110101011010110001100111101100",
+  "100000100100110100000101001011100",
+  "111111101101010101100001110100010",
+];
+
+/** Extra red lamp meshes for vehicles without shared tail materials — local positions on player group. */
+const BRAKE_FALLBACK_MOUNT = {
+  lightcycle: { y: 0.48, z: 1.46, xSep: 0.36, lampW: 0.092, lampH: 0.041 },
+  f16: { y: -0.04, z: 2.05, xSep: 0.26, lampW: 0.084, lampH: 0.036, pointDist: 4 },
+  xwing: { y: 0.31, z: 0.66, xSep: 0.44, lampW: 0.058, lampH: 0.042, lampD: 0.035, pointDist: 2.6 },
+  trex: { y: 0.92, z: 1.32, xSep: 0.22, lampW: 0.068, lampH: 0.04, pointDist: 3 },
+  ogre: { y: 0.32, z: 0.46, xSep: 0.22, lampW: 0.065, lampH: 0.038 },
+  hippo: { y: 0.78, z: 1.12, xSep: 0.38, lampW: 0.079, lampH: 0.042 },
+  skateboard: { y: 0.11, z: 1.04, xSep: 0.21, lampW: 0.058, lampH: 0.032, lampD: 0.028 },
+  bicycle: { y: 0.38, z: 0.82, xSep: 0.14 },
+  timetrain: { y: 0.62, z: 1.68, xSep: 0.52, lampW: 0.068, lampH: 0.055 },
+};
+
 /**
  * Low-poly open-wheel race car (F1-style read from chase cam), smooth lane lerp.
  */
@@ -10,6 +308,11 @@ export class Player {
     this.laneIndex = 1;
     this.targetLaneIndex = 1;
     this._smokeParticles = null;
+    /** @type {{ mat: import("three").MeshStandardMaterial, idle: number, brake: number }[]} */
+    this._brakeMatBindings = [];
+    this._brakePointLight = null;
+    this._brakePointIntensityBrake = 0.45;
+    this._brakeVisualLit = false;
     this.carType = carType;
     this.mesh = this._buildCarForType(carType);
     this.mesh.position.set(
@@ -23,10 +326,14 @@ export class Player {
     this.shieldRing = null;
     this._buildFlowGlow();
     this._buildShieldRing();
+    /** Set by Game (0..1) during DS finish glide — climb + pitch before finale. */
+    this._finishBreakawayEase = null;
   }
 
   swapCar(carType) {
     if (carType === this.carType) return;
+    this._clearBrakeLightBindings();
+    this._brakeVisualLit = false;
     const pos = this.mesh.position.clone();
     const vis = this.mesh.visible;
     this.dispose();
@@ -50,64 +357,143 @@ export class Player {
     this.shieldRing = null;
     this._buildFlowGlow();
     this._buildShieldRing();
+    this._finishBreakawayEase = null;
+  }
+
+  _clearBrakeLightBindings() {
+    this._brakeMatBindings.length = 0;
+    this._brakePointLight = null;
+  }
+
+  _registerBrakeMaterial(mat, idleEmissiveIntensity, brakeEmissiveIntensity) {
+    if (!mat || typeof mat.emissiveIntensity !== "number") return;
+    if (this._brakeMatBindings.some((b) => b.mat === mat)) return;
+    this._brakeMatBindings.push({
+      mat,
+      idle: idleEmissiveIntensity,
+      brake: brakeEmissiveIntensity,
+    });
+    mat.emissiveIntensity = this._brakeVisualLit ? brakeEmissiveIntensity : idleEmissiveIntensity;
+  }
+
+  /**
+   * Two shared red lamps + optional red point light (for chase-cam readability).
+   * @param {import("three").Group} group
+   * @param {Record<string, number>} opts
+   */
+  _mountBrakeLampsAux(group, opts) {
+    const y = opts.y ?? 0.34;
+    const z = opts.z ?? 1.92;
+    const xSep = opts.xSep ?? 0.42;
+    const lampW = opts.lampW ?? 0.088;
+    const lampH = opts.lampH ?? 0.048;
+    const lampD = opts.lampD ?? 0.042;
+    const idleEmit = opts.idleEmit ?? 0.18;
+    const brakeEmit = opts.brakeEmit ?? 2.0;
+    const pointBrake = opts.pointBrake ?? 0.42;
+    const pointDist = opts.pointDist ?? 3.6;
+    const lampMat = new THREE.MeshStandardMaterial({
+      color: 0x350806,
+      emissive: 0xff1508,
+      emissiveIntensity: idleEmit,
+      metalness: 0.15,
+      roughness: 0.5,
+    });
+    const geo = new THREE.BoxGeometry(lampW, lampH, lampD);
+    for (const sx of [-xSep, xSep]) {
+      const lamp = new THREE.Mesh(geo, lampMat);
+      lamp.position.set(sx, y, z);
+      group.add(lamp);
+    }
+    this._registerBrakeMaterial(lampMat, idleEmit, brakeEmit);
+    const pl = new THREE.PointLight(0xff2200, 0, pointDist);
+    pl.position.set(0, y, z + 0.055);
+    group.add(pl);
+    this._brakePointLight = pl;
+    this._brakePointIntensityBrake = pointBrake;
+  }
+
+  _ensureFallbackBrakeLamps(type, group) {
+    if (this._brakeMatBindings.length > 0) return;
+    const spec = BRAKE_FALLBACK_MOUNT[type];
+    if (!spec) return;
+    this._mountBrakeLampsAux(group, spec);
+  }
+
+  setBraking(on) {
+    const lit = !!on;
+    if (this._brakeVisualLit === lit) return;
+    this._brakeVisualLit = lit;
+    for (const { mat, idle, brake } of this._brakeMatBindings) {
+      mat.emissiveIntensity = lit ? brake : idle;
+    }
+    if (this._brakePointLight) {
+      this._brakePointLight.intensity = lit ? this._brakePointIntensityBrake : 0;
+    }
   }
 
   _buildCarForType(type) {
-    if (type === "truck") return this._buildTruckMesh();
-    if (type === "lightcycle") return this._buildLightcycleMesh();
-    if (type === "delorean") return this._buildDeloreanMesh();
-    if (type === "semi_truck") return this._buildSemiTruckMesh();
-    if (type === "scaloneta") return this._buildScalonetaMesh();
-    if (type === "f16") return this._buildF16Mesh();
-    if (type === "trex") return this._buildTrexMesh();
-    if (type === "cadillac") return this._buildCadillacMesh();
-    if (type === "ogre") return this._buildOgreMesh();
-    if (type === "crooner") return this._buildCroonerMesh();
-    if (type === "timetrain") return this._buildTimeTrainMesh();
-    if (type === "f1_yellow") return this._buildF1({
+    this._clearBrakeLightBindings();
+    /** @type {import("three").Group} */
+    let g;
+    if (type === "truck") g = this._buildTruckMesh();
+    else if (type === "lightcycle") g = this._buildLightcycleMesh();
+    else if (type === "delorean") g = this._buildDeloreanMesh();
+    else if (type === "semi_truck") g = this._buildSemiTruckMesh();
+    else if (type === "scaloneta") g = this._buildScalonetaMesh();
+    else if (type === "f16") g = this._buildF16Mesh();
+    else if (type === "xwing") g = this._buildXWingMesh();
+    else if (type === "trex") g = this._buildTrexMesh();
+    else if (type === "cadillac") g = this._buildCadillacMesh();
+    else if (type === "ogre") g = this._buildOgreMesh();
+    else if (type === "crooner") g = this._buildCroonerMesh();
+    else if (type === "timetrain") g = this._buildTimeTrainMesh();
+    else if (type === "f1_yellow") g = this._buildF1({
       livery: 0xffd000, liveryEmit: 0x332800,
       accent: 0xff6600, accentEmit: 0x331100,
       rim: 0xddaa00, glow: 0xffcc00,
     });
-    if (type === "f1_pink") return this._buildF1({
+    else if (type === "f1_pink") g = this._buildF1({
       livery: 0xff69b4, liveryEmit: 0x330018,
       accent: 0xffffff, accentEmit: 0x222222,
       rim: 0xffaacc, glow: 0xff69b4,
     });
-    if (type === "f1_purple") return this._buildF1({
+    else if (type === "f1_purple") g = this._buildF1({
       livery: 0x8833cc, liveryEmit: 0x1a0033,
       accent: 0xcc44ff, accentEmit: 0x330066,
       rim: 0xaa66dd, glow: 0x9944ff,
     });
-    if (type === "f1_turquoise") return this._buildF1({
+    else if (type === "f1_turquoise") g = this._buildF1({
       livery: 0x00d4cc, liveryEmit: 0x002a28,
       accent: 0x88eeff, accentEmit: 0x113344,
       rim: 0x66ddee, glow: 0x00e5d0,
     });
-    if (type === "f1_black_gold") return this._buildF1({
+    else if (type === "f1_black_gold") g = this._buildF1({
       livery: 0x111111, liveryEmit: 0x000000,
       accent: 0xdaa520, accentEmit: 0x332200,
       rim: 0xdaa520, glow: 0xffd700,
     });
-    if (type === "f1_pink_gold") return this._buildF1({
+    else if (type === "f1_pink_gold") g = this._buildF1({
       livery: 0xff69b4, liveryEmit: 0x330018,
       accent: 0xdaa520, accentEmit: 0x332200,
       rim: 0xdaa520, glow: 0xff69b4,
     });
-    if (type === "f1_blue_white") return this._buildF1({
+    else if (type === "f1_blue_white") g = this._buildF1({
       livery: 0x00205b, liveryEmit: 0x000d26,
       accent: 0xffffff, accentEmit: 0x444444,
       rim: 0xffffff, glow: 0x0044aa,
     });
-    if (type === "f1_maroon") return this._buildF1({
+    else if (type === "f1_maroon") g = this._buildF1({
       livery: 0x660000, liveryEmit: 0x1a0000,
       accent: 0xff6600, accentEmit: 0x331100,
       rim: 0xcc5500, glow: 0x882200,
     });
-    if (type === "hippo") return this._buildHippoMesh();
-    if (type === "skateboard") return this._buildSkateboardMesh();
-    if (type === "bicycle") return this._buildBicycleMesh();
-    return this._buildF1();
+    else if (type === "hippo") g = this._buildHippoMesh();
+    else if (type === "skateboard") g = this._buildSkateboardMesh();
+    else if (type === "bicycle") g = this._buildBicycleMesh();
+    else g = this._buildF1();
+    this._ensureFallbackBrakeLamps(type, g);
+    return g;
   }
 
   _buildF1(scheme = {}) {
@@ -333,15 +719,19 @@ export class Player {
     beamWing.position.set(0, 0.38, 0.88);
     g.add(beamWing);
 
-    // FIA rain light
-    const rainLight = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.05, 0.04),
-      new THREE.MeshStandardMaterial({
-        color: accCol, emissive: accCol, emissiveIntensity: 0.8,
-      })
-    );
-    rainLight.position.set(0, 0.34, 0.96);
-    g.add(rainLight);
+    // Dual rear brake lamps + subtle red spill (dims when not braking; HUD vignette unchanged)
+    this._mountBrakeLampsAux(g, {
+      y: 0.34,
+      z: 1.01,
+      xSep: 0.5,
+      lampW: 0.098,
+      lampH: 0.052,
+      lampD: 0.046,
+      idleEmit: 0.22,
+      brakeEmit: 2.08,
+      pointBrake: 0.5,
+      pointDist: 4.2,
+    });
 
     // ── Exhaust pipe ──
     const exhaust = new THREE.Mesh(
@@ -834,12 +1224,12 @@ export class Player {
     rBump.position.set(0, 0.17 + H, 1.28);
     g.add(rBump);
 
-    // Taillights (wide horizontal bar, classic DeLorean)
     for (const side of [-0.5, 0.5]) {
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.05), tailRed);
       tl.position.set(side, 0.3 + H, 1.28);
       g.add(tl);
     }
+    this._registerBrakeMaterial(tailRed, 0.62, 2.06);
 
     // ── BTTF2 rear louver vents (right-triangle wedge with grid slats) ──
     // Profile: flat vertical face at the rear, slopes down toward the front
@@ -1111,12 +1501,12 @@ export class Player {
     rBump.position.set(0, 0.28, 2.64);
     g.add(rBump);
 
-    // Taillights
     for (const side of [-0.6, 0.6]) {
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.06), red);
       tl.position.set(side, 0.45, 2.65);
       g.add(tl);
     }
+    this._registerBrakeMaterial(red, 0.52, 2.35);
 
     // Mud flaps
     for (const side of [-0.7, 0.7]) {
@@ -1182,6 +1572,12 @@ export class Player {
     g.add(smokeR);
 
     this._smokeParticles = [smokeL, smokeR];
+
+    // QR code on top of cabin
+    const qrCab = buildQrPanel(QR_ANDRIUS, 0.018);
+    qrCab.position.set(0, 1.46, -0.8);
+    qrCab.rotation.z = Math.PI / 2;
+    g.add(qrCab);
 
     // Headlight glow
     const glow = new THREE.PointLight(0xffaa44, 0.5, 8);
@@ -1443,12 +1839,13 @@ export class Player {
     rBump.position.set(0, 0.28, 2.16);
     g.add(rBump);
 
-    // Taillights
+    const tlMat = red.clone();
     for (const side of [-0.55, 0.55]) {
-      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.06), red.clone());
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.06), tlMat);
       tl.position.set(side, 0.5, 2.16);
       g.add(tl);
     }
+    this._registerBrakeMaterial(tlMat, 0.48, 2.22);
 
     // Wheels (2 axles)
     const addAxle = (z) => {
@@ -1469,6 +1866,15 @@ export class Player {
     };
     addAxle(-1.0);
     addAxle(1.5);
+
+    // QR code on both sides of the bus (lower body, between white stripes)
+    const qrRight = buildQrPanel(QR_LEO, 0.012);
+    qrRight.position.set(0.87, 0.65, -0.1);
+    g.add(qrRight);
+    const qrLeft = buildQrPanel(QR_LEO, 0.012);
+    qrLeft.position.set(-0.87, 0.65, -0.1);
+    qrLeft.rotation.y = Math.PI;
+    g.add(qrLeft);
 
     // Headlight glow
     const glow = new THREE.PointLight(0xffffcc, 0.4, 6);
@@ -1620,6 +2026,16 @@ export class Player {
     g.add(flame);
     this._jetFlame = flame;
 
+    // QR code on top of each main wing
+    const qrWingR = buildQrPanel(QR_ALEX, 0.012);
+    qrWingR.position.set(1.2, 0.04, -0.7);
+    qrWingR.rotation.z = Math.PI / 2;
+    g.add(qrWingR);
+    const qrWingL = buildQrPanel(QR_ALEX, 0.012);
+    qrWingL.position.set(-1.2, 0.04, -0.7);
+    qrWingL.rotation.z = Math.PI / 2;
+    g.add(qrWingL);
+
     // Underglow (orange)
     const glow = new THREE.PointLight(0xff6600, 1.0, 8);
     glow.position.set(0, -0.3, 1.5);
@@ -1635,6 +2051,216 @@ export class Player {
 
     grey.dispose(); darkGrey.dispose(); cockpitGlass.dispose();
     accentRed.dispose(); exhaust.dispose();
+
+    return g;
+  }
+
+  _buildXWingMesh() {
+    const g = new THREE.Group();
+    const hull = new THREE.MeshStandardMaterial({
+      color: 0xc4cad4, metalness: 0.55, roughness: 0.36,
+      emissive: 0x2a3038, emissiveIntensity: 0.09, flatShading: true,
+    });
+    const dark = new THREE.MeshStandardMaterial({
+      color: 0x454850, metalness: 0.55, roughness: 0.48,
+      emissive: 0x0c0c10, emissiveIntensity: 0.08, flatShading: true,
+    });
+    const red = new THREE.MeshStandardMaterial({
+      color: 0xc42020, metalness: 0.45, roughness: 0.42,
+      emissive: 0x501010, emissiveIntensity: 0.24, flatShading: true,
+    });
+    const glass = new THREE.MeshStandardMaterial({
+      color: 0x77a8cc, metalness: 0.65, roughness: 0.18,
+      transparent: true, opacity: 0.74, flatShading: true,
+    });
+    const engineMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2a30, metalness: 0.75, roughness: 0.38, flatShading: true,
+    });
+    /** Wingtip laser barrels — light gray, forward (−Z) like the film models. */
+    const barrelMat = new THREE.MeshStandardMaterial({
+      color: 0xc4cad4, metalness: 0.52, roughness: 0.4,
+      emissive: 0x1e2228, emissiveIntensity: 0.06, flatShading: true,
+    });
+    const r2Mat = new THREE.MeshStandardMaterial({
+      color: 0x2244aa, metalness: 0.42, roughness: 0.5,
+      emissive: 0x102044, emissiveIntensity: 0.12, flatShading: true,
+    });
+
+    const bodyC = new THREE.Vector3(0, 0.32, 0.02);
+    const wingLen = 1.06;
+    const wingT = 0.042;
+    const wingW = 0.33;
+
+    const fuselage = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.32, 0.98), hull);
+    fuselage.position.copy(bodyC);
+    g.add(fuselage);
+
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.58, 6), hull);
+    nose.rotation.x = -Math.PI / 2;
+    nose.position.set(0, bodyC.y, -0.76);
+    g.add(nose);
+
+    const canopy = new THREE.Mesh(
+      new THREE.SphereGeometry(0.13, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.52),
+      glass
+    );
+    canopy.scale.set(1, 0.82, 1.12);
+    canopy.position.set(0, 0.46, -0.1);
+    g.add(canopy);
+
+    const r2 = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5), r2Mat);
+    r2.scale.set(1, 0.52, 1);
+    r2.position.set(0, 0.51, 0.12);
+    g.add(r2);
+
+    /** Shallow S-foils — film attack position is a wide “flat” X, not a tall X. */
+    const sfoilDirs = [
+      new THREE.Vector3(-0.72, 0.22, -0.08),
+      new THREE.Vector3(0.72, 0.22, -0.08),
+      new THREE.Vector3(-0.72, -0.20, -0.08),
+      new THREE.Vector3(0.72, -0.20, -0.08),
+    ];
+
+    const sfoilBasis = new THREE.Matrix4();
+    const _sfx = new THREE.Vector3();
+    const _sfy = new THREE.Vector3();
+    const _sfz = new THREE.Vector3();
+    /** Trench / X-wing nose −Z — wing plane should contain span + forward so foil reads thin from chase cam. */
+    const _sfFwd = new THREE.Vector3(0, 0, -1);
+    const _sfUp = new THREE.Vector3(0, 1, 0);
+    const _sfFallback = new THREE.Vector3(0, 0, 1);
+    const setSfoilWingOrientation = (mesh, spanRaw) => {
+      _sfx.copy(spanRaw).normalize();
+      _sfy.crossVectors(_sfx, _sfFwd);
+      if (_sfy.lengthSq() < 1e-10) {
+        _sfy.crossVectors(_sfx, _sfUp);
+        if (_sfy.lengthSq() < 1e-10) _sfy.crossVectors(_sfx, _sfFallback);
+      }
+      _sfy.normalize();
+      _sfz.crossVectors(_sfx, _sfy).normalize();
+      sfoilBasis.makeBasis(_sfx, _sfy, _sfz);
+      mesh.quaternion.setFromRotationMatrix(sfoilBasis);
+    };
+
+    const barrelQ = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, -1)
+    );
+    const mountH = 0.075;
+    const poleLen = 0.58;
+    const muzzleH = 0.042;
+    /** Mesh-local emitter points — Game spawns turbolaser bolts here. */
+    g.userData.xwingBarrelTips = [];
+
+    for (const raw of sfoilDirs) {
+      const d = raw.clone().normalize();
+      const wing = new THREE.Mesh(
+        new THREE.BoxGeometry(wingLen, wingT, wingW),
+        hull
+      );
+      setSfoilWingOrientation(wing, raw);
+      const centerDist = 0.22 + wingLen * 0.5;
+      wing.position.copy(bodyC).add(d.clone().multiplyScalar(centerDist));
+      g.add(wing);
+
+      const stripe = new THREE.Mesh(
+        new THREE.BoxGeometry(wingLen * 0.2, wingT + 0.01, 0.1),
+        red
+      );
+      stripe.quaternion.copy(wing.quaternion);
+      stripe.position.copy(wing.position).add(d.clone().multiplyScalar(wingLen * 0.26));
+      stripe.position.y += 0.016;
+      g.add(stripe);
+
+      const tipD = 0.22 + wingLen * 0.94;
+      const tip = bodyC.clone().add(d.clone().multiplyScalar(tipD));
+      tip.y -= 0.018;
+
+      const mount = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.036, 0.042, mountH, 8),
+        barrelMat
+      );
+      mount.quaternion.copy(barrelQ);
+      mount.position.copy(tip).add(new THREE.Vector3(0, 0, -mountH * 0.5));
+      g.add(mount);
+
+      const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0125, 0.0145, poleLen, 8),
+        barrelMat
+      );
+      pole.quaternion.copy(barrelQ);
+      pole.position.copy(tip).add(new THREE.Vector3(0, 0, -(mountH + poleLen * 0.5)));
+      g.add(pole);
+
+      const muzzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.011, muzzleH, 8),
+        barrelMat
+      );
+      muzzle.quaternion.copy(barrelQ);
+      muzzle.position.copy(tip).add(
+        new THREE.Vector3(0, 0, -(mountH + poleLen + muzzleH * 0.5))
+      );
+      g.add(muzzle);
+
+      const cross = new THREE.Group();
+      cross.quaternion.copy(barrelQ);
+      cross.position.copy(
+        tip.clone().add(new THREE.Vector3(0, 0, -(mountH + poleLen + muzzleH)))
+      );
+      const prW = 0.034;
+      const prT = 0.006;
+      const prD = 0.014;
+      const barH = new THREE.Mesh(
+        new THREE.BoxGeometry(prW, prT, prD),
+        barrelMat
+      );
+      const barV = new THREE.Mesh(
+        new THREE.BoxGeometry(prT, prW, prD),
+        barrelMat
+      );
+      cross.add(barH);
+      cross.add(barV);
+      g.add(cross);
+
+      const emitterZ = mountH + poleLen + muzzleH + prD * 0.5 + 0.008;
+      g.userData.xwingBarrelTips.push(
+        tip.clone().add(new THREE.Vector3(0, 0, -emitterZ))
+      );
+    }
+
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xff3318, transparent: true, opacity: 0.94,
+    });
+    const honey = new THREE.MeshBasicMaterial({
+      color: 0xff5522, transparent: true, opacity: 0.82,
+    });
+    for (const raw of sfoilDirs) {
+      const d = raw.clone().normalize();
+      const pos = bodyC.clone()
+        .add(d.clone().multiplyScalar(0.2))
+        .add(new THREE.Vector3(0, 0, 0.5));
+      const eng = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.068, 0.082, 0.2, 8),
+        engineMat
+      );
+      eng.rotation.x = Math.PI / 2;
+      eng.position.copy(pos);
+      g.add(eng);
+      const grid = new THREE.Mesh(new THREE.RingGeometry(0.028, 0.054, 10), honey);
+      grid.rotation.x = -Math.PI / 2;
+      grid.position.copy(pos).add(new THREE.Vector3(0, 0, 0.108));
+      g.add(grid);
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.056, 8), glowMat);
+      glow.rotation.x = -Math.PI / 2;
+      glow.position.copy(pos).add(new THREE.Vector3(0, 0, 0.118));
+      g.add(glow);
+    }
+
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.44, 0.14), dark);
+    tail.position.set(0, 0.52, 0.58);
+    g.add(tail);
+
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 
     return g;
   }
@@ -1736,12 +2362,12 @@ export class Player {
       g.add(hl);
     }
 
-    // Taillights
     for (const side of [-0.55, 0.55]) {
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.06), red);
       tl.position.set(side, 0.5, 1.79);
       g.add(tl);
     }
+    this._registerBrakeMaterial(red, 0.38, 2.08);
 
     // Roll bar in bed
     const rollBar = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.08, 0.08), chrome);
@@ -1812,7 +2438,7 @@ export class Player {
     g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
 
     paint.dispose(); dark.dispose(); chrome.dispose();
-    rubber.dispose(); rim.dispose(); glass.dispose(); red.dispose();
+    rubber.dispose(); rim.dispose(); glass.dispose();
 
     return g;
   }
@@ -1833,16 +2459,22 @@ export class Player {
   }
 
   _buildShieldRing() {
+    const isXwing = this.carType === "xwing";
+    const major = isXwing ? 1.05 : 1.6;
+    const tube = isXwing ? 0.04 : 0.055;
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.6, 0.055, 8, 32),
+      new THREE.TorusGeometry(major, tube, 8, 32),
       new THREE.MeshBasicMaterial({
         color: 0xaa55ff,
         transparent: true,
         opacity: 0,
+        depthWrite: false,
+        depthTest: true,
       })
     );
     ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.3;
+    ring.position.y = isXwing ? 0.38 : 0.3;
+    ring.renderOrder = 2;
     this.mesh.add(ring);
     this.shieldRing = ring;
   }
@@ -1972,13 +2604,19 @@ export class Player {
     rBumper.position.set(0, 0.2 + H, 1.55);
     g.add(rBumper);
 
-    // Tail lights
-    const tailRed = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+    const tailLamp = new THREE.MeshStandardMaterial({
+      color: 0x660000,
+      emissive: 0xff1810,
+      emissiveIntensity: 0.35,
+      metalness: 0.18,
+      roughness: 0.42,
+    });
     for (const side of [-1, 1]) {
-      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.04), tailRed);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.04), tailLamp);
       tail.position.set(side * 0.65, 0.35 + H, 1.56);
       g.add(tail);
     }
+    this._registerBrakeMaterial(tailLamp, 0.36, 2.06);
 
     // Side trim
     for (const side of [-1, 1]) {
@@ -2265,6 +2903,15 @@ export class Player {
     cabGlow.position.set(0, 0.9, 1.1);
     g.add(cabGlow);
 
+    // QR code on both sides of the cab
+    const qrRight = buildQrPanel(QR_ROGER, 0.022);
+    qrRight.position.set(0.66, 0.75, 1.0);
+    g.add(qrRight);
+    const qrLeft = buildQrPanel(QR_ROGER, 0.022);
+    qrLeft.position.set(-0.66, 0.75, 1.0);
+    qrLeft.rotation.y = Math.PI;
+    g.add(qrLeft);
+
     g.rotation.y = Math.PI;
     return g;
   }
@@ -2550,12 +3197,12 @@ export class Player {
       finTip.rotation.x = -Math.PI / 2;
       finTip.position.set(side * 0.88, 0.72 + H, 1.8);
       g.add(finTip);
-      // Tail light — iconic bullet shape in the fin
       const tailLight = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.04, 0.12, 8), tailRed);
       tailLight.rotation.x = Math.PI / 2;
       tailLight.position.set(side * 0.88, 0.5 + H, 1.82);
       g.add(tailLight);
     }
+    this._registerBrakeMaterial(tailRed, 0.52, 2.08);
 
     // Rear bumper — chrome
     const rBumper = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.1), chrome);
@@ -2631,6 +3278,12 @@ export class Player {
         g.add(hubcap);
       }
     }
+
+    // QR code on hood
+    const qrHood = buildQrPanel(QR_AUBREY, 0.02);
+    qrHood.position.set(0, 0.53 + H, -1.0);
+    qrHood.rotation.z = Math.PI / 2;
+    g.add(qrHood);
 
     // Pink underglow
     const glow = new THREE.PointLight(0xff69b4, 1.5, 5);
@@ -2790,6 +3443,12 @@ export class Player {
       g.add(spike);
     }
 
+    // QR code on chest (torso cylinder front face is at z=-0.9)
+    const qrChest = buildQrPanel(QR_ANSHUL, 0.018);
+    qrChest.position.set(0, 1.0, -0.92);
+    qrChest.rotation.y = Math.PI / 2;
+    g.add(qrChest);
+
     // Underglow
     const glow = new THREE.PointLight(0x44ff44, 1.2, 4);
     glow.position.set(0, 0.3, 0);
@@ -2924,6 +3583,15 @@ export class Player {
 
     this._riderGrp = riderGrp;
     g.add(riderGrp);
+
+    // QR code on both sides
+    const qrRight = buildQrPanel(QR_NUNO, 0.025);
+    qrRight.position.set(0.71, 0.6, 0.1);
+    g.add(qrRight);
+    const qrLeft = buildQrPanel(QR_NUNO, 0.025);
+    qrLeft.position.set(-0.71, 0.6, 0.1);
+    qrLeft.rotation.y = Math.PI;
+    g.add(qrLeft);
 
     // Underglow
     const glow = new THREE.PointLight(0x66ffcc, 0.5, 8);
@@ -3370,6 +4038,13 @@ export class Player {
       rider.add(pupil);
     }
 
+    // QR code on rider's jersey front
+    const qrFront = buildQrPanel(QR_HICHAM, 0.012);
+    qrFront.position.set(0, 1.12, 0.11);
+    qrFront.rotation.x = -0.55;
+    qrFront.rotation.y = -Math.PI / 2;
+    rider.add(qrFront);
+
     g.add(rider);
     this._bikeRider = rider;
     this._bikePedalAngle = 0;
@@ -3628,7 +4303,16 @@ export class Player {
       this.mesh.position.y = CONFIG.PLAYER_Y + bob + this._skateJumpY;
       this.mesh.rotation.x = this._skateJumpY > 0.3 ? Math.sin(t * 0.015) * 0.15 : 0;
     } else {
-      this.mesh.position.y = CONFIG.PLAYER_Y + hoverLift + bob;
+      let y = CONFIG.PLAYER_Y + hoverLift + bob;
+      if (this.carType === "xwing" && this._finishBreakawayEase != null) {
+        const e = this._finishBreakawayEase;
+        const sm = e * e * (3 - 2 * e);
+        y += sm * 8.6;
+        this.mesh.position.z = -sm * 0.7;
+      } else if (this.carType === "xwing") {
+        this.mesh.position.z = 0;
+      }
+      this.mesh.position.y = y;
     }
 
     this.mesh.rotation.z = THREE.MathUtils.lerp(
@@ -3714,13 +4398,19 @@ export class Player {
       pos.needsUpdate = true;
     }
 
-    this.mesh.rotation.x = isF16
+    let rotX = isF16
       ? Math.sin(t * 0.003) * 0.04 + Math.cos(t * 0.002) * 0.025
       : isTrain
         ? Math.sin(t * 0.002) * 0.03 + Math.cos(t * 0.0015) * 0.018
         : isHover
           ? Math.sin(t * 0.0025) * 0.035 + Math.cos(t * 0.0017) * 0.02
           : 0;
+    if (this.carType === "xwing" && this._finishBreakawayEase != null) {
+      const e = this._finishBreakawayEase;
+      const sm = e * e * (3 - 2 * e);
+      rotX += -sm * 0.4;
+    }
+    this.mesh.rotation.x = rotX;
 
     if (this._smokeParticles) {
       for (const smoke of this._smokeParticles) {
@@ -3782,6 +4472,16 @@ export class Player {
   }
 
   updateCelebration(dt, elapsed) {
+    if (this.carType === "xwing") {
+      const rise = Math.min(1, elapsed / 5.5);
+      const ease = rise * rise * (3 - 2 * rise);
+      /** Keep low over the deck on trench complete — large rise + orbit read as “floating in space”. */
+      this.mesh.position.y = CONFIG.PLAYER_Y + ease * 4.2;
+      this.mesh.position.z = ease * 1.1;
+      this.mesh.rotation.x = -ease * 0.22;
+      this.mesh.rotation.z = Math.sin(elapsed * 0.9) * 0.1 * ease;
+      return;
+    }
     if (this.carType !== "hippo") return;
 
     const t = elapsed * 1000;
@@ -3817,6 +4517,14 @@ export class Player {
   }
 
   resetCelebrationPose() {
+    if (this.carType === "xwing") {
+      this.mesh.position.y = CONFIG.PLAYER_Y;
+      this.mesh.position.z = 0;
+      this.mesh.rotation.x = 0;
+      this.mesh.rotation.z = 0;
+      this.mesh.rotation.y = 0;
+      return;
+    }
     if (this.carType !== "hippo") return;
 
     this.mesh.position.y = CONFIG.PLAYER_Y;

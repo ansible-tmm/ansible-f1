@@ -1,6 +1,48 @@
 import * as THREE from "three";
 import { LEVELS } from "../data/config.js";
 
+/** Trench `propsGroup` / wall scroll wrap period — deck greeble must tile at this Z period or the floor “flips” visibly. */
+const TRENCH_PROP_Z_PERIOD = 14;
+
+/** Automation ROI (G): one shared ocean shader on wide strips (scroll + curve with props). */
+const ROI_OCEAN_INNER_X = -12.45;
+const ROI_OCEAN_OUTER_X = -580;
+const ROI_OCEAN_VS = `
+  varying vec3 vWorldPos;
+  varying vec3 vLocalPos;
+  void main() {
+    vLocalPos = position;
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+const ROI_OCEAN_FS = `
+  varying vec3 vWorldPos;
+  varying vec3 vLocalPos;
+  uniform float uTime;
+
+  void main() {
+    float offshore = smoothstep(25.0, 210.0, -vLocalPos.x);
+    vec3 shoreBright = vec3(0.44, 0.89, 0.97);
+    vec3 mid = vec3(0.16, 0.55, 0.72);
+    vec3 deep = vec3(0.04, 0.24, 0.38);
+    vec3 col = mix(shoreBright, mid, offshore * 0.58);
+    col = mix(col, deep, offshore * offshore * 0.52);
+
+    float ahead = -vWorldPos.z;
+    float horizon = smoothstep(28.0, 210.0, ahead);
+    col *= mix(vec3(1.0), vec3(0.68, 0.76, 0.88), horizon * 0.62);
+
+    float w1 = sin(vWorldPos.x * 0.062 + uTime * 2.05);
+    float w2 = sin(vWorldPos.z * 0.052 + uTime * 1.7);
+    float w3 = sin((vWorldPos.x * 0.75 + vWorldPos.z) * 0.078 + uTime * 2.55);
+    float ripple = (w1 * 0.45 + w2 * 0.4 + w3 * 0.35) * 0.042;
+
+    gl_FragColor = vec4(col + ripple, 1.0);
+  }
+`;
+
 /**
  * Themed roadway, lane markers, side props, billboards, skyline, horizon, lights.
  * Accepts a level theme key ("A", "B", "C") to configure visuals.
@@ -12,17 +54,25 @@ export class Track {
     scene.add(this.group);
     this.levelId = levelId;
     this.theme = LEVELS[levelId] || LEVELS.A;
+    /** True only for Death Star Trench (not other hypothetical trench themes). */
+    this._isDeathStar = levelId === "DS";
 
     this._curve = this.theme.curve || null;
     this._scrollDist = 0;
 
     /** @type {Object<string, THREE.Group>} */
     this.billboards = {};
+    /** Trench floor group parented to propsGroup so it scrolls with walls (null otherwise). */
+    this._roadDeck = null;
+    /** Level G ocean strips share this material; `update` advances `uTime`. */
+    this._roiOceanMat = null;
 
     this._road();
     this._laneMarkers();
     this._sideProps();
-    this._billboards();
+    if (levelId !== "DS") {
+      this._billboards();
+    }
     this._skyline();
     this._horizon();
     this._lights();
@@ -34,11 +84,104 @@ export class Track {
       Math.sin((worldZ + this._scrollDist) * this._curve.frequency);
   }
 
+  /** Speckled sand + roughness for Developer experience — avoids flat “carpet” albedo. */
+  _developerDesertSandTextures() {
+    if (this._devDesertSandTex) return this._devDesertSandTex;
+    const sz = 512;
+    const c = document.createElement("canvas");
+    c.width = sz;
+    c.height = sz;
+    const ctx = c.getContext("2d");
+    const g = ctx.createLinearGradient(0, 0, sz, sz);
+    g.addColorStop(0, "#dbc896");
+    g.addColorStop(0.5, "#d4b87a");
+    g.addColorStop(1, "#c9a870");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, sz, sz);
+    for (let i = 0; i < 14000; i++) {
+      const x = Math.random() * sz;
+      const y = Math.random() * sz;
+      const t = Math.random();
+      ctx.fillStyle =
+        t < 0.33
+          ? `rgba(120,95,55,${0.08 + Math.random() * 0.12})`
+          : t < 0.66
+            ? `rgba(210,190,140,${0.1 + Math.random() * 0.14})`
+            : `rgba(90,75,50,${0.06 + Math.random() * 0.1})`;
+      const s = 1 + Math.floor(Math.random() * 2.5);
+      ctx.fillRect(x, y, s, s);
+    }
+    const map = new THREE.CanvasTexture(c);
+    map.wrapS = map.wrapT = THREE.RepeatWrapping;
+    map.repeat.set(7, 11);
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = 4;
+
+    const cr = document.createElement("canvas");
+    cr.width = sz;
+    cr.height = sz;
+    const rcx = cr.getContext("2d");
+    const rg = rcx.createImageData(sz, sz);
+    const d = rg.data;
+    for (let y = 0; y < sz; y++) {
+      for (let x = 0; x < sz; x++) {
+        const i = (y * sz + x) * 4;
+        const nx = x / sz;
+        const ny = y / sz;
+        const w =
+          Math.sin(nx * 31.7) * Math.cos(ny * 27.3) * 0.22 +
+          Math.sin(nx * 67 + ny * 13) * 0.12 +
+          Math.random() * 0.1 +
+          0.52;
+        const v = Math.max(0, Math.min(1, w)) * 255;
+        d[i] = d[i + 1] = d[i + 2] = v;
+        d[i + 3] = 255;
+      }
+    }
+    rcx.putImageData(rg, 0, 0);
+    const roughness = new THREE.CanvasTexture(cr);
+    roughness.wrapS = roughness.wrapT = THREE.RepeatWrapping;
+    roughness.repeat.set(7, 11);
+
+    this._devDesertSandTex = { map, roughness };
+    return this._devDesertSandTex;
+  }
+
+  /** Tiny height variation on subdivided shoulder sand (XZ after plane rotation). */
+  _subtleDesertGroundRipple(geometry) {
+    const pos = geometry.attributes.position;
+    if (!pos) return;
+    for (let i = 0; i < pos.count; i++) {
+      const lx = pos.getX(i);
+      const ly = pos.getY(i);
+      const nx = lx * 0.14;
+      const ny = ly * 0.018;
+      const bump =
+        Math.sin(nx + ny * 0.7) * 0.045 +
+        Math.sin(nx * 2.1 - ny * 1.3) * 0.028 +
+        Math.sin(nx * 0.4 + ny * 0.55) * 0.032;
+      pos.setZ(i, bump);
+    }
+    pos.needsUpdate = true;
+    geometry.computeVertexNormals();
+  }
+
   _road() {
     const t = this.theme;
+    /** No asphalt berm past yellow lines — terrain meets road at ±6 */
+    const desertNarrowRoad =
+      this.levelId === "C" && t.scenery === "desert" && !this._isDeathStar;
+    const narrowRoad = desertNarrowRoad || ((this.levelId === "D" || this.levelId === "F") && !this._isDeathStar);
+    this._roadHalfWidth = narrowRoad ? 6 : 11;
+    const roadPlaneW = narrowRoad ? 12 : 22;
+    const curvedRoadW = narrowRoad ? (24 * roadPlaneW) / 22 : 24;
+
     const roadMat = new THREE.MeshStandardMaterial({
-      color: t.road, metalness: 0.15, roughness: 0.88,
-      emissive: t.roadEmissive, emissiveIntensity: 0.12,
+      color: t.road, metalness: t.scenery === "trench" ? 0.35 : 0.15,
+      roughness: t.scenery === "trench" ? 0.78 : 0.88,
+      emissive: t.roadEmissive,
+      emissiveIntensity: t.scenery === "trench" ? 0.06 : 0.12,
+      flatShading: t.scenery === "trench",
     });
     this._roadMat = roadMat;
     this._roadOrigColor = roadMat.color.getHex();
@@ -52,7 +195,8 @@ export class Track {
       this._roadSegCount = 100;
       for (let i = 0; i < this._roadSegCount; i++) {
         const seg = new THREE.Mesh(
-          new THREE.PlaneGeometry(24, this._roadSegSpacing + 0.6), roadMat
+          new THREE.PlaneGeometry(curvedRoadW, this._roadSegSpacing + 0.6),
+          roadMat
         );
         seg.rotation.x = -Math.PI / 2;
         seg.position.set(0, 0, -200 + i * this._roadSegSpacing);
@@ -60,69 +204,178 @@ export class Track {
         this._roadSegGroup.add(seg);
       }
     } else {
+      /** Trench deck + greeble scroll with props; otherwise the floor looks “stuck” while walls move. */
+      const trenchDeck = !this._curve && t.scenery === "trench";
+      this._roadDeck = trenchDeck ? new THREE.Group() : null;
+      const deck = this._roadDeck || this.group;
       const road = new THREE.Mesh(
-        new THREE.PlaneGeometry(22, 400), roadMat
+        new THREE.PlaneGeometry(roadPlaneW, 400), roadMat
       );
       road.rotation.x = -Math.PI / 2;
       road.position.y = 0;
       road.receiveShadow = true;
-      this.group.add(road);
+      deck.add(road);
+      if (t.scenery === "trench") {
+        this._addTrenchFloorGreeble(deck);
+      }
     }
 
-    this.edgeGroup = new THREE.Group();
-    this.group.add(this.edgeGroup);
     this._edgeSpacing = this._curve ? 5 : 20;
     this._edgeCount = this._curve ? 80 : 24;
-    const edgeMat = new THREE.MeshStandardMaterial({
-      color: t.edge, emissive: t.edgeEmissive, emissiveIntensity: 0.6,
-    });
-    this._edgeMat = edgeMat;
-    this._edgeOrigColor = edgeMat.color.getHex();
-    this._edgeOrigEmissive = edgeMat.emissive.getHex();
     this._edgeMeshes = [];
-    for (let i = 0; i < this._edgeCount; i++) {
-      const z = -200 + i * this._edgeSpacing;
-      const el = new THREE.Mesh(
-        new THREE.BoxGeometry(0.35, 0.08, this._edgeSpacing), edgeMat
-      );
-      el.position.set(-5.8, 0.05, z);
-      el.userData.baseX = -5.8;
-      this.edgeGroup.add(el);
-      const er = el.clone();
-      er.position.x = 5.8;
-      er.userData.baseX = 5.8;
-      this.edgeGroup.add(er);
-      this._edgeMeshes.push(el, er);
+    if (!this._isDeathStar) {
+      this.edgeGroup = new THREE.Group();
+      this.group.add(this.edgeGroup);
+      const edgeEmissiveInt = t.scenery === "trench" ? 0.22 : 0.6;
+      const edgeMat = new THREE.MeshStandardMaterial({
+        color: t.edge, emissive: t.edgeEmissive, emissiveIntensity: edgeEmissiveInt,
+        flatShading: t.scenery === "trench",
+      });
+      this._edgeMat = edgeMat;
+      this._edgeOrigColor = edgeMat.color.getHex();
+      this._edgeOrigEmissive = edgeMat.emissive.getHex();
+      for (let i = 0; i < this._edgeCount; i++) {
+        const z = -200 + i * this._edgeSpacing;
+        const el = new THREE.Mesh(
+          new THREE.BoxGeometry(0.35, 0.08, this._edgeSpacing), edgeMat
+        );
+        el.position.set(-5.8, 0.05, z);
+        el.userData.baseX = -5.8;
+        this.edgeGroup.add(el);
+        const er = el.clone();
+        er.position.x = 5.8;
+        er.userData.baseX = 5.8;
+        this.edgeGroup.add(er);
+        this._edgeMeshes.push(el, er);
+      }
+    } else {
+      this.edgeGroup = null;
+      this._edgeMat = null;
     }
 
-    // Ground planes on each side of the road
+    // Beside the deck: flat planes (other themes) or solid low aprons (Death Star — reads as volume, not black sheets)
+    const surf = this._roadDeck || this.group;
     if (t.scenery !== "city" && t.scenery !== "durham") {
-      const groundMat = new THREE.MeshStandardMaterial({
-        color: t.side, emissive: t.sideEmissive,
-        emissiveIntensity: 0.15, roughness: 0.95,
-      });
-      const gw = this._curve ? 100 : 80;
-      const groundL = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat);
-      groundL.rotation.x = -Math.PI / 2;
-      groundL.position.set(-51, -0.02, 0);
-      this.group.add(groundL);
-      const groundR = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat.clone());
-      groundR.rotation.x = -Math.PI / 2;
-      groundR.position.set(51, -0.02, 0);
-      this.group.add(groundR);
+      if (this._isDeathStar) {
+        const apronMat = new THREE.MeshStandardMaterial({
+          color: 0x5a6570,
+          emissive: 0x455059,
+          emissiveIntensity: 0.08,
+          roughness: 0.84,
+          metalness: 0.4,
+          flatShading: true,
+        });
+        const apLen = 400;
+        const apW = 36;
+        const apH = 0.85;
+        const innerHalf = 11;
+        const leftCx = -(innerHalf + apW / 2);
+        const apronL = new THREE.Mesh(new THREE.BoxGeometry(apW, apH, apLen), apronMat);
+        apronL.position.set(leftCx, -apH * 0.5 + 0.06, 0);
+        apronL.receiveShadow = true;
+        surf.add(apronL);
+        const apronR = new THREE.Mesh(new THREE.BoxGeometry(apW, apH, apLen), apronMat.clone());
+        apronR.position.set(-leftCx, -apH * 0.5 + 0.06, 0);
+        apronR.receiveShadow = true;
+        surf.add(apronR);
+      } else {
+        const sandTex = desertNarrowRoad ? this._developerDesertSandTextures() : null;
+        const groundMat = new THREE.MeshStandardMaterial({
+          color: t.side, emissive: t.sideEmissive,
+          emissiveIntensity: desertNarrowRoad
+            ? 0.04
+            : (t.scenery === "trench" ? 0.08 : 0.15),
+          roughness: desertNarrowRoad ? 0.99 : (t.scenery === "trench" ? 0.92 : 0.95),
+          metalness: t.scenery === "trench" ? 0.25 : 0,
+          flatShading: t.scenery === "trench",
+        });
+        if (sandTex) {
+          groundMat.map = sandTex.map;
+          groundMat.roughnessMap = sandTex.roughness;
+        }
+        const gw = this._curve ? 100 : 80;
+        /** Workflow (B): tuck field so inner grass ~±6. Else match inner berm to road outer edge. */
+        const gx =
+          this.levelId === "B" && t.scenery === "forest"
+            ? 46
+            : gw / 2 + this._roadHalfWidth;
+        const groundY =
+          narrowRoad ? -0.003 : -0.02;
+        const gSegX = desertNarrowRoad ? 18 : 1;
+        const gSegZ = desertNarrowRoad ? 64 : 1;
+        const groundL = new THREE.Mesh(
+          new THREE.PlaneGeometry(gw, 400, gSegX, gSegZ),
+          groundMat
+        );
+        groundL.rotation.x = -Math.PI / 2;
+        groundL.position.set(-gx, groundY, 0);
+        if (desertNarrowRoad) this._subtleDesertGroundRipple(groundL.geometry);
+        surf.add(groundL);
+        const groundR = new THREE.Mesh(
+          new THREE.PlaneGeometry(gw, 400, gSegX, gSegZ),
+          groundMat.clone()
+        );
+        if (sandTex) {
+          groundR.material.map = sandTex.map;
+          groundR.material.roughnessMap = sandTex.roughness;
+        }
+        groundR.rotation.x = -Math.PI / 2;
+        groundR.position.set(gx, groundY, 0);
+        if (desertNarrowRoad) this._subtleDesertGroundRipple(groundR.geometry);
+        surf.add(groundR);
+
+        if (this.levelId === "B" && t.scenery === "forest") {
+          const shoulderH = 0.06;
+          const shoulderY = shoulderH * 0.5 + 0.02;
+          /** Past lane-edge strips (±5.8) to outer road ±11 — kills gray asphalt berm */
+          const inner = 5.82;
+          const outer = 11.02;
+          const sw = outer - inner;
+          const shrub = new THREE.MeshStandardMaterial({
+            color: t.side,
+            emissive: t.sideEmissive,
+            emissiveIntensity: 0.22,
+            roughness: 0.9,
+            metalness: 0,
+          });
+          const shl = new THREE.Mesh(
+            new THREE.BoxGeometry(sw, shoulderH, 400),
+            shrub
+          );
+          shl.receiveShadow = true;
+          shl.position.set(-(inner + sw / 2), shoulderY, 0);
+          surf.add(shl);
+          const shr = new THREE.Mesh(
+            new THREE.BoxGeometry(sw, shoulderH, 400),
+            shrub
+          );
+          shr.receiveShadow = true;
+          shr.position.set(inner + sw / 2, shoulderY, 0);
+          surf.add(shr);
+        }
+      }
     }
   }
 
   _laneMarkers() {
+    if (this._isDeathStar) {
+      this.markerGroup = null;
+      this._markerMeshes = [];
+      this._markerSpacing = 8;
+      return;
+    }
+
     this.markerGroup = new THREE.Group();
     this.group.add(this.markerGroup);
 
+    const isTrench = this.theme.scenery === "trench";
     const mat = new THREE.MeshBasicMaterial({
       color: this.theme.laneMarker,
-      transparent: true, opacity: 0.85,
+      transparent: true,
+      opacity: isTrench ? 0.45 : 0.85,
     });
-    this._markerSpacing = this._curve ? 4 : 8;
-    this._markerCount = this._curve ? 100 : 40;
+    this._markerSpacing = this._curve ? 4 : isTrench ? 6 : 8;
+    this._markerCount = this._curve ? 100 : isTrench ? 52 : 40;
     this._markerMeshes = [];
     for (let i = 0; i < this._markerCount; i++) {
       const z = -200 + i * this._markerSpacing;
@@ -138,10 +391,94 @@ export class Track {
     }
   }
 
+  /** Raised seams + deck plates (low-poly Rogue Squadron vibe). */
+  _addTrenchFloorGreeble(parent = this.group) {
+    const seamMat = new THREE.MeshStandardMaterial({
+      color: 0x35363c, roughness: 0.9, metalness: 0.4,
+      emissive: 0x08080a, emissiveIntensity: 0.04, flatShading: true,
+    });
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0x42444c, roughness: 0.88, metalness: 0.38,
+      emissive: 0x0a0a0e, emissiveIntensity: 0.05, flatShading: true,
+    });
+    if (this._isDeathStar) {
+      this._addDeathStarPeriodicDeckGreeble(parent, seamMat, plateMat);
+      return;
+    }
+    for (let i = 0; i < 55; i++) {
+      const z = -198 + i * 7.2;
+      const seam = new THREE.Mesh(
+        new THREE.BoxGeometry(21.8, 0.035, 0.09),
+        seamMat
+      );
+      seam.position.set(0, 0.018, z);
+      parent.add(seam);
+    }
+    for (let row = 0; row < 42; row++) {
+      const z = -196 + row * 9.2;
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 4; k++) {
+          const x = side * (3.15 + k * 0.95);
+          if (Math.random() < 0.22) continue;
+          const dz = 1.4 + Math.random() * 1.8;
+          const h = 0.04 + Math.random() * 0.05;
+          const plate = new THREE.Mesh(
+            new THREE.BoxGeometry(0.85 + Math.random() * 0.35, h, dz),
+            plateMat
+          );
+          plate.position.set(x + (Math.random() - 0.5) * 0.15, 0.02 + h / 2, z + (Math.random() - 0.5) * 2);
+          parent.add(plate);
+        }
+      }
+    }
+  }
+
+  /**
+   * Death Star deck detail that repeats every `TRENCH_PROP_Z_PERIOD` units — matches
+   * `propsGroup` wrap so scrolling looks continuous, not flip-book jumps.
+   */
+  _addDeathStarPeriodicDeckGreeble(parent, seamMat, plateMat) {
+    const P = TRENCH_PROP_Z_PERIOD;
+    const zMin = -224;
+    const nCells = 34;
+    for (let i = 0; i <= nCells; i++) {
+      const z = zMin + i * P;
+      const seam = new THREE.Mesh(
+        new THREE.BoxGeometry(21.8, 0.035, 0.09),
+        seamMat
+      );
+      seam.position.set(0, 0.018, z);
+      parent.add(seam);
+    }
+    /** Same plate layout in every length-P cell (world Z + n·P looks identical). */
+    const cellPlates = [
+      { x: -2.95, z: 3.4, w: 0.92, h: 0.048, d: 2.15 },
+      { x: 2.95, z: 4.1, w: 0.88, h: 0.042, d: 1.95 },
+      { x: -3.2, z: 8.6, w: 1.05, h: 0.055, d: 2.45 },
+      { x: 3.05, z: 9.8, w: 0.78, h: 0.038, d: 1.65 },
+      { x: -1.15, z: 6.2, w: 0.7, h: 0.04, d: 1.55 },
+      { x: 1.2, z: 11.5, w: 0.82, h: 0.045, d: 1.85 },
+    ];
+    for (let gi = 0; gi < nCells; gi++) {
+      const z0 = zMin + gi * P;
+      for (const cp of cellPlates) {
+        const plate = new THREE.Mesh(
+          new THREE.BoxGeometry(cp.w, cp.h, cp.d),
+          plateMat
+        );
+        plate.position.set(cp.x, 0.02 + cp.h * 0.5, z0 + cp.z);
+        parent.add(plate);
+      }
+    }
+  }
+
   _sideProps() {
     this.propsGroup = new THREE.Group();
     this.group.add(this.propsGroup);
-    this._propSpacing = 14;
+    if (this._roadDeck) {
+      this.propsGroup.add(this._roadDeck);
+    }
+    this._propSpacing = TRENCH_PROP_Z_PERIOD;
     this._propCount = 28;
     this._propSlots = [];
 
@@ -153,6 +490,7 @@ export class Track {
     else if (s === "snow") this._snowProps();
     else if (s === "water") this._waterProps();
     else if (s === "coast") this._coastProps();
+    else if (s === "trench") this._trenchProps();
 
     // Total wrap range for props
     this._propTotalRange = this._propSpacing * this._propCount;
@@ -434,12 +772,45 @@ export class Track {
     const sandMat = new THREE.MeshStandardMaterial({
       color: 0xd4c090, roughness: 0.92, metalness: 0.05,
     });
+    /** Network & infra (E): continuous beach between palms and open water (GridHelper horizon). */
+    const beachWideMat = new THREE.MeshStandardMaterial({
+      color: 0xdcbe90, roughness: 0.9, metalness: 0.02,
+    });
+    const beachWetMat = new THREE.MeshStandardMaterial({
+      color: 0xc9a972, roughness: 0.88, metalness: 0.03,
+    });
+    const isInfraOcean = this.levelId === "E";
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
       const slot = new THREE.Group();
       slot.position.z = z;
       this.propsGroup.add(slot);
       this._propSlots.push(slot);
+
+      if (isInfraOcean) {
+        const dz = this._propSpacing + 0.5;
+        /** Thin shoulder sand: starts just past edge strips (±5.8); ends before open water grid (deck ±11). */
+        const innerAbs = 6.05;
+        const outerAbs = 12.4;
+        const stripW = outerAbs - innerAbs;
+        const cx = innerAbs + stripW / 2;
+        /** Above GridHelper at y≈0.01 */
+        const beachY = 0.038;
+        for (const side of [-1, 1]) {
+          const wide = new THREE.Mesh(
+            new THREE.BoxGeometry(stripW, 0.1, dz),
+            beachWideMat
+          );
+          wide.position.set(side * cx, beachY, 0);
+          slot.add(wide);
+          const wet = new THREE.Mesh(
+            new THREE.BoxGeometry(Math.max(1.1, stripW * 0.35), 0.07, dz - 0.2),
+            beachWetMat
+          );
+          wet.position.set(side * (outerAbs - stripW * 0.22), beachY - 0.006, 0);
+          slot.add(wet);
+        }
+      }
 
       for (const side of [-1, 1]) {
         const x = side * (8 + Math.random() * 5);
@@ -534,6 +905,35 @@ export class Track {
       color: 0x6a9a4a, roughness: 0.88, metalness: 0.05, flatShading: true,
     });
 
+    /** Automation ROI (G): shoreline + beach strip scroll with props (only coast level). */
+    const roiShore = this.levelId === "G";
+    const beachSandMat = roiShore
+      ? new THREE.MeshStandardMaterial({
+          color: 0xd8c896,
+          roughness: 0.9,
+          metalness: 0.02,
+        })
+      : null;
+    if (roiShore) {
+      this._roiOceanMat = new THREE.ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: ROI_OCEAN_VS,
+        fragmentShader: ROI_OCEAN_FS,
+        fog: false,
+      });
+    } else {
+      this._roiOceanMat = null;
+    }
+
+    const foamLineMat = roiShore
+      ? new THREE.MeshBasicMaterial({
+          color: 0xe8fbff,
+          transparent: true,
+          opacity: 0.88,
+          fog: false,
+        })
+      : null;
+
     for (let i = 0; i < this._propCount; i++) {
       const z = -200 + i * this._propSpacing;
       const slot = new THREE.Group();
@@ -541,21 +941,54 @@ export class Track {
       this.propsGroup.add(slot);
       this._propSlots.push(slot);
 
-      // left: cliff face dropping down (visible wall below road level)
+      // left: cliff / shoreline (G = beach + water beside the road)
       const cliffH = 6 + Math.random() * 3;
+      const cliffW = roiShore ? 10 : 12;
+      /** ROI: backdrop rock left; sink mesh so its top isn’t a tan “second road” beside the lane */
+      const cliffCx = roiShore ? -35 : -13;
       const cliff = new THREE.Mesh(
-        new THREE.BoxGeometry(12, cliffH, this._propSpacing + 0.5),
+        new THREE.BoxGeometry(cliffW, cliffH, this._propSpacing + 0.5),
         Math.random() < 0.5 ? cliffMat : cliffDarkMat
       );
-      cliff.position.set(-13, -cliffH / 2 + 0.1, 0);
+      const cliffY = roiShore ? -cliffH / 2 + 0.1 - 1.55 : -cliffH / 2 + 0.1;
+      cliff.position.set(cliffCx, cliffY, 0);
       slot.add(cliff);
+
+      if (roiShore) {
+        // Ocean sheet: inner edge at beach; outer edge far past horizon (scrolls with curve)
+        const dz = this._propSpacing + 0.5;
+        const oceanW = ROI_OCEAN_INNER_X - ROI_OCEAN_OUTER_X;
+        const oceanCx = (ROI_OCEAN_INNER_X + ROI_OCEAN_OUTER_X) * 0.5;
+        const water = new THREE.Mesh(
+          new THREE.BoxGeometry(oceanW, 0.06, dz),
+          this._roiOceanMat
+        );
+        water.position.set(oceanCx, -0.045, 0);
+        slot.add(water);
+        const beach = new THREE.Mesh(
+          new THREE.BoxGeometry(5.5, 0.11, dz),
+          beachSandMat
+        );
+        beach.position.set(-9.85, 0.035, 0);
+        slot.add(beach);
+        const foam = new THREE.Mesh(
+          new THREE.BoxGeometry(0.55, 0.06, dz - 0.15),
+          foamLineMat
+        );
+        foam.position.set(-13.35, 0.014, 0);
+        slot.add(foam);
+      }
 
       // rocky ledge along cliff top
       if (Math.random() < 0.7) {
         const ledge = new THREE.Mesh(
           new THREE.DodecahedronGeometry(0.5 + Math.random() * 0.6, 0), cliffMat
         );
-        ledge.position.set(-7.5 - Math.random() * 2, 0.15, Math.random() * 6 - 3);
+        ledge.position.set(
+          (roiShore ? -33 : -7.5) - Math.random() * 2,
+          0.15,
+          Math.random() * 6 - 3
+        );
         ledge.scale.set(1.5, 0.4, 1);
         slot.add(ledge);
       }
@@ -775,12 +1208,18 @@ export class Track {
     const s = this.theme.scenery;
     if (s === "city") this._citySkyline(this._skylineGroup);
     else if (s === "durham") this._durhamSkyline(this._skylineGroup);
-    else if (s === "forest") this._mountainSkyline(this._skylineGroup, 0x3a5a4a, 0x4a6a5a, 0x556b55, 0xeeffee);
+    else if (s === "forest" && this.levelId === "B") {
+      this._mountainSkylineWorkflow(this._skylineGroup, 0x3a5a4a, 0x4a6a5a, 0x556b55, 0xeeffee);
+    } else if (s === "forest") {
+      this._mountainSkyline(this._skylineGroup, 0x3a5a4a, 0x4a6a5a, 0x556b55, 0xeeffee);
+    }
+    else if (s === "desert" && this.levelId === "C") this._mountainSkylineSonoran(this._skylineGroup);
     else if (s === "desert") this._mountainSkyline(this._skylineGroup, 0xa08050, 0xb89060, 0xc49868, 0xffe8c0);
     else if (s === "swamp") this._swampSkyline(this._skylineGroup);
     else if (s === "snow") this._snowMountainSkyline(this._skylineGroup);
     else if (s === "water") this._waterSkyline(this._skylineGroup);
     else if (s === "coast") this._coastSkyline(this._skylineGroup);
+    else if (s === "trench") this._trenchSkyline(this._skylineGroup);
 
     this._castleMode = false;
     this._savedSkyChildren = null;
@@ -1079,6 +1518,255 @@ export class Track {
     }
   }
 
+  /** Workflow orchestration (B): smoother silhouettes + layered mass vs raw 6-gon cones */
+  _mountainSkylineWorkflow(skylineGroup, baseColor, midColor, peakColor, snowColor) {
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: baseColor, roughness: 0.88, metalness: 0.06, flatShading: false,
+    });
+    const midMat = new THREE.MeshStandardMaterial({
+      color: midColor, roughness: 0.86, metalness: 0.05, flatShading: false,
+    });
+    const peakMat = new THREE.MeshStandardMaterial({
+      color: peakColor, roughness: 0.84, metalness: 0.06, flatShading: false,
+    });
+    const snowMat = new THREE.MeshStandardMaterial({
+      color: snowColor, roughness: 0.72, metalness: 0.06, flatShading: false,
+    });
+    const rockyMat = new THREE.MeshStandardMaterial({
+      color: midColor, roughness: 0.92, metalness: 0.03, flatShading: true,
+    });
+
+    const peaks = [
+      { x: -62, h: 26, w: 24, z: -6, mx: -1.5, mz: 1.2, cx: 1.8, cz: -0.6, cr: 3.4, cry: 0.35 },
+      { x: -38, h: 38, w: 30, z: 2, mx: 2.2, mz: -1.8, cx: -1.2, cz: 0.9, cr: 4.1, cry: 0.55 },
+      { x: -18, h: 22, w: 18, z: -10, mx: -1, mz: 0.8, cx: 0.6, cz: -1.4, cr: 2.6, cry: 0.2 },
+      { x: 2, h: 34, w: 26, z: 4, mx: 1.4, mz: 2, cx: -1.9, cz: -0.5, cr: 3.8, cry: 0.45 },
+      { x: 22, h: 41, w: 32, z: -4, mx: -2.4, mz: -1.2, cx: 2.1, cz: 1.1, cr: 4.4, cry: 0.5 },
+      { x: 46, h: 28, w: 22, z: 6, mx: 1.6, mz: -2, cx: -0.8, cz: 0.4, cr: 3.1, cry: 0.3 },
+      { x: 68, h: 34, w: 28, z: -8, mx: -1.8, mz: 1.5, cx: 1.5, cz: -1.1, cr: 3.9, cry: 0.4 },
+    ];
+
+    for (const p of peaks) {
+      const base = new THREE.Mesh(
+        new THREE.SphereGeometry(p.w / 2, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        baseMat
+      );
+      base.scale.set(1.05, p.h / (p.w / 2), 0.92);
+      base.position.set(p.x, 0, p.z);
+      skylineGroup.add(base);
+
+      const mid = new THREE.Mesh(
+        new THREE.SphereGeometry(p.w * 0.38, 9, 7, 0, Math.PI * 2, 0, Math.PI / 2),
+        midMat
+      );
+      mid.scale.set(1.1, (p.h * 0.68) / (p.w * 0.38), 1.05);
+      mid.position.set(p.x + p.mx, 0, p.z + p.mz);
+      skylineGroup.add(mid);
+
+      const crest = new THREE.Mesh(
+        new THREE.ConeGeometry(p.w * 0.22, p.h * 0.22, 10),
+        peakMat
+      );
+      crest.position.set(p.x + p.cx, p.h * 0.62, p.z + p.cz);
+      skylineGroup.add(crest);
+
+      if (p.h > 26) {
+        const cap = new THREE.Mesh(
+          new THREE.SphereGeometry(p.w * 0.26, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+          snowMat
+        );
+        cap.scale.set(1.2, (p.h * 0.28) / (p.w * 0.26), 1.15);
+        cap.position.set(p.x + 1.2, p.h * 0.52, p.z);
+        skylineGroup.add(cap);
+      }
+
+      const crag = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(p.cr, 1),
+        rockyMat
+      );
+      crag.scale.set(1.4, 0.55, 1.1);
+      crag.position.set(p.x - p.w * 0.15, p.h * p.cry + 2, p.z + 4);
+      crag.rotation.set(0.2, (p.x % 17) / 22, 0.1);
+      skylineGroup.add(crag);
+    }
+
+    const rollRadii = [6, 7.5, 5.8, 8, 6.8];
+    for (let k = 0; k < 5; k++) {
+      const roll = new THREE.Mesh(
+        new THREE.SphereGeometry(rollRadii[k], 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+        baseMat
+      );
+      roll.scale.set(1.2, 0.35, 0.9);
+      roll.position.set(-70 + k * 32, 1.5, -18 - k * 3);
+      skylineGroup.add(roll);
+    }
+  }
+
+  /** Developer experience (C): jagged ridges on the flanks, low saddle down the center (open pass), no Mario domes */
+  _mountainSkylineSonoran(skylineGroup) {
+    const shadow = new THREE.MeshStandardMaterial({
+      color: 0x484060, roughness: 0.94, metalness: 0.03, flatShading: true,
+      emissive: 0x1a1428, emissiveIntensity: 0.06,
+    });
+    const rock = new THREE.MeshStandardMaterial({
+      color: 0x904838, roughness: 0.9, metalness: 0.05, flatShading: true,
+      emissive: 0x381810, emissiveIntensity: 0.05,
+    });
+    const sunlit = new THREE.MeshStandardMaterial({
+      color: 0xc46850, roughness: 0.85, metalness: 0.06, flatShading: true,
+      emissive: 0x682820, emissiveIntensity: 0.09,
+    });
+    const rim = new THREE.MeshStandardMaterial({
+      color: 0xe09070, roughness: 0.75, metalness: 0.07, flatShading: true,
+      emissive: 0xa85838, emissiveIntensity: 0.15,
+    });
+    const fin = new THREE.MeshStandardMaterial({
+      color: 0x5a4868, roughness: 0.93, metalness: 0.03, flatShading: true,
+      emissive: 0x201830, emissiveIntensity: 0.05,
+    });
+
+    const seg = 7;
+    const addCone = (mat, x, yBase, z, r, h, ry, rz = 0) => {
+      const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), mat);
+      m.position.set(x, yBase + h * 0.5, z);
+      m.rotation.y = ry;
+      m.rotation.z = rz;
+      skylineGroup.add(m);
+    };
+    /** Wide low mesa buttress — horizontal bulk reads as desert ridge, not a tapering tree */
+    const addMesaSlab = (mat, cx, y0, cz, rx, rz, hy, ry) => {
+      const m = new THREE.Mesh(
+        new THREE.CylinderGeometry(rx, rx * 1.06, hy, seg, 1),
+        mat
+      );
+      m.position.set(cx, y0 + hy * 0.5, cz);
+      m.rotation.y = ry;
+      m.scale.set(1, 1, rz / rx);
+      skylineGroup.add(m);
+    };
+
+    /**
+     * Flank silhouettes stay wide/low (mesa), not stacks of narrowing cones (= evergreens in the corners).
+     * Inner massifs stay a bit peakier — away from the extreme left/right frame.
+     */
+    const flankMassifs = [
+      {
+        x: -90, z: -2, ry: 0.32, slabs: [
+          { rx: 26, rz: 10, hy: 9, y0: 0, m: shadow },
+          { rx: 21, rz: 9, hy: 8, y0: 9, m: rock },
+          { rx: 15, rz: 8, hy: 6, y0: 17, m: sunlit },
+        ],
+        wings: [{ dx: -18, dz: -4 }, { dx: 12, dz: -2 }],
+      },
+      {
+        x: 94, z: 6, ry: -0.34, slabs: [
+          { rx: 24, rz: 9, hy: 8, y0: 0, m: shadow },
+          { rx: 18, rz: 8, hy: 7, y0: 8, m: rock },
+          { rx: 13, rz: 7, hy: 6, y0: 15, m: sunlit },
+        ],
+        wings: [{ dx: 14, dz: -3 }, { dx: -14, dz: -2 }],
+      },
+    ];
+    for (const fm of flankMassifs) {
+      for (const S of fm.slabs) {
+        addMesaSlab(S.m, fm.x, S.y0, fm.z, S.rx, S.rz, S.hy, fm.ry);
+      }
+      for (const w of fm.wings) {
+        const wy = 5 + Math.abs(w.dx) * 0.04;
+        addMesaSlab(
+          rock,
+          fm.x + w.dx,
+          0,
+          fm.z + w.dz,
+          13,
+          10,
+          wy,
+          fm.ry + (w.dx < 0 ? -0.12 : 0.1)
+        );
+      }
+    }
+
+    /** Inner ridges: layered mesa slabs so they read as rocky buttes */
+    const massifs = [
+      {
+        x: -54, z: 10, ry: -0.28, slabs: [
+          { rx: 22, rz: 12, hy: 12, y0: 0, m: shadow },
+          { rx: 17, rz: 10, hy: 10, y0: 12, m: rock },
+          { rx: 12, rz: 8, hy: 7, y0: 22, m: sunlit },
+          { rx: 8, rz: 6, hy: 4, y0: 29, m: rim },
+        ],
+      },
+      {
+        x: 62, z: -2, ry: 0.22, slabs: [
+          { rx: 24, rz: 13, hy: 13, y0: 0, m: rock },
+          { rx: 18, rz: 11, hy: 10, y0: 13, m: sunlit },
+          { rx: 13, rz: 9, hy: 7, y0: 23, m: rim },
+          { rx: 9, rz: 7, hy: 4, y0: 30, m: rim },
+        ],
+      },
+    ];
+    for (const mass of massifs) {
+      for (const S of mass.slabs) {
+        addMesaSlab(S.m, mass.x, S.y0, mass.z, S.rx, S.rz, S.hy, mass.ry);
+      }
+    }
+
+    /** No pencil spires near frame edges — only mid-distance peaks, stocky silhouette */
+    const spires = [
+      { x: -42, z: -16, r: 13, h: 16, ry: -0.3 },
+      { x: 50, z: -14, r: 14, h: 18, ry: 0.26 },
+    ];
+    for (const s of spires) {
+      addCone(sunlit, s.x, 0, s.z, s.r, s.h, s.ry);
+      addCone(shadow, s.x + 1.4, s.h * 0.28, s.z - 1.8, s.r * 0.6, s.h * 0.3, s.ry + 0.15, 0.08);
+    }
+
+
+    /** Slabs at frame edges: short + broad so they read as rock strata, not tall trunks */
+    const fins = [
+      { x: -98, y: 7, z: -28, sx: 4.2, sy: 11, sz: 9, ry: 0.32 },
+      { x: -66, y: 10, z: -22, sx: 3.8, sy: 14, sz: 8, ry: -0.18 },
+      { x: 40, y: 12, z: -20, sx: 3.6, sy: 15, sz: 9, ry: 0.24 },
+      { x: 82, y: 8, z: -24, sx: 4, sy: 12, sz: 8, ry: -0.28 },
+    ];
+    for (const f of fins) {
+      const b = new THREE.Mesh(
+        new THREE.BoxGeometry(f.sx, f.sy, f.sz), fin
+      );
+      b.position.set(f.x, f.y, f.z);
+      b.rotation.set(0.08, f.ry, -0.06);
+      skylineGroup.add(b);
+    }
+    const wedges = [
+      { x: -100, y: 7, z: -34, sx: 10, sy: 10, sz: 12, ry: 0.2 },
+      { x: -78, y: 5, z: -40, sx: 8, sy: 8, sz: 9, ry: -0.15 },
+    ];
+    for (const q of wedges) {
+      const w = new THREE.Mesh(
+        new THREE.BoxGeometry(q.sx, q.sy, q.sz), shadow
+      );
+      w.rotation.set(0.1, q.ry, -0.08);
+      w.position.set(q.x, q.y, q.z);
+      skylineGroup.add(w);
+    }
+
+    /** Edge crags: squat so they don’t read as round tree crowns */
+    const crags = [
+      { x: -104, z: 2, sc: 5.5 },
+      { x: 110, z: -4, sc: 4.8 },
+    ];
+    for (const c of crags) {
+      const d = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(c.sc, 0),
+        rock
+      );
+      d.position.set(c.x, c.sc * 0.35, c.z);
+      d.rotation.set(0.22, c.x * 0.01, -0.15);
+      d.scale.set(1.6, 0.45, 1.5);
+      skylineGroup.add(d);
+    }
+  }
+
   _snowMountainSkyline(skylineGroup) {
     const rockMat = new THREE.MeshStandardMaterial({
       color: 0x6a7a8a, roughness: 0.9, metalness: 0.05, flatShading: true,
@@ -1327,6 +2015,172 @@ export class Track {
       cloud.position.set(-40 + c * 28, 32 + Math.random() * 10, -5);
       cloud.scale.set(2.5, 0.5, 1);
       skylineGroup.add(cloud);
+    }
+  }
+
+  _trenchProps() {
+    /** Imperial station greys: #8599A6 / #BFCDD9 / #455059 / #AFAFAF */
+    const wallMat = this._isDeathStar
+      ? new THREE.MeshStandardMaterial({
+        color: 0x8599a6,
+        roughness: 0.78,
+        metalness: 0.42,
+        emissive: 0x455059,
+        emissiveIntensity: 0.055,
+        flatShading: true,
+      })
+      : new THREE.MeshStandardMaterial({
+        color: 0x5a5c68, roughness: 0.82, metalness: 0.48,
+        emissive: 0x1c1e28, emissiveIntensity: 0.14, flatShading: true,
+      });
+    const turretBaseMat = this._isDeathStar
+      ? new THREE.MeshStandardMaterial({
+        color: 0x7a8a98,
+        roughness: 0.84,
+        metalness: 0.48,
+        emissive: 0x455059,
+        emissiveIntensity: 0.05,
+        flatShading: true,
+      })
+      : new THREE.MeshStandardMaterial({
+        color: 0x4a4c58, roughness: 0.88, metalness: 0.52,
+        emissive: 0x12141a, emissiveIntensity: 0.1, flatShading: true,
+      });
+    const gunMat = this._isDeathStar
+      ? new THREE.MeshStandardMaterial({
+        color: 0x455059,
+        roughness: 0.8,
+        metalness: 0.55,
+        emissive: 0x1a1e24,
+        emissiveIntensity: 0.04,
+        flatShading: true,
+      })
+      : new THREE.MeshStandardMaterial({
+        color: 0x353842, roughness: 0.75, metalness: 0.62,
+        emissive: 0x2a1010, emissiveIntensity: 0.08, flatShading: true,
+      });
+    const beamMat = this._isDeathStar
+      ? new THREE.MeshStandardMaterial({
+        color: 0xbfcdD9,
+        roughness: 0.72,
+        metalness: 0.38,
+        emissive: 0x6a7580,
+        emissiveIntensity: 0.04,
+        flatShading: true,
+      })
+      : new THREE.MeshStandardMaterial({
+        color: 0x484a56, roughness: 0.88, metalness: 0.45, flatShading: true,
+      });
+    const addTurret = (wx, side, z) => {
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.55, 0.62, 1.1, 6),
+        turretBaseMat
+      );
+      base.position.set(wx + side * 0.95, 0.55, z);
+      this.propsGroup.add(base);
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(0.42, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        turretBaseMat
+      );
+      dome.position.set(wx + side * 0.95, 1.15, z);
+      this.propsGroup.add(dome);
+      for (const bz of [-0.14, 0.14]) {
+        const barrel = new THREE.Mesh(
+          new THREE.BoxGeometry(0.75, 0.1, 0.1),
+          gunMat
+        );
+        barrel.position.set(wx + side * 1.18, 1.02, z + bz);
+        barrel.rotation.y = side * 0.08;
+        this.propsGroup.add(barrel);
+      }
+    };
+    for (let i = 0; i < this._propCount; i++) {
+      const z = -200 + i * this._propSpacing;
+      const segD = this._propSpacing * 0.94;
+      for (const side of [-1, 1]) {
+        const wx = side * 5.85;
+        const wall = new THREE.Mesh(
+          new THREE.BoxGeometry(2.0, 8.8, segD),
+          wallMat
+        );
+        wall.position.set(wx, 4.4, z);
+        this.propsGroup.add(wall);
+        const tz = z - segD * 0.25 + (i % 3) * (segD * 0.22);
+        addTurret(wx, side, tz);
+        if ((i + side) % 2 === 0) {
+          addTurret(wx, side, z + segD * 0.28);
+        }
+        const rib = new THREE.Mesh(
+          new THREE.BoxGeometry(0.12, 7.2, 0.18),
+          beamMat
+        );
+        rib.position.set(wx + side * 1.02, 4.2, z);
+        this.propsGroup.add(rib);
+      }
+    }
+  }
+
+  _trenchSkyline(skylineGroup) {
+    /** DS: fewer points than before so the trench doesn’t read as a snow globe; finale uses its own starfield. */
+    const nPts = this._isDeathStar ? 2400 : 220;
+    const positions = new Float32Array(nPts * 3);
+    for (let i = 0; i < nPts; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 260;
+      if (this._isDeathStar) {
+        /**
+         * Mix “upper vault” with a band closer to the trench opening so looking straight
+         * ahead is not an empty black wedge (no stars) vs. corners that read as “space”.
+         */
+        const hi = i < nPts * 0.52;
+        positions[i * 3 + 1] = hi
+          ? 34 + Math.random() * 90
+          : 5 + Math.random() * 44;
+        positions[i * 3 + 2] = -55 - Math.random() * 240;
+      } else {
+        positions[i * 3 + 1] = 18 + Math.random() * 85;
+        positions[i * 3 + 2] = -40 - Math.random() * 220;
+      }
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const starPts = new THREE.Points(
+      starGeo,
+      new THREE.PointsMaterial({
+        color: this._isDeathStar ? 0xd8e4f0 : 0xeeeeff,
+        size: this._isDeathStar ? 0.095 : 0.09,
+        transparent: true,
+        opacity: this._isDeathStar ? 0.82 : 0.75,
+        depthWrite: false,
+        sizeAttenuation: true,
+        /** DS: don’t dim stars with scene fog — avoids a “darker void” wedge vs. corners. */
+        fog: !this._isDeathStar,
+      })
+    );
+    skylineGroup.add(starPts);
+
+    /** DS: pitch-black space + stars only (no Yavin / skyline DS blobs that read as “clouds”). */
+    if (!this._isDeathStar) {
+      const dsMat = new THREE.MeshStandardMaterial({
+        color: 0x55565e, roughness: 0.94, metalness: 0.18,
+        emissive: 0x141418, emissiveIntensity: 0.22, flatShading: true,
+      });
+      const ds = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(22, 1),
+        dsMat
+      );
+      ds.position.set(0, 28, -95);
+      ds.scale.set(1.1, 0.35, 1);
+      skylineGroup.add(ds);
+      const dish = new THREE.Mesh(
+        new THREE.SphereGeometry(6, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.5),
+        new THREE.MeshStandardMaterial({
+          color: 0x404248, roughness: 0.88, metalness: 0.22,
+          emissive: 0x181a22, emissiveIntensity: 0.18, flatShading: true,
+        })
+      );
+      dish.rotation.x = Math.PI * 0.5;
+      dish.position.set(14, 22, -88);
+      skylineGroup.add(dish);
     }
   }
 
@@ -1646,56 +2500,71 @@ export class Track {
       forest: [0x447744, 0x2a4a2a], desert: [0x998855, 0x665530],
       swamp: [0x3a5530, 0x1a2a14], snow: [0x7788aa, 0x445566],
       water: [0x2255aa, 0x0a1840], coast: [0x557755, 0x2a3a2a],
+      trench: [0x4a4c58, 0x2a2c38],
     };
-    const [gc1, gc2] = gridColors[t.scenery] || [0x888888, 0x444444];
-    const grid = new THREE.GridHelper(400, 80, gc1, gc2);
-    grid.position.y = 0.01;
-    grid.position.z = -120;
-    grid.scale.set(1.2, 1, 1.5);
-    this.group.add(grid);
+    /** Coast uses mesh shoreline + skyline ocean; GridHelper reads as a fake checkerboard “sea”.
+     * Developer experience (C) desert: grid reads as ugly “carpet” — use sand texture + ripple only. */
+    if (!this._isDeathStar && t.scenery !== "coast" && !(this.levelId === "C" && t.scenery === "desert")) {
+      const [gc1, gc2] = gridColors[t.scenery] || [0x888888, 0x444444];
+      const grid = new THREE.GridHelper(400, 80, gc1, gc2);
+      grid.position.y = 0.01;
+      grid.position.z = -120;
+      grid.scale.set(1.2, 1, 1.5);
+      this.group.add(grid);
+    }
 
-    const sky = new THREE.Mesh(
-      new THREE.PlaneGeometry(600, 200),
-      new THREE.MeshBasicMaterial({
-        color: t.sky, transparent: true, opacity: 0.95,
-      })
-    );
-    sky.position.set(0, 80, -200);
-    this.group.add(sky);
+    if (!this._isDeathStar) {
+      const sky = new THREE.Mesh(
+        new THREE.PlaneGeometry(600, 200),
+        new THREE.MeshBasicMaterial({
+          color: t.sky, transparent: true, opacity: 0.95,
+        })
+      );
+      sky.position.set(0, 80, -200);
+      this.group.add(sky);
+    }
+    /** DS: no backdrop mesh — `scene.background` stays uniform black; a plane can fog/tone-map differently. */
   }
 
   _lights() {
     const isCity = this.theme.scenery === "city" || this.theme.scenery === "durham";
+    const isTrench = this.theme.scenery === "trench";
 
     const amb = new THREE.AmbientLight(
-      isCity ? 0xb8c8e0 : 0xdde8f0,
-      isCity ? 0.72 : 0.9
+      isTrench ? (this._isDeathStar ? 0x8599a6 : 0x445566) : isCity ? 0xb8c8e0 : 0xdde8f0,
+      isTrench ? (this._isDeathStar ? 0.32 : 0.35) : isCity ? 0.72 : 0.9
     );
     this.group.add(amb);
 
     const hemi = new THREE.HemisphereLight(
-      isCity ? 0x8899bb : 0xaabbcc,
-      isCity ? 0x1a1520 : 0x443322,
-      isCity ? 0.55 : 0.65
+      isTrench ? (this._isDeathStar ? 0xbfcdD9 : 0x223344) : isCity ? 0x8899bb : 0xaabbcc,
+      isTrench ? (this._isDeathStar ? 0x455059 : 0x080810) : isCity ? 0x1a1520 : 0x443322,
+      isTrench ? (this._isDeathStar ? 0.38 : 0.4) : isCity ? 0.55 : 0.65
     );
     hemi.position.set(0, 80, 0);
     this.group.add(hemi);
 
     const key = new THREE.DirectionalLight(
-      isCity ? 0xd8e8ff : 0xfff8e8,
-      isCity ? 0.95 : 1.1
+      isTrench ? (this._isDeathStar ? 0xafafaf : 0xaabbcc) : isCity ? 0xd8e8ff : 0xfff8e8,
+      isTrench ? (this._isDeathStar ? 0.52 : 0.55) : isCity ? 0.95 : 1.1
     );
     key.position.set(-6, 32, 28);
     this.group.add(key);
 
     const rim = new THREE.DirectionalLight(
-      isCity ? 0xaaccff : 0xddccaa,
-      isCity ? 0.45 : 0.55
+      isTrench ? (this._isDeathStar ? 0x8599a6 : 0x6688aa) : isCity ? 0xaaccff : 0xddccaa,
+      isTrench ? (this._isDeathStar ? 0.3 : 0.25) : isCity ? 0.45 : 0.55
     );
     rim.position.set(0, 14, 42);
     this.group.add(rim);
 
-    if (isCity) {
+    if (isTrench && !this._isDeathStar) {
+      const trenchFill = new THREE.PointLight(
+        0xff6644, 0.4, 80, 2
+      );
+      trenchFill.position.set(0, 3, -40);
+      this.group.add(trenchFill);
+    } else if (isCity) {
       const fillL = new THREE.PointLight(0x55ddff, 1.15, 55, 1.8);
       fillL.position.set(-10, 4.5, 8);
       this.group.add(fillL);
@@ -1728,6 +2597,10 @@ export class Track {
 
   update(dt, worldSpeed) {
     const dz = worldSpeed * dt;
+
+    if (this._roiOceanMat) {
+      this._roiOceanMat.uniforms.uTime.value += dt;
+    }
 
     if (this._rainbowMode && this._roadMat) {
       const hue = (performance.now() * 0.0003) % 1;
@@ -1766,7 +2639,7 @@ export class Track {
     }
 
     // Apply curve offsets to lane markers
-    if (this._curve && this._markerMeshes) {
+    if (this._curve && this.markerGroup && this._markerMeshes.length) {
       const gz = this.markerGroup.position.z;
       for (const m of this._markerMeshes) {
         const wz = gz + m.position.z;
@@ -1782,7 +2655,7 @@ export class Track {
     }
 
     // Apply curve offsets to edge strips
-    if (this._curve && this._edgeMeshes) {
+    if (this._curve && this.edgeGroup && this._edgeMeshes.length) {
       const gz = this.edgeGroup.position.z;
       for (const e of this._edgeMeshes) {
         const wz = gz + e.position.z;
@@ -1807,8 +2680,9 @@ export class Track {
       }
     } else if (this.propsGroup) {
       this.propsGroup.position.z += dz;
-      if (this.propsGroup.position.z > this._propSpacing) {
-        this.propsGroup.position.z -= this._propSpacing;
+      const sp = this._propSpacing;
+      while (this.propsGroup.position.z > sp) {
+        this.propsGroup.position.z -= sp;
       }
     }
 
@@ -1823,6 +2697,59 @@ export class Track {
     const g = new THREE.Group();
     const distance = Math.max(150, Math.min(500, worldSpeed * timeLeft));
     const z = playerZ - distance;
+
+    if (this.theme.scenery === "trench") {
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x454850, roughness: 0.88, metalness: 0.42,
+        emissive: 0x181a20, emissiveIntensity: 0.1, flatShading: true,
+      });
+      const glowMat = new THREE.MeshStandardMaterial({
+        color: 0xff5520, emissive: 0xff4400, emissiveIntensity: 1.0, flatShading: true,
+      });
+      const span = 12;
+      for (const side of [-1, 1]) {
+        const pillar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, 5.5, 0.45),
+          frameMat
+        );
+        pillar.position.set(side * span * 0.42, 2.75, z);
+        g.add(pillar);
+      }
+      const lintel = new THREE.Mesh(
+        new THREE.BoxGeometry(span + 0.6, 0.35, 0.35),
+        frameMat
+      );
+      lintel.position.set(0, 5.4, z);
+      g.add(lintel);
+      /** Portal flush with trench deck (road plane y≈0), not floating mid-air. */
+      const portalY = 0.11;
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1.15, 0.12, 10, 24),
+        glowMat
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.set(0, portalY, z + 0.1);
+      g.add(ring);
+      const port = new THREE.Mesh(
+        new THREE.CircleGeometry(0.85, 20),
+        new THREE.MeshBasicMaterial({
+          color: 0xff4400, transparent: true, opacity: 0.75,
+        })
+      );
+      port.rotation.x = -Math.PI / 2;
+      port.position.set(0, portalY, z + 0.18);
+      g.add(port);
+      const beamL = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.12, span * 0.85),
+        new THREE.MeshBasicMaterial({ color: 0xffaa44 })
+      );
+      beamL.position.set(0, 0.06, z);
+      g.add(beamL);
+      this.group.add(g);
+      this._finishLine = g;
+      this._finishZ = z;
+      return;
+    }
 
     const white = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x333333, emissiveIntensity: 0.3 });
     const black = new THREE.MeshStandardMaterial({ color: 0x111111 });
@@ -1901,13 +2828,16 @@ export class Track {
   dispose() {
     this.removeFinishLine();
     this.scene.remove(this.group);
+    /** Dedupe materials — ROI ocean shares one ShaderMaterial across strips */
+    const materials = new Set();
     this.group.traverse((c) => {
       if (c.geometry) c.geometry.dispose();
       if (c.material) {
         const m = c.material;
-        if (Array.isArray(m)) m.forEach((x) => x.dispose());
-        else m.dispose();
+        if (Array.isArray(m)) m.forEach((x) => materials.add(x));
+        else materials.add(m);
       }
     });
+    materials.forEach((m) => m.dispose());
   }
 }

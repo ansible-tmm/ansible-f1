@@ -1973,7 +1973,7 @@ body {
   gap: 0.75rem;
   justify-content: center;
   flex-wrap: wrap;
-  max-width: 720px;
+  max-width: 880px;
   margin: 0 auto;
 }
 
@@ -2100,7 +2100,8 @@ body {
 /* Floating damage popup */
 .damage-popup {
   position: fixed;
-  top: 25%;
+  top: auto;
+  bottom: 22%;
   left: 50%;
   transform: translate(-50%, 0);
   font-family: "Orbitron", sans-serif;
@@ -2121,21 +2122,22 @@ body {
 @keyframes damage-float {
   0% {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1.2);
+    transform: translate(-50%, 10px) scale(1.2);
   }
   20% {
     opacity: 1;
-    transform: translate(-50%, -20px) scale(1);
+    transform: translate(-50%, 0) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -80px) scale(0.7);
+    transform: translate(-50%, -36px) scale(0.72);
   }
 }
 
 .pickup-popup {
   position: fixed;
-  top: 30%;
+  top: auto;
+  bottom: 16%;
   left: 50%;
   transform: translate(-50%, 0);
   font-family: "Orbitron", sans-serif;
@@ -2157,26 +2159,27 @@ body {
 @keyframes pickup-float {
   0% {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1.3);
+    transform: translate(-50%, 14px) scale(1.25);
   }
-  20% {
+  18% {
     opacity: 1;
-    transform: translate(-50%, -15px) scale(1);
+    transform: translate(-50%, 0) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -70px) scale(0.6);
+    transform: translate(-50%, -32px) scale(0.72);
   }
 }
 
-/* Hippo mode announcement */
+/* Hippo / secret-mode announcement — bottom third so forward view stays clear */
 .hippo-announce {
   position: fixed;
-  top: 50%;
+  top: auto;
+  bottom: 11%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0);
+  transform: translate(-50%, 0) scale(0);
   font-family: "Orbitron", sans-serif;
-  font-size: 6rem;
+  font-size: 4.35rem;
   font-weight: 900;
   color: #ffdd00;
   text-shadow:
@@ -2187,7 +2190,8 @@ body {
   pointer-events: none;
   opacity: 0;
   z-index: 500;
-  white-space: nowrap;
+  max-width: min(96vw, 52rem);
+  white-space: normal;
   text-align: center;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -2201,38 +2205,38 @@ body {
 @keyframes hippo-smash {
   0% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+    transform: translate(-50%, 0) scale(0) rotate(-10deg);
   }
   8% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(3.5) rotate(3deg);
+    transform: translate(-50%, 0) scale(3.5) rotate(3deg);
   }
   15% {
-    transform: translate(-50%, -50%) scale(1.0) rotate(-2deg);
+    transform: translate(-50%, 0) scale(1.0) rotate(-2deg);
   }
   20% {
-    transform: translate(-50%, -50%) scale(1.3) rotate(1deg);
+    transform: translate(-50%, 0) scale(1.3) rotate(1deg);
   }
   25% {
-    transform: translate(-50%, -50%) scale(1.0) rotate(0deg);
+    transform: translate(-50%, 0) scale(1.0) rotate(0deg);
   }
   55% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.0) rotate(0deg);
+    transform: translate(-50%, 0) scale(1.0) rotate(0deg);
   }
   75% {
     opacity: 0.8;
-    transform: translate(-50%, -50%) scale(1.1) rotate(-1deg);
+    transform: translate(-50%, 0) scale(1.1) rotate(-1deg);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(2.5) rotate(5deg);
+    transform: translate(-50%, 0) scale(2.5) rotate(5deg);
   }
 }
 
 .hippo-announce.crush {
   animation: hippo-crush 3.8s ease-out forwards;
-  font-size: 4.5rem;
+  font-size: 3.35rem;
   color: #ff4400;
   text-shadow:
     0 0 20px rgba(255, 200, 0, 0.9),
@@ -2244,25 +2248,25 @@ body {
 @keyframes hippo-crush {
   0% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(0) rotate(-15deg);
+    transform: translate(-50%, 0) scale(0) rotate(-15deg);
   }
   6% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(2.8) rotate(5deg);
+    transform: translate(-50%, 0) scale(2.8) rotate(5deg);
   }
   12% {
-    transform: translate(-50%, -50%) scale(1.0) rotate(-3deg);
+    transform: translate(-50%, 0) scale(1.0) rotate(-3deg);
   }
   17% {
-    transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
+    transform: translate(-50%, 0) scale(1.2) rotate(0deg);
   }
   80% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.0) rotate(0deg);
+    transform: translate(-50%, 0) scale(1.0) rotate(0deg);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(1.8) rotate(8deg);
+    transform: translate(-50%, 0) scale(1.8) rotate(8deg);
   }
 }
 
@@ -2636,28 +2640,29 @@ body {
 /* --- Mobile popup scaling --- */
 @media (max-width: 768px), (pointer: coarse) {
   .hippo-announce {
-    font-size: 2.2rem;
+    bottom: 9%;
+    font-size: 1.95rem;
     letter-spacing: 0.08em;
   }
   .hippo-announce.show {
     animation: hippo-smash-mobile 2s ease-out forwards;
   }
   .hippo-announce.crush {
-    font-size: 1.8rem;
+    font-size: 1.58rem;
     animation: hippo-crush-mobile 2.5s ease-out forwards;
   }
   @keyframes hippo-smash-mobile {
-    0%   { opacity: 1; transform: translate(-50%, -50%) scale(0) rotate(-8deg); }
-    10%  { opacity: 1; transform: translate(-50%, -50%) scale(1.6) rotate(2deg); }
-    18%  { transform: translate(-50%, -50%) scale(1.0) rotate(-1deg); }
-    25%  { transform: translate(-50%, -50%) scale(1.1) rotate(0deg); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7) rotate(0deg); }
+    0%   { opacity: 1; transform: translate(-50%, 0) scale(0) rotate(-8deg); }
+    10%  { opacity: 1; transform: translate(-50%, 0) scale(1.6) rotate(2deg); }
+    18%  { transform: translate(-50%, 0) scale(1.0) rotate(-1deg); }
+    25%  { transform: translate(-50%, 0) scale(1.1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, 0) scale(0.7) rotate(0deg); }
   }
   @keyframes hippo-crush-mobile {
-    0%   { opacity: 1; transform: translate(-50%, -50%) scale(0) rotate(-10deg); }
-    8%   { opacity: 1; transform: translate(-50%, -50%) scale(1.4) rotate(3deg); }
-    15%  { transform: translate(-50%, -50%) scale(1.0) rotate(0deg); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.6) rotate(0deg); }
+    0%   { opacity: 1; transform: translate(-50%, 0) scale(0) rotate(-10deg); }
+    8%   { opacity: 1; transform: translate(-50%, 0) scale(1.4) rotate(3deg); }
+    15%  { transform: translate(-50%, 0) scale(1.0) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, 0) scale(0.6) rotate(0deg); }
   }
   .damage-popup {
     font-size: 1.8rem;
@@ -2918,6 +2923,59 @@ body {
   .gz-hint { display: none; }
 }
 
+/* ─── Mobile tutorial checklist + pause repositioning ─── */
+@media (max-width: 768px), (pointer: coarse) {
+  .tutorial-checklist {
+    top: auto !important;
+    right: auto !important;
+    bottom: 6.5rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    min-width: 160px;
+    max-width: 220px;
+    text-align: center;
+    animation: none;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
+  }
+  .tutorial-checklist-header {
+    font-size: 0.5rem;
+    margin-bottom: 0.3rem;
+    padding-bottom: 0.25rem;
+  }
+  .tutorial-checklist-item {
+    font-size: 0.6rem;
+    padding: 0.2rem 0;
+  }
+  .btn-skip-tutorial {
+    font-size: 0.55rem;
+    padding: 0.3rem 0.6rem;
+    margin-top: 0.3rem;
+  }
+  .tutorial-progress {
+    font-family: "Press Start 2P", monospace;
+    font-size: 0.45rem;
+    color: rgba(0, 255, 204, 0.7);
+    margin-top: 0.3rem;
+    letter-spacing: 0.06em;
+  }
+  .touch-pause {
+    top: auto;
+    bottom: 3.5rem;
+  }
+  .finish-progress {
+    bottom: 0.8rem;
+  }
+  .tt-cooldown-bar {
+    display: none !important;
+  }
+  .boost-bar {
+    top: auto;
+    bottom: 1.8rem;
+    font-size: 0.55rem;
+  }
+}
+
 /* ─── Interactive tutorial ─── */
 
 .tutorial-tip {
@@ -2958,6 +3016,56 @@ body {
 @keyframes tutorialPulse {
   0%, 100% { box-shadow: 0 0 24px rgba(0, 255, 204, 0.25); }
   50% { box-shadow: 0 0 36px rgba(0, 255, 204, 0.5); }
+}
+
+/* Billboard tutorial nudge (full view, clicks pass through to canvas) */
+.tutorial-bb-nudge {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  pointer-events: none;
+}
+.tutorial-bb-nudge-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  pointer-events: none;
+}
+.tutorial-bb-nudge-pointer {
+  position: absolute;
+  z-index: 2;
+  font-size: clamp(2rem, 7vw, 3rem);
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.7));
+  transform: translate(-50%, -55%);
+  animation: tutorialBbPointerBounce 0.9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tutorialBbPointerBounce {
+  0%, 100% { transform: translate(-50%, -55%) scale(1); }
+  50% { transform: translate(-50%, -70%) scale(1.08); }
+}
+.tutorial-bb-nudge-bar {
+  position: absolute;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: min(22rem, 92vw);
+  padding: 0.55rem 1rem;
+  background: rgba(10, 14, 24, 0.92);
+  border: 2px solid var(--accent, #00ffcc);
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+  pointer-events: none;
+}
+.tutorial-bb-nudge-text {
+  margin: 0;
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(0.65rem, 2vw, 0.82rem);
+  color: #fff;
+  text-align: center;
+  line-height: 1.45;
 }
 
 .btn-small {
@@ -3069,7 +3177,8 @@ body {
 .tutorial-checklist {
   position: absolute;
   top: 50%;
-  left: 1rem;
+  right: 1rem;
+  left: auto;
   transform: translateY(-50%);
   z-index: 18;
   background: rgba(10, 14, 24, 0.88);
@@ -3153,7 +3262,7 @@ body {
   animation: checkComplete 0.4s ease-out;
 }
 @keyframes checklistSlideIn {
-  from { opacity: 0; transform: translateY(-50%) translateX(-20px); }
+  from { opacity: 0; transform: translateY(-50%) translateX(20px); }
   to { opacity: 1; transform: translateY(-50%) translateX(0); }
 }
 

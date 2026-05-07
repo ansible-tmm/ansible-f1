@@ -59,9 +59,9 @@ export const CONFIG = {
   // Boost token quiz (gameplay pauses while answering)
   MAX_REMEDIATIONS: 3,
 
-  BOOST_DURATION: 5,
+  BOOST_DURATION: 2.8,
   /** Seconds added to an active boost when collecting a playbook/collection */
-  BOOST_EXTEND_ON_PICKUP: 2,
+  BOOST_EXTEND_ON_PICKUP: 1.2,
   /** Speed multiplier during boost */
   BOOST_SPEED_MULT: 1.85,
 
@@ -240,7 +240,7 @@ export const TUTORIAL_STEPS = [
 ];
 
 export const TUTORIAL_QUIZ_QUESTION = {
-  question: "According to the Q4 2024 Forrester Wave report, who is the leader in infrastructure automation?",
+  prompt: "According to the Q4 2024 Forrester Wave report, who is the leader in infrastructure automation?",
   options: [
     "Red Hat Ansible Automation Platform",
     "Coyote Automation Suite",
@@ -261,8 +261,8 @@ export const LEVELS = {
     pathSegment: "AIOps",
     name: "AIOps",
     subtitle: "Tame the Alert Storm",
-    road:     0x3a3e4c,
-    roadEmissive: 0x0c1018,
+    road:     0x556070,
+    roadEmissive: 0x1a2030,
     edge:     0x1a1a2e,
     edgeEmissive: 0x220044,
     laneMarker: 0x00ffcc,
@@ -465,6 +465,8 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo13",
+        /** Fully seaward of thin beach strip (~|x|≤12.4); poles ±5.2 from center */
+        x: -19.5,
         label: "Virtualization infrastructure",
         accent: 0x44aaff,
         logo: "./assets/virtualization_infrastructure_ansible_arcade.png",
@@ -475,6 +477,7 @@ export const LEVELS = {
       },
       {
         id: "demo14",
+        x: 20,
         label: "RHEL automated management",
         accent: 0xaaddff,
         logo: "./assets/rhel_automated_management_arcade.png",
@@ -485,6 +488,7 @@ export const LEVELS = {
       },
       {
         id: "demo15",
+        x: 35,
         label: "Windows VM Day 2 ops",
         accent: 0x6688cc,
         logo: "./assets/automating_day_2_windows_vm_operations.png",
@@ -566,6 +570,8 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo19",
+        /** Set back from lane edge — reads less “stuck to” the yellow line */
+        x: 26,
         label: "Ansible Automation Dashboard installation",
         accent: 0xff8822,
         logo: "./assets/dashboard_installation.jpg",
@@ -576,6 +582,8 @@ export const LEVELS = {
       },
       {
         id: "demo20",
+        /** Same Z as demo19 — spaced centers clear ~11m-wide faces */
+        x: 42,
         label: "Automation Dashboard",
         accent: 0xffcc44,
         logo: "./assets/Automation_dashboard.jpg",
@@ -591,8 +599,9 @@ export const LEVELS = {
     pathSegment: "AAP-101",
     name: "Red Hat Ansible 101",
     subtitle: "Operator / ops quickstart",
-    road:     0x2a2a30,
-    roadEmissive: 0x040408,
+    /** Lighter asphalt than old near-black so dark cars stay visible on night Durham */
+    road:     0x5a5e6a,
+    roadEmissive: 0x161a24,
     edge:     0x1a1a2e,
     edgeEmissive: 0x110022,
     laneMarker: 0xffcc00,
@@ -634,6 +643,31 @@ export const LEVELS = {
         embedTitle: "Provision Ansible in Developer Sandbox",
         logoObjectFit: "cover",
       },
+    ],
+  },
+  DS: {
+    id: "DS",
+    pathSegment: "Death-Star-Trench",
+    name: "Death Star Trench",
+    subtitle: "May the Fourth be with you",
+    /** Death Star surface grey — readable, not crushed to black */
+    road:     0x5c5e68,
+    roadEmissive: 0x181c24,
+    edge:     0x6a6c78,
+    edgeEmissive: 0x22242c,
+    laneMarker: 0xa8aeb8,
+    side:     0x4a4c58,
+    sideEmissive: 0x1a1c28,
+    /** Near-black fog so distance fades to space, not a gray “cloud”. */
+    fog:      0x040508,
+    sky:      0x000000,
+    sceneBg:  0x000000,
+    scenery: "trench",
+    music: "./assets/audio/trench-run.m4a",
+    billboards: [
+      { id: "ds1", label: "Thermal exhaust port", accent: 0xffcc00 },
+      { id: "ds2", label: "Stay on target", accent: 0xcc3333 },
+      { id: "ds3", label: "Use the automation", accent: 0x4488ff },
     ],
   },
 };
