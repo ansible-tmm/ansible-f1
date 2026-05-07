@@ -459,6 +459,8 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo13",
+        /** Fully seaward of thin beach strip (~|x|≤12.4); poles ±5.2 from center */
+        x: -19.5,
         label: "Virtualization infrastructure",
         accent: 0x44aaff,
         logo: "./assets/virtualization_infrastructure_ansible_arcade.png",
@@ -469,6 +471,7 @@ export const LEVELS = {
       },
       {
         id: "demo14",
+        x: 20,
         label: "RHEL automated management",
         accent: 0xaaddff,
         logo: "./assets/rhel_automated_management_arcade.png",
@@ -479,6 +482,7 @@ export const LEVELS = {
       },
       {
         id: "demo15",
+        x: 35,
         label: "Windows VM Day 2 ops",
         accent: 0x6688cc,
         logo: "./assets/automating_day_2_windows_vm_operations.png",
