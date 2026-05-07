@@ -67,6 +67,7 @@ const SFX = {
   TRAIN_FINALE: "./assets/audio/train-finale.m4a",
   SCALONETA: "./assets/audio/scaloneta.m4a",
   TREX_ROAR: "./assets/audio/trex-roar.m4a",
+  SHEEP_BAH: "./assets/audio/sheep-bah.m4a",
   OGRE_GRUNT_1: "./assets/audio/ogre-grunt-1.mp4",
   OGRE_GRUNT_2: "./assets/audio/ogre-grunt-2.mp4",
   CROONER_1: "./assets/audio/decal.m4a",
@@ -2979,7 +2980,7 @@ export class Game {
     if (performance.now() < this.boostUntil) {
       this.boostUntil = 0;
     }
-    play(SFX.OBSTACLE_HIT, 0.8);
+    play(isSheep ? SFX.SHEEP_BAH : SFX.OBSTACLE_HIT, 0.8);
     this.ui.flashDamage();
     this.ui.showDamagePopup(dmg);
     this.ui.shake();
