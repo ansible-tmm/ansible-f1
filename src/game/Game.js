@@ -2559,9 +2559,6 @@ export class Game {
    * VO + overlays; queued after the hit handler so lite debris clears the stack first. Crooner skips
    * shared obstacle-hit.wav (parent branch) — only VO, less decode contention.
    */
-  _croonerSmashFeedback() {
-    this._playCroonerSfx(0.7);
-  }
 
   _ogreSmashLines = [
     "🧌 OGRE SMASH! 🧌",
@@ -2925,74 +2922,26 @@ export class Game {
       if (showPopup && this.player.carType !== "crooner") {
         play(SFX.OBSTACLE_HIT, 0.6);
       }
-      if (this.player.carType === "hippo") {
-        this.score += 50000;
-        if (showPopup) {
+      this.score += 50000;
+      if (showPopup) {
+        if (this.player.carType === "hippo") {
           const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
           play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "scaloneta") {
-        this.score += 50000;
-        if (showPopup) {
+        } else if (this.player.carType === "scaloneta") {
           play(SFX.SCALONETA, 0.6);
-          this.ui.showPickupPopup("+50.000");
-          const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "trex") {
-        this.score += 50000;
-        if (showPopup) {
-          play(SFX.OBSTACLE_HIT, 0.7);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._trexSmashLines[Math.floor(Math.random() * this._trexSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "cadillac") {
-        this.score += 50000;
-        if (showPopup) {
-          play(SFX.OBSTACLE_HIT, 0.6);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._hollywoodSmashLines[Math.floor(Math.random() * this._hollywoodSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "ogre") {
-        this.score += 50000;
-        if (showPopup) {
+        } else if (this.player.carType === "ogre") {
           this._playOgreSfx(0.8);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "crooner") {
-        this.score += 50000;
-        if (showPopup) {
-          this._croonerSmashFeedback();
-        }
-      } else if (this.player.carType === "timetrain") {
-        this.score += 50000;
-        this._trainHitCount = (this._trainHitCount || 0) + 1;
-        if (showPopup) {
+        } else if (this.player.carType === "crooner") {
+          this._playCroonerSfx(0.7);
+        } else if (this.player.carType === "timetrain") {
+          this._trainHitCount = (this._trainHitCount || 0) + 1;
           const trainSfx = this._trainHitCount === 1 ? SFX.TRAIN_35MPH
             : this._trainHitCount === 2 ? SFX.TRAIN_45MPH
             : [SFX.TRAIN_WHISTLE, SFX.TRAIN_WHISTLE_ALT, SFX.TRAIN_EXPLOSION][Math.floor(Math.random() * 3)];
           play(trainSfx, 0.7);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._timeTrainSmashLines[Math.floor(Math.random() * this._timeTrainSmashLines.length)];
-          this.ui.showHippoCrush(line);
+        } else {
+          play(SFX.OBSTACLE_HIT, 0.6);
         }
-      } else if (this.player.carType === "bicycle") {
-        this.score += 50000;
-        if (showPopup) {
-          play(SFX.OBSTACLE_HIT, 0.7);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._bicycleSmashLines[Math.floor(Math.random() * this._bicycleSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else {
-        if (showPopup) this.ui.setStatus(this._t("Smashed right through it!"), 1200);
       }
       return;
     }
@@ -3067,74 +3016,26 @@ export class Game {
       if (showPopup && this.player.carType !== "crooner") {
         play(SFX.OBSTACLE_HIT, 0.6);
       }
-      if (this.player.carType === "hippo") {
-        this.score += 50000;
-        if (showPopup) {
+      this.score += 50000;
+      if (showPopup) {
+        if (this.player.carType === "hippo") {
           const blahs = [SFX.HIPPO_BLAH_1, SFX.HIPPO_BLAH_2, SFX.HIPPO_BLAH_3, SFX.HIPPO_BLAH_4];
           play(blahs[Math.floor(Math.random() * blahs.length)], 0.85);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._hippoSmashLines[Math.floor(Math.random() * this._hippoSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "scaloneta") {
-        this.score += 50000;
-        if (showPopup) {
+        } else if (this.player.carType === "scaloneta") {
           play(SFX.SCALONETA, 0.6);
-          this.ui.showPickupPopup("+50.000");
-          const line = this._scalonetaSmashLines[Math.floor(Math.random() * this._scalonetaSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "trex") {
-        this.score += 50000;
-        if (showPopup) {
-          play(SFX.OBSTACLE_HIT, 0.7);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._trexSmashLines[Math.floor(Math.random() * this._trexSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "cadillac") {
-        this.score += 50000;
-        if (showPopup) {
-          play(SFX.OBSTACLE_HIT, 0.6);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._hollywoodSmashLines[Math.floor(Math.random() * this._hollywoodSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "ogre") {
-        this.score += 50000;
-        if (showPopup) {
+        } else if (this.player.carType === "ogre") {
           this._playOgreSfx(0.8);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._ogreSmashLines[Math.floor(Math.random() * this._ogreSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else if (this.player.carType === "crooner") {
-        this.score += 50000;
-        if (showPopup) {
-          this._croonerSmashFeedback();
-        }
-      } else if (this.player.carType === "timetrain") {
-        this.score += 50000;
-        this._trainHitCount = (this._trainHitCount || 0) + 1;
-        if (showPopup) {
+        } else if (this.player.carType === "crooner") {
+          this._playCroonerSfx(0.7);
+        } else if (this.player.carType === "timetrain") {
+          this._trainHitCount = (this._trainHitCount || 0) + 1;
           const trainSfx = this._trainHitCount === 1 ? SFX.TRAIN_35MPH
             : this._trainHitCount === 2 ? SFX.TRAIN_45MPH
             : [SFX.TRAIN_WHISTLE, SFX.TRAIN_WHISTLE_ALT, SFX.TRAIN_EXPLOSION][Math.floor(Math.random() * 3)];
           play(trainSfx, 0.7);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._timeTrainSmashLines[Math.floor(Math.random() * this._timeTrainSmashLines.length)];
-          this.ui.showHippoCrush(line);
+        } else {
+          play(SFX.OBSTACLE_HIT, 0.6);
         }
-      } else if (this.player.carType === "bicycle") {
-        this.score += 50000;
-        if (showPopup) {
-          play(SFX.OBSTACLE_HIT, 0.7);
-          this.ui.showPickupPopup("+50,000");
-          const line = this._bicycleSmashLines[Math.floor(Math.random() * this._bicycleSmashLines.length)];
-          this.ui.showHippoCrush(line);
-        }
-      } else {
-        if (showPopup) this.ui.setStatus(this._t("Plowed right through!"), 1200);
       }
       return;
     }
