@@ -981,6 +981,11 @@ export class Game {
             else this.player.moveRight();
           } else if (Math.abs(dy) > Math.abs(dx) * 1.5) {
             if (dy < 0) this._activateManualBoost();
+            else {
+              this.braking = true;
+              clearTimeout(this._mobileBrakeTimer);
+              this._mobileBrakeTimer = setTimeout(() => { this.braking = false; }, 1500);
+            }
           }
         }
         e.preventDefault();
@@ -1307,7 +1312,8 @@ export class Game {
 
     if (step.kind === "lesson") {
       if (!this._tutorialWaitingForBrake) {
-        this._showTutorialTipOnPlayer(step.tip);
+        const tip = this.ui.isMobile ? "Swipe ↓ to brake and slow down." : step.tip;
+        this._showTutorialTipOnPlayer(tip);
       } else if (this.braking) {
         this.ui.setStatus("Nice braking!", 1500);
         this._advanceTutorialStep();
@@ -1434,7 +1440,7 @@ export class Game {
     if (step && step.type === "BRAKE") {
       this._tutorialPaused = false;
       this._tutorialWaitingForBrake = true;
-      this.ui.setStatus("Press S or ↓ now!", 30000);
+      this.ui.setStatus(this.ui.isMobile ? "Swipe ↓ to brake!" : "Press S or ↓ now!", 30000);
       return;
     }
 
