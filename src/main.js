@@ -77,6 +77,7 @@ ui.setHandlers({
   onSaveScoreLc: () => game.saveLcScore(),
   onSkipTutorial: () => game.skipTutorial(),
   onTutorialGotIt: () => game.tutorialGotIt(),
+  onAttractScoresHidden: () => game.notifyAttractScoresDismissed(),
 });
 
 ui.setActiveDriver(getLastDriver());

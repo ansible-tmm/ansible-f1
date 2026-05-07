@@ -3481,6 +3481,11 @@ export class Game {
     this._attractScoreFlashTimer = null;
   }
 
+  /** When attract leaderboard overlay hides (Escape, click-away, timer). Keeps `_attractScoreShowing` aligned. */
+  notifyAttractScoresDismissed() {
+    this._attractScoreShowing = false;
+  }
+
   _updateAttract(dt, now) {
     this._stripCurve();
 

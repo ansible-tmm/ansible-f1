@@ -275,6 +275,11 @@ export class UI {
         e.preventDefault();
         e.stopPropagation();
         if (this.onBillboardClose) this.onBillboardClose();
+        return;
+      }
+      if (e.code === "Escape" && this._menuEscapeBack()) {
+        e.preventDefault();
+        e.stopPropagation();
       }
     }, true);
 
@@ -377,6 +382,7 @@ export class UI {
     this.onSaveScoreLc = h.onSaveScoreLc;
     this.onSkipTutorial = h.onSkipTutorial;
     this.onTutorialGotIt = h.onTutorialGotIt;
+    this.onAttractScoresHidden = h.onAttractScoresHidden;
   }
 
   showMainMenu(visible) {
@@ -637,6 +643,7 @@ export class UI {
     } else {
       this.el.attractScores.classList.add("hidden");
       if (this._shouldShowMainMenu) this.el.mainMenu.classList.remove("hidden");
+      if (this.onAttractScoresHidden) this.onAttractScoresHidden();
     }
     this._syncSummitDockVisibility();
   }
@@ -1475,6 +1482,57 @@ export class UI {
       this.el.menuAchievements.classList.add("hidden");
     }
     this._toggleMenuButtons(true);
+  }
+
+  /**
+   * Escape from submenus (same as clicking Back): one step at a time, before Game pause handling.
+   * @returns {boolean} true if this keypress was consumed
+   */
+  _menuEscapeBack() {
+    if (this.el.levelSelect &&
+        !this.el.levelSelect.classList.contains("hidden")) {
+      this._closeLevelSelect();
+      return true;
+    }
+
+    if (this.isDriverSelectVisible()) {
+      if (this.el.driverDetail &&
+          !this.el.driverDetail.classList.contains("hidden")) {
+        this.el.driverDetail.classList.add("hidden");
+        if (this.el.driverCards) this.el.driverCards.classList.remove("compact");
+        this._stopCarPreview();
+        return true;
+      }
+      this._closeDriverSelect();
+      return true;
+    }
+
+    const menuLb = document.getElementById("menu-leaderboard");
+    if (menuLb && !menuLb.classList.contains("hidden")) {
+      this._hideMenuLeaderboard();
+      return true;
+    }
+
+    if (this.el.menuAchievements &&
+        !this.el.menuAchievements.classList.contains("hidden")) {
+      this._hideMenuAchievements();
+      return true;
+    }
+
+    if (this.el.attractScores &&
+        !this.el.attractScores.classList.contains("hidden")) {
+      this.showAttractScores(false);
+      return true;
+    }
+
+    if (this.el.godzillaScore &&
+        !this.el.godzillaScore.classList.contains("hidden")) {
+      this.hideGodzillaScore();
+      if (this.onMenu) this.onMenu();
+      return true;
+    }
+
+    return false;
   }
 
   _openDriverSelect(returnTo) {
