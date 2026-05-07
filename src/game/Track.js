@@ -575,7 +575,75 @@ export class Track {
           slot.add(c2);
         }
       }
+
+      // Decorative sheep on roadsides (level B only)
+      if (this.levelId === "B" && Math.random() < 0.35) {
+        const sheep = this._makeSideSheep();
+        const side = Math.random() < 0.5 ? -1 : 1;
+        sheep.position.set(side * (5.5 + Math.random() * 3), 0, Math.random() * 6);
+        sheep.rotation.y = Math.random() * Math.PI * 2;
+        slot.add(sheep);
+        if (Math.random() < 0.5) {
+          const sheep2 = this._makeSideSheep();
+          sheep2.position.set(side * (6 + Math.random() * 4), 0, 2 + Math.random() * 4);
+          sheep2.rotation.y = Math.random() * Math.PI * 2;
+          slot.add(sheep2);
+        }
+      }
     }
+  }
+
+  _makeSideSheep() {
+    const g = new THREE.Group();
+    const wool = new THREE.MeshStandardMaterial({
+      color: 0xf5f0e8, roughness: 0.95, metalness: 0.0,
+      emissive: 0x444038, emissiveIntensity: 0.15,
+    });
+    const face = new THREE.MeshStandardMaterial({
+      color: 0x2a2018, roughness: 0.85, metalness: 0.05,
+      emissive: 0x0a0804, emissiveIntensity: 0.2,
+    });
+    const legMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1510, roughness: 0.9, metalness: 0.05,
+    });
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 7, 5), wool);
+    body.scale.set(1.1, 0.85, 1.3);
+    body.position.set(0, 0.55, 0);
+    g.add(body);
+
+    for (let i = 0; i < 4; i++) {
+      const tuft = new THREE.Mesh(new THREE.SphereGeometry(0.22, 5, 4), wool);
+      tuft.position.set((Math.random() - 0.5) * 0.5, 0.6 + Math.random() * 0.1, (Math.random() - 0.5) * 0.55);
+      g.add(tuft);
+    }
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), face);
+    head.position.set(0, 0.65, -0.6);
+    g.add(head);
+
+    for (const side of [-0.15, 0.15]) {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.08, 4, 3), face);
+      ear.position.set(side, 0.72, -0.5);
+      g.add(ear);
+    }
+
+    const legs = [
+      { x: -0.28, z: -0.28 }, { x: 0.28, z: -0.28 },
+      { x: -0.28, z: 0.28 }, { x: 0.28, z: 0.28 },
+    ];
+    for (const lp of legs) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.4, 5), legMat);
+      leg.position.set(lp.x, 0.2, lp.z);
+      g.add(leg);
+    }
+
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.12, 5, 4), wool);
+    tail.position.set(0, 0.55, 0.55);
+    g.add(tail);
+
+    g.scale.set(1.3, 1.3, 1.3);
+    return g;
   }
 
   _desertProps() {

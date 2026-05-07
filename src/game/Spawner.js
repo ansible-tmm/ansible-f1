@@ -1321,6 +1321,7 @@ export class Spawner {
     const lane = Math.floor(Math.random() * 3);
     const z = CONFIG.SPAWN_Z - Math.random() * 4;
     const mesh = this._makeSheepMesh();
+    mesh.scale.set(1.4, 1.4, 1.4);
     mesh.position.set(CONFIG.LANES[lane], 0, z);
     this.scene.add(mesh);
     const e = {
@@ -1332,7 +1333,7 @@ export class Spawner {
       z,
       active: true,
       worldBox: new THREE.Box3(),
-      hit: { w: 0.8, h: 0.6, d: 0.7 },
+      hit: { w: 1.0, h: 0.8, d: 0.9 },
       flashT: 0,
     };
     this._syncBox(e);
