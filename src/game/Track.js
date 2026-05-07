@@ -1716,15 +1716,6 @@ export class Track {
       addCone(shadow, s.x + 1.4, s.h * 0.28, s.z - 1.8, s.r * 0.6, s.h * 0.3, s.ry + 0.15, 0.08);
     }
 
-    /** Center “pass”: only low berms — keeps vanishing point open */
-    const saddle = [
-      { x: -14, z: 12, r: 9, h: 8 },
-      { x: 16, z: 11, r: 8, h: 9 },
-      { x: 2, z: 16, r: 7, h: 6 },
-    ];
-    for (const s of saddle) {
-      addCone(rock, s.x, 0, s.z, s.r, s.h, (s.x % 7) * 0.06);
-    }
 
     /** Slabs at frame edges: short + broad so they read as rock strata, not tall trunks */
     const fins = [
