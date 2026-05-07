@@ -1287,6 +1287,8 @@ export class UI {
     }
     this._preloadedIframes = {};
     if (!billboards) return;
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) return;
 
     for (const bb of billboards) {
       if (!bb.embed) continue;
@@ -1332,7 +1334,20 @@ export class UI {
       return;
     }
 
-    if (embed) {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (embed && isMobile) {
+      window.open(embed, "_blank");
+      const logoHtml = logo
+        ? `<img class="billboard-placeholder-logo" src="${logo}" alt="${label}" />`
+        : `<div class="billboard-placeholder-icon">&#9881;</div>`;
+      this.el.billboardContent.innerHTML =
+        `<div class="billboard-placeholder">` +
+        logoHtml +
+        `<h3>${label}</h3>` +
+        `<p>Demo opened in a new tab.</p>` +
+        `<p class="billboard-placeholder-hint">Close this panel to resume the game.</p>` +
+        `</div>`;
+    } else if (embed) {
       const preloaded = this._preloadedIframes && this._preloadedIframes[embed];
       if (preloaded) {
         preloaded.style.cssText = "";
