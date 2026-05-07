@@ -1112,18 +1112,18 @@ export class Track {
 
   _billboards() {
     /** Bigger faces + closer to play (higher Z) = easier to read & click */
-    const BB_Z = -50;
+    const BB_Z = -65;
     const nBillboards = this.theme.billboards.length;
     const defs = this.theme.billboards.map((b, i) => ({
       ...b,
       x:
         nBillboards >= 4
-          ? [-20, -7, 7, 20][i] ?? 20
+          ? [-24, -9, 9, 24][i] ?? 24
           : i === 0
-            ? -16
+            ? -20
             : i === 1
-              ? 16
-              : 32,
+              ? 20
+              : 36,
       z: BB_Z,
     }));
 
