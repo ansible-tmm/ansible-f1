@@ -1681,28 +1681,28 @@ export class Track {
       }
     }
 
-    /** Inner ridges: stacked cones OK here — breadth reads from camera, height less “tree tapered” */
+    /** Inner ridges: layered mesa slabs so they read as rocky buttes */
     const massifs = [
       {
-        x: -54, z: 10, ry: -0.28, layers: [
-          { r: 22, h: 14, y: 0, m: shadow },
-          { r: 16, h: 11, y: 10, m: rock },
-          { r: 11, h: 8, y: 19, m: sunlit },
-          { r: 7, h: 5, y: 26, m: rim },
+        x: -54, z: 10, ry: -0.28, slabs: [
+          { rx: 22, rz: 12, hy: 12, y0: 0, m: shadow },
+          { rx: 17, rz: 10, hy: 10, y0: 12, m: rock },
+          { rx: 12, rz: 8, hy: 7, y0: 22, m: sunlit },
+          { rx: 8, rz: 6, hy: 4, y0: 29, m: rim },
         ],
       },
       {
-        x: 62, z: -2, ry: 0.22, layers: [
-          { r: 24, h: 15, y: 0, m: rock },
-          { r: 17, h: 12, y: 11, m: sunlit },
-          { r: 12, h: 8, y: 21, m: rim },
-          { r: 8, h: 5, y: 28, m: rim },
+        x: 62, z: -2, ry: 0.22, slabs: [
+          { rx: 24, rz: 13, hy: 13, y0: 0, m: rock },
+          { rx: 18, rz: 11, hy: 10, y0: 13, m: sunlit },
+          { rx: 13, rz: 9, hy: 7, y0: 23, m: rim },
+          { rx: 9, rz: 7, hy: 4, y0: 30, m: rim },
         ],
       },
     ];
     for (const mass of massifs) {
-      for (const L of mass.layers) {
-        addCone(L.m, mass.x, L.y, mass.z, L.r, L.h, mass.ry);
+      for (const S of mass.slabs) {
+        addMesaSlab(S.m, mass.x, S.y0, mass.z, S.rx, S.rz, S.hy, mass.ry);
       }
     }
 
