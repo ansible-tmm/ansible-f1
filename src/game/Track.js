@@ -1041,14 +1041,19 @@ export class Track {
   _billboards() {
     /** Bigger faces + closer to play (higher Z) = easier to read & click */
     const BB_Z = -50;
-    const defs = this.theme.billboards.map((b, i) => {
-      const defaultX = i === 0 ? -16 : i === 1 ? 16 : 32;
-      return {
-        ...b,
-        x: typeof b.x === "number" && !Number.isNaN(b.x) ? b.x : defaultX,
-        z: BB_Z,
-      };
-    });
+    const nBillboards = this.theme.billboards.length;
+    const defs = this.theme.billboards.map((b, i) => ({
+      ...b,
+      x:
+        nBillboards >= 4
+          ? [-20, -7, 7, 20][i] ?? 20
+          : i === 0
+            ? -16
+            : i === 1
+              ? 16
+              : 32,
+      z: BB_Z,
+    }));
 
     /** 16:9 face matches interactive demo thumbnails; world scale is ~+15% for readability */
     const boardW = 11.2;
