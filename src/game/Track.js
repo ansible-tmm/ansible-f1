@@ -86,6 +86,13 @@ export class Track {
 
   _road() {
     const t = this.theme;
+    /** Developer experience (C): no asphalt berm past yellow lines — terrain meets road at ±6 */
+    const desertNarrowRoad =
+      this.levelId === "C" && t.scenery === "desert" && !this._isDeathStar;
+    this._roadHalfWidth = desertNarrowRoad ? 6 : 11;
+    const roadPlaneW = desertNarrowRoad ? 12 : 22;
+    const curvedRoadW = desertNarrowRoad ? (24 * roadPlaneW) / 22 : 24;
+
     const roadMat = new THREE.MeshStandardMaterial({
       color: t.road, metalness: t.scenery === "trench" ? 0.35 : 0.15,
       roughness: t.scenery === "trench" ? 0.78 : 0.88,
@@ -105,7 +112,8 @@ export class Track {
       this._roadSegCount = 100;
       for (let i = 0; i < this._roadSegCount; i++) {
         const seg = new THREE.Mesh(
-          new THREE.PlaneGeometry(24, this._roadSegSpacing + 0.6), roadMat
+          new THREE.PlaneGeometry(curvedRoadW, this._roadSegSpacing + 0.6),
+          roadMat
         );
         seg.rotation.x = -Math.PI / 2;
         seg.position.set(0, 0, -200 + i * this._roadSegSpacing);
@@ -118,7 +126,7 @@ export class Track {
       this._roadDeck = trenchDeck ? new THREE.Group() : null;
       const deck = this._roadDeck || this.group;
       const road = new THREE.Mesh(
-        new THREE.PlaneGeometry(22, 400), roadMat
+        new THREE.PlaneGeometry(roadPlaneW, 400), roadMat
       );
       road.rotation.x = -Math.PI / 2;
       road.position.y = 0;
@@ -196,15 +204,20 @@ export class Track {
           flatShading: t.scenery === "trench",
         });
         const gw = this._curve ? 100 : 80;
-        /** Workflow (B): tuck field in so inner grass edge ~±6; shoulder caps sit on asphalt to edge lines */
-        const gx = this.levelId === "B" && t.scenery === "forest" ? 46 : 51;
+        /** Workflow (B): tuck field so inner grass ~±6. Else match inner berm to road outer edge. */
+        const gx =
+          this.levelId === "B" && t.scenery === "forest"
+            ? 46
+            : gw / 2 + this._roadHalfWidth;
+        const groundY =
+          desertNarrowRoad ? -0.003 : -0.02;
         const groundL = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat);
         groundL.rotation.x = -Math.PI / 2;
-        groundL.position.set(-gx, -0.02, 0);
+        groundL.position.set(-gx, groundY, 0);
         surf.add(groundL);
         const groundR = new THREE.Mesh(new THREE.PlaneGeometry(gw, 400), groundMat.clone());
         groundR.rotation.x = -Math.PI / 2;
-        groundR.position.set(gx, -0.02, 0);
+        groundR.position.set(gx, groundY, 0);
         surf.add(groundR);
 
         if (this.levelId === "B" && t.scenery === "forest") {
@@ -1091,6 +1104,7 @@ export class Track {
     } else if (s === "forest") {
       this._mountainSkyline(this._skylineGroup, 0x3a5a4a, 0x4a6a5a, 0x556b55, 0xeeffee);
     }
+    else if (s === "desert" && this.levelId === "C") this._mountainSkylineSonoran(this._skylineGroup);
     else if (s === "desert") this._mountainSkyline(this._skylineGroup, 0xa08050, 0xb89060, 0xc49868, 0xffe8c0);
     else if (s === "swamp") this._swampSkyline(this._skylineGroup);
     else if (s === "snow") this._snowMountainSkyline(this._skylineGroup);
@@ -1476,6 +1490,123 @@ export class Track {
       roll.scale.set(1.2, 0.35, 0.9);
       roll.position.set(-70 + k * 32, 1.5, -18 - k * 3);
       skylineGroup.add(roll);
+    }
+  }
+
+  /** Developer experience (C): layered Sonoran ridges — cooler shadow folds + warm rim light, no snow caps */
+  _mountainSkylineSonoran(skylineGroup) {
+    const shade = new THREE.MeshStandardMaterial({
+      color: 0x504465, roughness: 0.92, metalness: 0.04, flatShading: false,
+      emissive: 0x201828, emissiveIntensity: 0.08,
+    });
+    const baseSun = new THREE.MeshStandardMaterial({
+      color: 0x985848, roughness: 0.88, metalness: 0.05, flatShading: false,
+      emissive: 0x402418, emissiveIntensity: 0.055,
+    });
+    const midSun = new THREE.MeshStandardMaterial({
+      color: 0xc07055, roughness: 0.82, metalness: 0.06, flatShading: false,
+      emissive: 0x683020, emissiveIntensity: 0.1,
+    });
+    const peakWarm = new THREE.MeshStandardMaterial({
+      color: 0xd88860, roughness: 0.78, metalness: 0.07, flatShading: false,
+      emissive: 0xa06040, emissiveIntensity: 0.14,
+    });
+    const rimGlow = new THREE.MeshStandardMaterial({
+      color: 0xe89870, roughness: 0.7, metalness: 0.08, flatShading: false,
+      emissive: 0xc07050, emissiveIntensity: 0.22,
+    });
+    const cragMat = new THREE.MeshStandardMaterial({
+      color: 0x5c4f68, roughness: 0.94, metalness: 0.03, flatShading: true,
+      emissive: 0x1c1428, emissiveIntensity: 0.05,
+    });
+    const foothillMat = new THREE.MeshStandardMaterial({
+      color: 0x7a5848, roughness: 0.9, metalness: 0.04, flatShading: false,
+      emissive: 0x281810, emissiveIntensity: 0.045,
+    });
+
+    const peaks = [
+      { x: -80, h: 31, w: 40, z: -14, mx: -5.5, mz: 5, cx: -2.2, cz: 1.2, cr: 5, cry: 0.52 },
+      { x: -50, h: 46, w: 44, z: 2, mx: 4.5, mz: -3.5, cx: -4, cz: -2, cr: 5.8, cry: 0.6 },
+      { x: -22, h: 27, w: 31, z: -22, mx: -2.8, mz: 7, cx: 1.4, cz: -3.2, cr: 3.4, cry: 0.38 },
+      { x: 0, h: 41, w: 40, z: 9, mx: -4, mz: -5, cx: 3, cz: 1.8, cr: 5.2, cry: 0.54 },
+      { x: 26, h: 50, w: 46, z: -9, mx: 5.5, mz: 3.5, cx: -3.2, cz: -2, cr: 6, cry: 0.65 },
+      { x: 54, h: 35, w: 38, z: 11, mx: -4.5, mz: -6, cx: 3.5, cz: 2.6, cr: 4.5, cry: 0.46 },
+      { x: 76, h: 40, w: 40, z: -17, mx: 4, mz: 5.5, cx: -1.8, cz: -3, cr: 5.2, cry: 0.52 },
+      { x: 96, h: 29, w: 30, z: 5, mx: -2.5, mz: -7, cx: 1.8, cz: 1.2, cr: 3.6, cry: 0.44 },
+    ];
+
+    for (const p of peaks) {
+      const baseColorMat = p.x < -58 ? shade : baseSun;
+      const base = new THREE.Mesh(
+        new THREE.SphereGeometry(p.w / 2, 11, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+        baseColorMat
+      );
+      base.scale.set(1.06, p.h / (p.w / 2), 0.94);
+      base.position.set(p.x, 0, p.z);
+      skylineGroup.add(base);
+
+      const mid = new THREE.Mesh(
+        new THREE.SphereGeometry(p.w * 0.39, 9, 7, 0, Math.PI * 2, 0, Math.PI / 2),
+        midSun
+      );
+      mid.scale.set(1.08, (p.h * 0.7) / (p.w * 0.39), 1.06);
+      mid.position.set(p.x + p.mx, 0.2, p.z + p.mz);
+      skylineGroup.add(mid);
+
+      const crest = new THREE.Mesh(
+        new THREE.ConeGeometry(p.w * 0.23, p.h * 0.26, 10),
+        peakWarm
+      );
+      crest.position.set(p.x + p.cx, p.h * 0.64, p.z + p.cz);
+      skylineGroup.add(crest);
+
+      if (p.h > 33) {
+        const rim = new THREE.Mesh(
+          new THREE.SphereGeometry(p.w * 0.24, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+          rimGlow
+        );
+        rim.scale.set(1.18, (p.h * 0.3) / (p.w * 0.24), 1.12);
+        rim.position.set(p.x + 1.6, p.h * 0.56, p.z - 1.2);
+        skylineGroup.add(rim);
+      }
+
+      const crag = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(p.cr, 1),
+        cragMat
+      );
+      crag.scale.set(1.45, 0.58, 1.12);
+      crag.position.set(p.x - p.w * 0.16, p.h * p.cry + 1.8, p.z + 5);
+      crag.rotation.set(0.25, (p.x % 19) / 21, 0.12);
+      skylineGroup.add(crag);
+    }
+
+    const foothillZs = [-24, -20, -28, -16];
+    const foothillRadii = [7, 8.5, 6.2, 9];
+    for (let k = 0; k < 4; k++) {
+      const roll = new THREE.Mesh(
+        new THREE.SphereGeometry(foothillRadii[k], 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+        foothillMat
+      );
+      roll.scale.set(1.35, 0.42, 0.95);
+      roll.position.set(-85 + k * 56, 1.8, foothillZs[k]);
+      skylineGroup.add(roll);
+    }
+    /** Cool shadow wedges on the western skyline for depth */
+    const wedges = [
+      { x: -92, y: 11, z: -30, sx: 6, sy: 16, sz: 9, ry: 0.22 },
+      { x: -84, y: 7, z: -38, sx: 5, sy: 11, sz: 7, ry: -0.18 },
+      { x: -78, y: 14, z: -24, sx: 7, sy: 12, sz: 11, ry: 0.14 },
+      { x: -70, y: 5, z: -34, sx: 4, sy: 9, sz: 6, ry: -0.12 },
+      { x: -102, y: 9, z: -42, sx: 5, sy: 13, sz: 8, ry: 0.08 },
+      { x: -98, y: 13, z: -26, sx: 6, sy: 10, sz: 7, ry: -0.2 },
+    ];
+    for (const q of wedges) {
+      const w = new THREE.Mesh(
+        new THREE.BoxGeometry(q.sx, q.sy, q.sz), shade
+      );
+      w.rotation.set(0.12, q.ry, -0.1);
+      w.position.set(q.x, q.y, q.z);
+      skylineGroup.add(w);
     }
   }
 
