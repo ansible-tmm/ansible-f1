@@ -509,12 +509,13 @@ export const LEVELS = {
     billboards: [
       {
         id: "demo16",
-        label: "Self-healing infrastructure",
+        label: "Self-healing Google Cloud",
         accent: 0x22ccff,
-        logo: "./assets/aiops_self_healing_infrastructure_aap.png",
+        logo: "./assets/aiops_self_healing_google_cloud_infrastructure_aap.png",
         embed:
           "https://demo.arcade.software/QIkx7TMuu22RDi0nUjRA?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true",
-        embedTitle: "AIOps — self-healing infrastructure with AAP",
+        embedTitle:
+          "AIOps — Self-healing Google Cloud Infrastructure with AAP",
         logoObjectFit: "cover",
       },
       {
