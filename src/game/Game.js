@@ -3382,6 +3382,7 @@ export class Game {
         logo: def.logo || null,
         showBonus: !alreadyClaimed,
       });
+      if (this.tutorialMode) this.ui.showBillboardExitHint();
     }
 
     if (this._bbReturning && dist < 1.5) {

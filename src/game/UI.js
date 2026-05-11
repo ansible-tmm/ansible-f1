@@ -64,6 +64,7 @@ export class UI {
       billboardLabel: document.getElementById("billboard-label"),
       billboardContent: document.getElementById("billboard-content"),
       billboardBonus: document.getElementById("billboard-bonus"),
+      billboardExitHint: document.getElementById("billboard-exit-hint"),
 
       levelSelect: document.getElementById("level-select"),
       hudLevelName: document.getElementById("hud-level-name"),
@@ -502,6 +503,11 @@ export class UI {
     if (!wrap) return;
     wrap.classList.add("hidden");
     wrap.setAttribute("aria-hidden", "true");
+  }
+
+  showBillboardExitHint() {
+    if (!this.el.billboardExitHint) return;
+    this.el.billboardExitHint.classList.remove("hidden");
   }
 
   buildTutorialChecklist(steps) {
@@ -1355,6 +1361,9 @@ export class UI {
     }
     if (this.el.billboardOverlay) {
       this.el.billboardOverlay.classList.toggle("hidden", !visible);
+    }
+    if (this.el.billboardExitHint && !visible) {
+      this.el.billboardExitHint.classList.add("hidden");
     }
     if (this.el.billboardLabel && label) {
       this.el.billboardLabel.textContent = label;
