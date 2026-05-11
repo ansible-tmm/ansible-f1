@@ -1464,7 +1464,7 @@ export class Game {
     }
 
     if (step?.kind === "billboard") {
-      this._tutorialBillboardNudgeAt = performance.now() + 5000;
+      this._tutorialBillboardNudgeAt = performance.now() + 2000;
       this._tutorialBillboardNudgeShown = false;
     } else {
       this._tutorialBillboardNudgeAt = null;
