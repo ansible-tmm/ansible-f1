@@ -436,6 +436,12 @@ export class Game {
 
       if (this.state === "quiz") return;
 
+      if (this.tutorialMode && this._tutorialPaused) {
+        this.tutorialGotIt();
+        e.preventDefault();
+        return;
+      }
+
       if (e.code === "Escape" || e.code === "Backspace") {
         if (this.recoveryPrompt) {
           this.onRecoveryNo();
@@ -949,6 +955,10 @@ export class Game {
 
   _bindHorn() {
     this.renderer.domElement.addEventListener("click", () => {
+      if (this.tutorialMode && this._tutorialPaused) {
+        this.tutorialGotIt();
+        return;
+      }
       this._hornOrVehicleAction();
     });
   }
@@ -998,6 +1008,11 @@ export class Game {
 
       // Tap detection: short distance, quick tap
       if (dist < 15 && elapsed < 250) {
+        if (this.tutorialMode && this._tutorialPaused) {
+          this.tutorialGotIt();
+          e.preventDefault();
+          return;
+        }
         if (this.state === "running" && !this.recoveryPrompt) {
           const half = window.innerWidth / 2;
           if (t.clientX < half) this.player.moveLeft();
