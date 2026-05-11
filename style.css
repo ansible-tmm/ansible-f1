@@ -3060,6 +3060,29 @@ body.hud-info-open #audio-controls {
   border-right: 10px solid transparent;
   border-top: 12px solid var(--accent, #00ffcc);
 }
+.tutorial-tip-countdown {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+.tutorial-tip-countdown-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--neon, #00ffcc);
+  border-radius: 2px;
+  transform-origin: left;
+  transform: scaleX(1);
+}
+.tutorial-tip-countdown-fill.running {
+  animation: tipCountdown 3s linear forwards;
+}
+@keyframes tipCountdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
 @keyframes tutorialPulse {
   0%, 100% { box-shadow: 0 0 24px rgba(0, 255, 204, 0.25); }
   50% { box-shadow: 0 0 36px rgba(0, 255, 204, 0.5); }

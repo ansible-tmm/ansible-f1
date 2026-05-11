@@ -461,7 +461,7 @@ export class UI {
     if (this.el.skipTutorialBtn) this.el.skipTutorialBtn.classList.toggle("visible", visible);
   }
 
-  showTutorialTip(screenX, screenY, text) {
+  showTutorialTip(screenX, screenY, text, { autoDismiss = true } = {}) {
     const tip = this.el.tutorialTip;
     if (!tip) return;
     this.el.tutorialTipText.textContent = text;
@@ -470,6 +470,24 @@ export class UI {
     tip.style.left = `${screenX}px`;
     tip.style.top = `${screenY}px`;
     tip.style.transform = "translate(-50%, -100%)";
+
+    clearTimeout(this._tipAutoTimer);
+    const fill = document.getElementById("tutorial-tip-countdown-fill");
+    if (fill) {
+      fill.classList.remove("running");
+      void fill.offsetWidth;
+      if (autoDismiss) {
+        fill.classList.add("running");
+        fill.parentElement.style.display = "";
+      } else {
+        fill.parentElement.style.display = "none";
+      }
+    }
+    if (autoDismiss) {
+      this._tipAutoTimer = setTimeout(() => {
+        if (this.onTutorialGotIt) this.onTutorialGotIt();
+      }, 3000);
+    }
   }
 
   hideTutorialTip() {
@@ -477,6 +495,9 @@ export class UI {
     if (!tip) return;
     tip.classList.add("hidden");
     tip.setAttribute("aria-hidden", "true");
+    clearTimeout(this._tipAutoTimer);
+    const fill = document.getElementById("tutorial-tip-countdown-fill");
+    if (fill) fill.classList.remove("running");
   }
 
   showTutorialBillboardNudge(message) {

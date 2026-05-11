@@ -1304,7 +1304,7 @@ export class Game {
         this._tutorialPaused = true;
         const cx = this.renderer.domElement.clientWidth / 2;
         const cy = this.renderer.domElement.clientHeight * 0.36;
-        this.ui.showTutorialTip(cx, cy, step.tip);
+        this.ui.showTutorialTip(cx, cy, step.tip, { autoDismiss: false });
       } else if (
         !this._tutorialPaused &&
         this.state === "running" &&
