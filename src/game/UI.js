@@ -172,7 +172,7 @@ export class UI {
       "btn-choose-driver",
     ];
     if (!hideHowTo) ids.push("btn-how-to-play");
-    ids.push("btn-highscores", "btn-achievements");
+    ids.push("btn-highscores", "btn-achievements", "btn-credits");
     this._menuBtns = ids.map((id) => document.getElementById(id)).filter(Boolean);
     if (this._menuIdx >= this._menuBtns.length) this._menuIdx = 0;
     this._updateMenuFocus();
@@ -237,6 +237,8 @@ export class UI {
     on("btn-lb-back", () => this._hideMenuLeaderboard());
     on("btn-achievements", () => this._showMenuAchievements());
     on("btn-ach-back", () => this._hideMenuAchievements());
+    on("btn-credits", () => this._showMenuCredits());
+    on("btn-credits-back", () => this._hideMenuCredits());
     on("btn-resume", () => this.onResume && this.onResume());
     on("btn-restart-pause", () => this.onRestart && this.onRestart());
     on("btn-menu-pause", () => this.onMenu && this.onMenu());
@@ -303,6 +305,7 @@ export class UI {
     on("btn-hud-info", () => this.onHudInfoOpen && this.onHudInfoOpen());
     on("btn-hud-close", () => this.onHudInfoClose && this.onHudInfoClose());
     on("btn-hud-resume", () => this.onHudInfoClose && this.onHudInfoClose());
+    on("btn-hud-menu", () => { this.closeMobileHud(); if (this.onMenu) this.onMenu(); });
     on("btn-mobile-secret", () => this.onMobileSecret && this.onMobileSecret());
     on("btn-gz-back", () => { this.hideGodzillaScore(); if (this.onMenu) this.onMenu(); });
 
@@ -972,11 +975,13 @@ export class UI {
   openMobileHud() {
     const left = this.el.hud?.querySelector(".hud-left");
     if (left) left.classList.add("mobile-open");
+    document.body.classList.add("hud-info-open");
   }
 
   closeMobileHud() {
     const left = this.el.hud?.querySelector(".hud-left");
     if (left) left.classList.remove("mobile-open");
+    document.body.classList.remove("hud-info-open");
   }
 
   async updateMenuBest(localBest) {
@@ -1540,6 +1545,90 @@ export class UI {
     this._toggleMenuButtons(true);
   }
 
+  // --- Credits ---
+
+  _creditsCache = null;
+
+  async _showMenuCredits() {
+    const panel = document.getElementById("menu-credits");
+    if (!panel) return;
+    panel.classList.remove("hidden");
+    this._toggleMenuButtons(false);
+    if (!this._creditsCache) {
+      await this._fetchCredits();
+    }
+  }
+
+  _hideMenuCredits() {
+    const panel = document.getElementById("menu-credits");
+    if (panel) panel.classList.add("hidden");
+    this._toggleMenuButtons(true);
+  }
+
+  async _fetchCredits() {
+    const container = document.getElementById("credits-content");
+    if (!container) return;
+    container.innerHTML = '<p style="text-align:center;color:var(--muted);padding:1rem">Loading\u2026</p>';
+
+    const REPO = "abwalczyk/ansible-f1";
+    const API = "https://api.github.com";
+
+    try {
+      const [repoRes, contribRes] = await Promise.all([
+        fetch(`${API}/repos/${REPO}`),
+        fetch(`${API}/repos/${REPO}/contributors?per_page=30`),
+      ]);
+
+      if (!repoRes.ok || !contribRes.ok) throw new Error("GitHub API error");
+
+      const repo = await repoRes.json();
+      const contributors = await contribRes.json();
+      this._creditsCache = { repo, contributors };
+
+      const totalCommits = contributors.reduce((s, c) => s + c.contributions, 0);
+      const created = new Date(repo.created_at).toLocaleDateString("en-US", {
+        year: "numeric", month: "long",
+      });
+
+      let html = "";
+
+      html += '<div class="credits-oss-blurb">';
+      html += "<p><strong>Built to Automate</strong> is an open-source arcade game built with Three.js.</p>";
+      html += "<p>Fork it, improve it, and submit a PR!</p>";
+      html += `<a href="https://github.com/${REPO}" target="_blank" rel="noopener" class="credits-gh-link">`;
+      html += '<span class="credits-gh-icon">&#9733;</span> View on GitHub</a>';
+      html += "</div>";
+
+      html += '<div class="credits-stats">';
+      html += `<div class="credits-stat"><span class="credits-stat-num">${totalCommits}</span><span class="credits-stat-label">Commits</span></div>`;
+      html += `<div class="credits-stat"><span class="credits-stat-num">${repo.stargazers_count}</span><span class="credits-stat-label">Stars</span></div>`;
+      html += `<div class="credits-stat"><span class="credits-stat-num">${repo.forks_count}</span><span class="credits-stat-label">Forks</span></div>`;
+      html += `<div class="credits-stat"><span class="credits-stat-num">${contributors.length}</span><span class="credits-stat-label">Contributors</span></div>`;
+      if (created) {
+        html += `<div class="credits-stat"><span class="credits-stat-num">${created}</span><span class="credits-stat-label">Created</span></div>`;
+      }
+      html += "</div>";
+
+      html += '<h4 class="credits-section-title">Contributors</h4>';
+      html += '<div class="credits-contributors">';
+      for (const c of contributors) {
+        html += '<a class="credits-contributor" href="' + c.html_url + '" target="_blank" rel="noopener">';
+        html += '<img class="credits-avatar" src="' + c.avatar_url + '&s=80" alt="" loading="lazy" />';
+        html += '<span class="credits-name">' + (c.login || "unknown") + "</span>";
+        html += '<span class="credits-commits">' + c.contributions + " commits</span>";
+        html += "</a>";
+      }
+      html += "</div>";
+
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML =
+        '<p style="text-align:center;color:var(--muted);padding:1rem">Could not load credits. ' +
+        '<a href="https://github.com/' + REPO + '" target="_blank" rel="noopener" ' +
+        'style="color:var(--neon)">Visit on GitHub</a></p>';
+    }
+  }
+
   /**
    * Escape from submenus (same as clicking Back): one step at a time, before Game pause handling.
    * @returns {boolean} true if this keypress was consumed
@@ -1572,6 +1661,12 @@ export class UI {
     if (this.el.menuAchievements &&
         !this.el.menuAchievements.classList.contains("hidden")) {
       this._hideMenuAchievements();
+      return true;
+    }
+
+    const menuCredits = document.getElementById("menu-credits");
+    if (menuCredits && !menuCredits.classList.contains("hidden")) {
+      this._hideMenuCredits();
       return true;
     }
 
@@ -1755,6 +1850,7 @@ export class UI {
       "btn-choose-driver",
       "btn-highscores",
       "btn-achievements",
+      "btn-credits",
     ];
     for (const id of ids) {
       const el = document.getElementById(id);

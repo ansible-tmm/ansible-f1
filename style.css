@@ -2764,6 +2764,15 @@ body {
   .hud-resume-btn:active {
     background: rgba(0, 230, 255, 0.35);
   }
+  .hud-menu-btn {
+    background: transparent;
+    border-color: rgba(0, 230, 255, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.65rem;
+  }
+  .hud-menu-btn:active {
+    background: rgba(0, 230, 255, 0.15);
+  }
 
   /* Mobile driver select: scrollable compact grid */
   #driver-select.panel {
@@ -2974,6 +2983,10 @@ body {
     bottom: 1.8rem;
     font-size: 0.55rem;
   }
+}
+
+body.hud-info-open #audio-controls {
+  display: none;
 }
 
 /* ─── Interactive tutorial ─── */
@@ -3264,6 +3277,140 @@ body {
 @keyframes checklistSlideIn {
   from { opacity: 0; transform: translateY(-50%) translateX(20px); }
   to { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+/* ─── Credits panel ─── */
+
+.menu-credits {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto 1rem;
+}
+
+.credits-content {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 0.3rem;
+}
+
+.credits-oss-blurb {
+  text-align: center;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.credits-oss-blurb p {
+  margin: 0.25rem 0;
+}
+
+.credits-gh-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(0, 255, 204, 0.4);
+  border-radius: 6px;
+  background: rgba(0, 255, 204, 0.08);
+  color: var(--neon, #00ffcc);
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.7rem;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.credits-gh-link:hover {
+  background: rgba(0, 255, 204, 0.18);
+  border-color: rgba(0, 255, 204, 0.7);
+}
+
+.credits-gh-icon {
+  margin-right: 0.3rem;
+}
+
+.credits-stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 0.8rem 0 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.credits-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.credits-stat-num {
+  font-family: "Press Start 2P", monospace;
+  font-size: 0.7rem;
+  color: var(--neon, #00ffcc);
+}
+
+.credits-stat-label {
+  font-size: 0.55rem;
+  color: var(--muted, rgba(255, 255, 255, 0.4));
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.credits-section-title {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.credits-contributors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+
+.credits-contributor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.credits-contributor:hover {
+  background: rgba(0, 255, 204, 0.06);
+  border-color: rgba(0, 255, 204, 0.3);
+}
+
+.credits-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 255, 204, 0.3);
+}
+
+.credits-name {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.6rem;
+  color: #fff;
+  text-align: center;
+  word-break: break-all;
+}
+
+.credits-commits {
+  font-size: 0.5rem;
+  color: var(--muted, rgba(255, 255, 255, 0.4));
 }
 
 .hidden {
